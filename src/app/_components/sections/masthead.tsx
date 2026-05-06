@@ -4,7 +4,7 @@ export function Masthead({ observedAt }: { observedAt: string }) {
       <h1 className="text-lg font-semibold tracking-tight text-ink">
         Hetzner Cloud Radar
       </h1>
-      <p className="ml-auto text-xs text-ink-soft">
+      <p className="text-xs text-ink-soft sm:ml-auto">
         Observed at <span className="text-ink tabular-nums">{observedAt}</span>
       </p>
     </header>

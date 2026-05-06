@@ -7,7 +7,10 @@ const GAP = 1;
 
 export function SupplyChart({ days }: { days: SupplyDay[] }) {
   const barW = (W - (days.length - 1) * GAP) / days.length;
-  const maxStack = Math.max(...days.map((d) => d.limited + d.soldOut), 1);
+  const maxStack = Math.max(
+    ...days.map((d) => d.available + d.limited + d.soldOut),
+    1,
+  );
   const yScale = (v: number) => (v / maxStack) * H;
 
   const tickIndices = [
@@ -25,7 +28,7 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
         className="block w-full"
         preserveAspectRatio="none"
         role="img"
-        aria-label={`Cells flickering or sold out per day, last ${days.length} days. Maximum ${maxStack} cells.`}
+        aria-label={`Available, limited, and sold-out cells per day, last ${days.length} days. Maximum ${maxStack} cells.`}
       >
         <line
           x1={0}
@@ -38,17 +41,27 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
         />
         {days.map((d, i) => {
           const x = i * (barW + GAP);
+          const availableH = yScale(d.available);
           const limitedH = yScale(d.limited);
           const soldOutH = yScale(d.soldOut);
-          const totalH = limitedH + soldOutH;
+          const totalH = availableH + limitedH + soldOutH;
           if (totalH === 0) return null;
           return (
             <g key={d.date}>
-              <title>{`${formatChartLabel(d.date)}: ${d.limited} flickered, ${d.soldOut} sold out`}</title>
+              <title>{`${formatChartLabel(d.date)}: ${d.available} available, ${d.limited} limited, ${d.soldOut} sold out`}</title>
+              {d.available > 0 ? (
+                <rect
+                  x={x}
+                  y={H - availableH}
+                  width={barW}
+                  height={availableH}
+                  fill="var(--status-operational)"
+                />
+              ) : null}
               {d.limited > 0 ? (
                 <rect
                   x={x}
-                  y={H - limitedH}
+                  y={H - availableH - limitedH}
                   width={barW}
                   height={limitedH}
                   fill="var(--status-degraded)"

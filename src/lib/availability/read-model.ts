@@ -141,6 +141,7 @@ function fallbackModel(): AvailabilityReadModel {
 
     return {
       date: date.toISOString().slice(0, 10),
+      available: 0,
       limited: 0,
       soldOut: 0,
     };
@@ -262,8 +263,9 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
     const dailyRows = await db
       .select({
         dateUtc: dailyAvailabilityState.dateUtc,
+        available: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and not ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
         limited: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
-        soldOut: sql<number>`sum(case when ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
+        soldOut: sql<number>`sum(case when ${dailyAvailabilityState.sawSoldOut} and not ${dailyAvailabilityState.sawAvailable} then 1 else 0 end)`,
       })
       .from(dailyAvailabilityState)
       .where(
@@ -278,6 +280,7 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
       dailyRows.map((day) => [
         day.dateUtc,
         {
+          available: Number(day.available),
           limited: Number(day.limited),
           soldOut: Number(day.soldOut),
         },
@@ -291,6 +294,7 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
 
       return {
         date: key,
+        available: day?.available ?? 0,
         limited: day?.limited ?? 0,
         soldOut: day?.soldOut ?? 0,
       };

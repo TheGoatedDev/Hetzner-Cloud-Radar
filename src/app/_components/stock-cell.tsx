@@ -10,7 +10,7 @@ export function StockCell({
   type: string;
 }) {
   return (
-    <td className="px-2 py-2 text-center align-middle">
+    <td className="px-0 py-3 text-center align-top sm:px-2">
       <span className="sr-only">
         {type} in {dc}, {DC_META[dc].city}: {STOCK[stock].label}
       </span>

@@ -88,6 +88,7 @@ export type StockEvent = {
 
 export type SupplyDay = {
   date: string;
+  available: number;
   limited: number;
   soldOut: number;
 };

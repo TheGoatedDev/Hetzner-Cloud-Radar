@@ -27,7 +27,7 @@ export function PageFooter({ pollCadence }: { pollCadence: string }) {
             {l.label}
           </a>
         ))}
-        <span className="ml-auto text-ink-faint">
+        <span className="text-ink-faint sm:ml-auto">
           Hetzner Cloud Radar · 2026
         </span>
       </div>
