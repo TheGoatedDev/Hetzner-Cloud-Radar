@@ -1,36 +1,230 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hetzner Cloud Radar
 
-## Getting Started
+Independent availability radar for Hetzner Cloud server types.
 
-First, run the development server:
+The app polls Hetzner Cloud, stores raw availability observations in Postgres,
+derives current stock state, and renders a public dashboard. The mailing list UI
+is present, but persistence and email sending are not implemented yet.
+
+## Stack
+
+- Next.js 16 App Router
+- React 19
+- TanStack Query, server-prefetched and hydrated
+- Postgres
+- Drizzle ORM and Drizzle Kit
+- Zod + T3 Env
+- Biome
+- pnpm
+
+## Features
+
+- Authenticated HTTP cron endpoint for polling.
+- Hetzner `GET /v1/server_types` integration.
+- Raw poll history in `availability_observations`.
+- Current per server-type/location state in `availability_current`.
+- Daily flicker tracking in `daily_availability_state`.
+- `limited` display state when latest stock is available but same UTC day also
+  saw sold-out.
+- ISR for `/` and `/api/availability` with 60 second revalidation.
+- On-demand revalidation after successful cron poll.
+- DB-backed homepage with no mock-data dependency.
+
+## Status Rules
+
+Base status:
+
+- location exists and `available: true` -> `available`
+- location exists and `available: false` -> `sold-out`
+- tracked location missing from server type -> `not-offered`
+- parse/fetch uncertainty -> `unknown`
+
+Display status:
+
+- latest `sold-out` stays `sold-out`
+- latest `available` plus same UTC day saw both available and sold-out -> `limited`
+- latest `available` without flicker -> `available`
+- `not-offered` and `unknown` pass through
+
+Tracked families are `CX`, `CAX`, `CPX`, and `CCX`. Server types are discovered
+from the live Hetzner API by family prefix, so current active types such as
+`CX23`, `CX33`, `CX43`, and `CX53` are shown instead of stale legacy codes.
+
+## Environment
+
+Create `.env.local` from `env.example`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+DATABASE_URL=postgres://postgres:password@localhost:5432/hetzner_cloud_radar
+HETZNER_API_TOKEN=
+CRON_SECRET=dev_cron_secret
+SKIP_ENV_VALIDATION=false
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Do not commit `.env.local` or real tokens.
 
-## Learn More
+## Local Development
 
-To learn more about Next.js, take a look at the following resources:
+Install dependencies:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm install
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Create the local database and run migrations:
 
-## Deploy on Vercel
+```bash
+pnpm db:setup:local
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Start the app:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+## Polling
+
+The cron endpoint is:
+
+```text
+POST /api/cron/poll-availability
+Authorization: Bearer <CRON_SECRET>
+```
+
+Run a local poll against the default dev server:
+
+```bash
+pnpm poll:local
+```
+
+Run against a different URL:
+
+```bash
+POLL_URL=https://example.com/api/cron/poll-availability pnpm poll:local
+```
+
+Equivalent curl:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Accept: application/json" \
+  http://127.0.0.1:3000/api/cron/poll-availability
+```
+
+Successful poll response includes:
+
+```json
+{
+  "pollRunId": "...",
+  "observedAt": "...",
+  "insertedObservations": 150,
+  "currentUpdated": 150,
+  "status": "success"
+}
+```
+
+After success, the cron route revalidates `/` and `/api/availability`.
+
+## Database
+
+Schema lives in:
+
+```text
+src/lib/db/schema.ts
+```
+
+Tables:
+
+- `poll_runs`
+- `server_types`
+- `locations`
+- `availability_observations`
+- `availability_current`
+- `daily_availability_state`
+
+Generate migrations:
+
+```bash
+pnpm db:generate
+```
+
+Apply migrations:
+
+```bash
+pnpm db:migrate
+```
+
+Open Drizzle Studio:
+
+```bash
+pnpm db:studio
+```
+
+## API
+
+Public read endpoint:
+
+```text
+GET /api/availability
+```
+
+Returns the same shape used by the dashboard:
+
+- `families`
+- `observedAt`
+- `observedDate`
+- `pollCadence`
+- `topLine`
+- `events`
+- `supplyHistory`
+- `usingFallback`
+
+## Project Layout
+
+```text
+src/app/                         Next.js routes and UI
+src/app/api/availability/         Public availability JSON
+src/app/api/cron/poll-availability/ Authenticated poll endpoint
+src/lib/availability/             Hetzner polling and read model
+src/lib/db/                       Drizzle client and schema
+src/scripts/                      Local DB setup and poll helpers
+drizzle/                          Generated migrations
+```
+
+## Verification
+
+Run:
+
+```bash
+pnpm lint
+pnpm exec tsc --noEmit
+pnpm build
+```
+
+Known lint output: Biome currently warns about `!important` rules in
+`src/app/globals.css` for reduced-motion overrides. The command exits with code
+0.
+
+## Out Of Scope
+
+- Mailing list persistence
+- Email sending
+- User accounts
+- Admin UI
+- Public API docs
+- Alerting
+- Long-form historical dispatch generation
