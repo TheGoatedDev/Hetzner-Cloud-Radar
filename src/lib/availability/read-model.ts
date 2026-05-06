@@ -8,7 +8,7 @@ import {
   type StockEvent,
   type SupplyDay,
 } from "@/lib/schema";
-import { getDb } from "../db/client";
+import { getDb, getSql } from "../db/client";
 import {
   availabilityCurrent,
   dailyAvailabilityState,
@@ -89,11 +89,51 @@ const FALLBACK_TYPES: Record<
   ],
 };
 
+type DispatchTransition = {
+  observed_at: Date | string;
+  server_type_code: string;
+  location_code: string;
+  base_status: "available" | "sold-out" | "not-offered" | "unknown";
+  prev_status: "available" | "sold-out" | "not-offered" | "unknown" | null;
+  current_status: Stock | null;
+  previous_sold_out_at: Date | string | null;
+};
+
 function formatObservedAt(date: Date) {
   return date
     .toISOString()
     .replace("T", " ")
     .replace(/\.\d{3}Z$/, " UTC");
+}
+
+function formatDispatchTime(date: Date) {
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "UTC",
+  });
+}
+
+function toDate(value: Date | string) {
+  return value instanceof Date ? value : new Date(value);
+}
+
+function formatDuration(start: Date, end: Date) {
+  const seconds = Math.max(
+    0,
+    Math.floor((end.getTime() - start.getTime()) / 1000),
+  );
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+
+  return `${Math.max(1, minutes)}m`;
 }
 
 function row(values: Partial<Record<DcCode, Stock>>) {
@@ -181,6 +221,131 @@ function serverTypeOrder(code: string) {
   return Number.isFinite(numeric) ? numeric : Number.MAX_SAFE_INTEGER;
 }
 
+function makeDispatch(
+  transition: DispatchTransition,
+  latestAt: Date,
+): StockEvent | null {
+  const code = transition.server_type_code;
+  const location = transition.location_code.toUpperCase();
+  const observedAt = toDate(transition.observed_at);
+  const previousSoldOutAt = transition.previous_sold_out_at
+    ? toDate(transition.previous_sold_out_at)
+    : null;
+  const startedAt = `${formatDispatchTime(observedAt)} UTC`;
+  const id = [
+    observedAt.toISOString(),
+    code,
+    location,
+    transition.base_status,
+    transition.prev_status ?? "initial",
+  ].join(":");
+
+  if (transition.base_status === "sold-out") {
+    if (transition.current_status !== "sold-out") {
+      return null;
+    }
+
+    return {
+      id,
+      startedAt,
+      resolvedAt: null,
+      durationLabel: `ongoing · ${formatDuration(observedAt, latestAt)}`,
+      scope: `${code} / ${location}`,
+      title: `${code} sold out in ${location}`,
+      body: `${code} is currently unavailable for new provisioning in ${location}. This sold-out run was first observed at ${startedAt}.`,
+      state: "ongoing-out" as const,
+    };
+  }
+
+  if (transition.prev_status === "sold-out") {
+    const outageDuration = previousSoldOutAt
+      ? ` after ${formatDuration(previousSoldOutAt, observedAt)} sold out`
+      : "";
+
+    return {
+      id,
+      startedAt,
+      resolvedAt: startedAt,
+      durationLabel: outageDuration ? outageDuration.trim() : "restocked",
+      scope: `${code} / ${location}`,
+      title: `${code} returned in ${location}`,
+      body: `${code} became available for new provisioning in ${location}${outageDuration}.`,
+      state: "resolved-restock" as const,
+    };
+  }
+
+  if (transition.prev_status === "not-offered") {
+    return {
+      id,
+      startedAt,
+      resolvedAt: null,
+      durationLabel: "newly offered",
+      scope: `${code} / ${location}`,
+      title: `${code} became available in ${location}`,
+      body: `${code} moved from not offered to available in ${location}. This may indicate a rollout or newly exposed capacity for that location.`,
+      state: "ongoing-rollout" as const,
+    };
+  }
+
+  return null;
+}
+
+async function getDispatchEvents(latestAt: Date): Promise<StockEvent[]> {
+  const rawSql = getSql();
+  const cutoff = new Date(latestAt);
+  cutoff.setUTCDate(cutoff.getUTCDate() - 30);
+  const cutoffIso = cutoff.toISOString();
+  const transitions = await rawSql<DispatchTransition[]>`
+    with ordered as (
+      select
+        o.server_type_code,
+        o.location_code,
+        o.observed_at,
+        o.base_status,
+        lag(o.base_status) over cell_order as prev_status,
+        max(case when o.base_status = 'sold-out' then o.observed_at end)
+          over (
+            partition by o.server_type_code, o.location_code
+            order by o.observed_at
+            rows between unbounded preceding and 1 preceding
+          ) as previous_sold_out_at
+      from availability_observations o
+      where o.observed_at >= ${cutoffIso}
+        and o.base_status in ('available', 'sold-out', 'not-offered')
+      window cell_order as (
+        partition by o.server_type_code, o.location_code
+        order by o.observed_at
+      )
+    )
+    select
+      ordered.observed_at,
+      ordered.server_type_code,
+      ordered.location_code,
+      ordered.base_status,
+      ordered.prev_status,
+      ordered.previous_sold_out_at,
+      c.display_status as current_status
+    from ordered
+    left join availability_current c
+      on c.server_type_code = ordered.server_type_code
+     and c.location_code = ordered.location_code
+    where (
+      ordered.base_status = 'sold-out'
+      and (ordered.prev_status is null or ordered.prev_status <> 'sold-out')
+    ) or (
+      ordered.base_status = 'available'
+      and ordered.prev_status in ('sold-out', 'not-offered')
+    )
+    order by ordered.observed_at desc
+    limit 16
+  `;
+
+  return transitions
+    .map((transition) => makeDispatch(transition, latestAt))
+    .filter((event): event is StockEvent => event !== null)
+    .slice(0, 8);
+}
+
 export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel> {
   try {
     const db = getDb();
@@ -260,22 +425,25 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
     const topLine = makeTopLine(families, observedAt);
     const sixtyDaysAgo = new Date(latestPoll[0].finishedAt);
     sixtyDaysAgo.setUTCDate(sixtyDaysAgo.getUTCDate() - 59);
-    const dailyRows = await db
-      .select({
-        dateUtc: dailyAvailabilityState.dateUtc,
-        available: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and not ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
-        limited: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
-        soldOut: sql<number>`sum(case when ${dailyAvailabilityState.sawSoldOut} and not ${dailyAvailabilityState.sawAvailable} then 1 else 0 end)`,
-      })
-      .from(dailyAvailabilityState)
-      .where(
-        gte(
-          dailyAvailabilityState.dateUtc,
-          sixtyDaysAgo.toISOString().slice(0, 10),
-        ),
-      )
-      .groupBy(dailyAvailabilityState.dateUtc)
-      .orderBy(dailyAvailabilityState.dateUtc);
+    const [dailyRows, events] = await Promise.all([
+      db
+        .select({
+          dateUtc: dailyAvailabilityState.dateUtc,
+          available: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and not ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
+          limited: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
+          soldOut: sql<number>`sum(case when ${dailyAvailabilityState.sawSoldOut} and not ${dailyAvailabilityState.sawAvailable} then 1 else 0 end)`,
+        })
+        .from(dailyAvailabilityState)
+        .where(
+          gte(
+            dailyAvailabilityState.dateUtc,
+            sixtyDaysAgo.toISOString().slice(0, 10),
+          ),
+        )
+        .groupBy(dailyAvailabilityState.dateUtc)
+        .orderBy(dailyAvailabilityState.dateUtc),
+      getDispatchEvents(latestPoll[0].finishedAt),
+    ]);
     const dailyByDate = new Map(
       dailyRows.map((day) => [
         day.dateUtc,
@@ -306,11 +474,13 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
       observedDate,
       pollCadence: POLL_CADENCE,
       topLine,
-      events: [],
+      events,
       supplyHistory,
       usingFallback: false,
     };
-  } catch {
+  } catch (error) {
+    console.error("Availability read model failed", error);
+
     return fallbackModel();
   }
 }

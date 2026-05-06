@@ -3,8 +3,8 @@
 Independent availability radar for Hetzner Cloud server types.
 
 The app polls Hetzner Cloud, stores raw availability observations in Postgres,
-derives current stock state, and renders a public dashboard. The mailing list UI
-is present, but persistence and email sending are not implemented yet.
+derives current stock state, renders a public dashboard, and syncs mailing-list
+subscribers into Resend Contacts for marketing dispatches.
 
 ## Stack
 
@@ -28,6 +28,7 @@ is present, but persistence and email sending are not implemented yet.
   saw sold-out.
 - ISR for `/` and `/api/availability` with 60 second revalidation.
 - On-demand revalidation after successful cron poll.
+- Resend-backed subscriber capture for marketing emails.
 - DB-backed homepage with no mock-data dependency.
 
 ## Status Rules
@@ -64,8 +65,17 @@ Required variables:
 DATABASE_URL=postgres://postgres:password@localhost:5432/hetzner_cloud_radar
 HETZNER_API_TOKEN=
 CRON_SECRET=dev_cron_secret
+RESEND_API_KEY=
+RESEND_MARKETING_SEGMENT_ID=
+RESEND_SOLD_OUT_TOPIC_ID=
+RESEND_RESTOCK_TOPIC_ID=
 SKIP_ENV_VALIDATION=false
 ```
+
+`RESEND_MARKETING_SEGMENT_ID`, `RESEND_SOLD_OUT_TOPIC_ID`, and
+`RESEND_RESTOCK_TOPIC_ID` are optional. If topic IDs are configured, new contacts
+are created with matching opt-in/opt-out topic preferences. Preferences are also
+stored as contact properties.
 
 Do not commit `.env.local` or real tokens.
 
@@ -193,14 +203,35 @@ Returns the same shape used by the dashboard:
 - `supplyHistory`
 - `usingFallback`
 
+Subscribe endpoint:
+
+```text
+POST /api/subscribe
+```
+
+Body:
+
+```json
+{
+  "email": "you@example.com",
+  "wantsSoldOut": true,
+  "wantsRestock": true
+}
+```
+
+The endpoint syncs the address to Resend Contacts and upserts local subscriber
+preferences in `mailing_subscribers`.
+
 ## Project Layout
 
 ```text
 src/app/                         Next.js routes and UI
 src/app/api/availability/         Public availability JSON
 src/app/api/cron/poll-availability/ Authenticated poll endpoint
+src/app/api/subscribe/            Resend-backed subscriber endpoint
 src/lib/availability/             Hetzner polling and read model
 src/lib/db/                       Drizzle client and schema
+src/lib/marketing/                Resend contact sync
 src/scripts/                      Local DB setup and poll helpers
 drizzle/                          Generated migrations
 ```
@@ -221,10 +252,9 @@ Known lint output: Biome currently warns about `!important` rules in
 
 ## Out Of Scope
 
-- Mailing list persistence
-- Email sending
 - User accounts
 - Admin UI
 - Public API docs
 - Alerting
+- Automated broadcast creation/sending
 - Long-form historical dispatch generation

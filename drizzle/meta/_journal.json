@@ -8,6 +8,13 @@
       "when": 1778094294938,
       "tag": "0000_minor_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778099812894,
+      "tag": "0001_solid_loa",
+      "breakpoints": true
     }
   ]
 }

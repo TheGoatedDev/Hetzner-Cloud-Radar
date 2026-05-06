@@ -64,8 +64,8 @@ export function RadarView() {
       {data.families.map((f, i) => (
         <FamilySection key={f.id} family={f} first={i === 0} />
       ))}
-      <Dispatches events={data.events} />
       <Subscribe />
+      <Dispatches events={data.events} />
       <PageFooter pollCadence={data.pollCadence} />
     </div>
   );

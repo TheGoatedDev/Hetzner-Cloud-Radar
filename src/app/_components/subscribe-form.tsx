@@ -22,8 +22,35 @@ export function SubscribeForm() {
     }
     setStatus("submitting");
     setErrorMsg("");
-    await new Promise((r) => setTimeout(r, 600));
-    setStatus("ok");
+
+    try {
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          wantsSoldOut: soldOut,
+          wantsRestock: restock,
+        }),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(body?.error ?? "Subscription failed.");
+      }
+
+      setStatus("ok");
+    } catch (error) {
+      setStatus("error");
+      setErrorMsg(
+        error instanceof Error ? error.message : "Subscription failed.",
+      );
+    }
   }
 
   if (status === "ok") {

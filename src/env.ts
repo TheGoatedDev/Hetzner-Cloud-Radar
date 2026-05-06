@@ -4,6 +4,7 @@ import { z } from "zod";
 let cachedDatabaseEnv: ReturnType<typeof createDatabaseEnv> | undefined;
 let cachedCronEnv: ReturnType<typeof createCronEnv> | undefined;
 let cachedHetznerEnv: ReturnType<typeof createHetznerEnv> | undefined;
+let cachedResendEnv: ReturnType<typeof createResendEnv> | undefined;
 
 const commonOptions = {
   emptyStringAsUndefined: true,
@@ -46,6 +47,24 @@ function createHetznerEnv() {
   });
 }
 
+function createResendEnv() {
+  return createEnv({
+    server: {
+      RESEND_API_KEY: z.string().min(1),
+      RESEND_MARKETING_SEGMENT_ID: z.string().min(1).optional(),
+      RESEND_SOLD_OUT_TOPIC_ID: z.string().min(1).optional(),
+      RESEND_RESTOCK_TOPIC_ID: z.string().min(1).optional(),
+    },
+    runtimeEnv: {
+      RESEND_API_KEY: process.env.RESEND_API_KEY,
+      RESEND_MARKETING_SEGMENT_ID: process.env.RESEND_MARKETING_SEGMENT_ID,
+      RESEND_SOLD_OUT_TOPIC_ID: process.env.RESEND_SOLD_OUT_TOPIC_ID,
+      RESEND_RESTOCK_TOPIC_ID: process.env.RESEND_RESTOCK_TOPIC_ID,
+    },
+    ...commonOptions,
+  });
+}
+
 export function getDatabaseEnv() {
   cachedDatabaseEnv ??= createDatabaseEnv();
 
@@ -62,4 +81,10 @@ export function getHetznerEnv() {
   cachedHetznerEnv ??= createHetznerEnv();
 
   return cachedHetznerEnv;
+}
+
+export function getResendEnv() {
+  cachedResendEnv ??= createResendEnv();
+
+  return cachedResendEnv;
 }
