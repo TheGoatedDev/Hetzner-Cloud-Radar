@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --paper: oklch(0.985 0.005 70);
+  --paper-recessed: oklch(0.965 0.006 70);
+  --paper-raised: oklch(0.995 0.004 70);
+  --ink: oklch(0.18 0.008 60);
+  --ink-soft: oklch(0.45 0.005 60);
+  --ink-faint: oklch(0.62 0.005 60);
+  --hairline: oklch(0.88 0.005 70);
+  --hairline-strong: oklch(0.78 0.005 70);
+
+  --accent: oklch(0.56 0.14 35);
+  --accent-deep: oklch(0.46 0.15 35);
+
+  --status-operational: oklch(0.3 0.005 60);
+  --status-degraded: oklch(0.62 0.11 75);
+  --status-down: oklch(0.45 0.13 30);
+  --status-unknown: oklch(0.65 0.005 60);
+
+  --focus-ring: oklch(0.56 0.14 35 / 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: oklch(0.155 0.008 60);
+    --paper-recessed: oklch(0.125 0.008 60);
+    --paper-raised: oklch(0.195 0.008 60);
+    --ink: oklch(0.94 0.005 70);
+    --ink-soft: oklch(0.68 0.005 70);
+    --ink-faint: oklch(0.5 0.005 70);
+    --hairline: oklch(0.28 0.005 60);
+    --hairline-strong: oklch(0.38 0.005 60);
+
+    --accent: oklch(0.72 0.14 35);
+    --accent-deep: oklch(0.8 0.12 35);
+
+    --status-operational: oklch(0.78 0.005 60);
+    --status-degraded: oklch(0.78 0.12 75);
+    --status-down: oklch(0.65 0.15 30);
+    --status-unknown: oklch(0.45 0.005 60);
+
+    --focus-ring: oklch(0.72 0.14 35 / 0.6);
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-recessed: var(--paper-recessed);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+
+  --color-operational: var(--status-operational);
+  --color-degraded: var(--status-degraded);
+  --color-down: var(--status-down);
+  --color-unknown: var(--status-unknown);
+
+  --font-mono: var(--font-plex-mono);
+  --font-sans: var(--font-plex-sans);
+
+  --radius-sharp: 0;
+  --radius-edge: 2px;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family:
+    var(--font-plex-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, monospace;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
