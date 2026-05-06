@@ -15,6 +15,13 @@
       "when": 1778099812894,
       "tag": "0001_solid_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778101440572,
+      "tag": "0002_adorable_nitro",
+      "breakpoints": true
     }
   ]
 }

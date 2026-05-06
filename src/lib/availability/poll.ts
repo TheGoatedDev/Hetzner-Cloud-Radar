@@ -10,6 +10,7 @@ import {
   pollRuns,
   serverTypes,
 } from "../db/schema";
+import { sendPendingMarketingDispatches } from "../marketing/dispatch-email";
 import {
   fetchHetznerServerTypes,
   type HetznerServerType,
@@ -310,21 +311,34 @@ export async function pollAvailability() {
         });
     }
 
+    const finishedAt = new Date();
+
     await db
       .update(pollRuns)
       .set({
-        finishedAt: new Date(),
+        finishedAt,
         status: "success",
         httpStatus: 200,
         errorMessage: null,
       })
       .where(sql`${pollRuns.id} = ${pollRunId}`);
 
+    const emailDispatches = await sendPendingMarketingDispatches(
+      finishedAt,
+    ).catch((error) => ({
+      attemptedDispatches: 0,
+      sentDispatches: 0,
+      sentEmails: 0,
+      skippedReason:
+        error instanceof Error ? error.message : "Email dispatch failed",
+    }));
+
     return {
       pollRunId,
       observedAt: observedAt.toISOString(),
       insertedObservations: observationValues.length,
       currentUpdated: currentRows.length,
+      emailDispatches,
       status: "success" as const,
     };
   } catch (error) {

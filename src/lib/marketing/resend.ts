@@ -12,14 +12,6 @@ type TopicSubscription = {
   subscription: "opt_in" | "opt_out";
 };
 
-function contactProperties(input: SubscribeInput) {
-  return {
-    wants_sold_out: String(input.wantsSoldOut),
-    wants_restock: String(input.wantsRestock),
-    source: "hetzner-cloud-radar",
-  };
-}
-
 function contactTopics(input: SubscribeInput): TopicSubscription[] {
   const env = getResendEnv();
 
@@ -43,7 +35,6 @@ async function ensureContact(resend: Resend, input: SubscribeInput) {
   const updated = await resend.contacts.update({
     email: input.email,
     unsubscribed: false,
-    properties: contactProperties(input),
   });
 
   if (updated.data) {
@@ -59,7 +50,6 @@ async function ensureContact(resend: Resend, input: SubscribeInput) {
   const created = await resend.contacts.create({
     email: input.email,
     unsubscribed: false,
-    properties: contactProperties(input),
     ...(env.RESEND_MARKETING_SEGMENT_ID
       ? { segments: [{ id: env.RESEND_MARKETING_SEGMENT_ID }] }
       : {}),

@@ -28,7 +28,7 @@ subscribers into Resend Contacts for marketing dispatches.
   saw sold-out.
 - ISR for `/` and `/api/availability` with 60 second revalidation.
 - On-demand revalidation after successful cron poll.
-- Resend-backed subscriber capture for marketing emails.
+- Resend-backed subscriber capture and React Email marketing dispatches.
 - DB-backed homepage with no mock-data dependency.
 
 ## Status Rules
@@ -66,16 +66,18 @@ DATABASE_URL=postgres://postgres:password@localhost:5432/hetzner_cloud_radar
 HETZNER_API_TOKEN=
 CRON_SECRET=dev_cron_secret
 RESEND_API_KEY=
+RESEND_FROM_EMAIL=dispatches@hetzner.thegoated.dev
 RESEND_MARKETING_SEGMENT_ID=
 RESEND_SOLD_OUT_TOPIC_ID=
 RESEND_RESTOCK_TOPIC_ID=
 SKIP_ENV_VALIDATION=false
 ```
 
-`RESEND_MARKETING_SEGMENT_ID`, `RESEND_SOLD_OUT_TOPIC_ID`, and
-`RESEND_RESTOCK_TOPIC_ID` are optional. If topic IDs are configured, new contacts
-are created with matching opt-in/opt-out topic preferences. Preferences are also
-stored as contact properties.
+`RESEND_FROM_EMAIL` must be a verified sender/domain in Resend. It defaults to
+`dispatches@hetzner.thegoated.dev` if omitted. `RESEND_MARKETING_SEGMENT_ID`,
+`RESEND_SOLD_OUT_TOPIC_ID`, and `RESEND_RESTOCK_TOPIC_ID` are optional. If topic
+IDs are configured, new contacts are created with matching opt-in/opt-out topic
+preferences and dispatch emails are tagged with the matching topic.
 
 Do not commit `.env.local` or real tokens.
 
@@ -165,6 +167,8 @@ Tables:
 - `availability_observations`
 - `availability_current`
 - `daily_availability_state`
+- `mailing_subscribers`
+- `marketing_dispatch_sends`
 
 Generate migrations:
 

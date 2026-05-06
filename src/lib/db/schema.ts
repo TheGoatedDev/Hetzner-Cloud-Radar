@@ -140,3 +140,22 @@ export const mailingSubscribers = pgTable("mailing_subscribers", {
     .notNull()
     .defaultNow(),
 });
+
+export const marketingDispatchSends = pgTable("marketing_dispatch_sends", {
+  dispatchId: text("dispatch_id").primaryKey(),
+  eventState: text("event_state", {
+    enum: ["ongoing-out", "resolved-restock", "ongoing-rollout"],
+  }).notNull(),
+  scope: text("scope").notNull(),
+  status: text("status", { enum: ["sent", "failed", "skipped"] }).notNull(),
+  recipientCount: integer("recipient_count").notNull().default(0),
+  resendEmailIds: jsonb("resend_email_ids").notNull().default([]),
+  sentAt: timestamp("sent_at", { withTimezone: true, mode: "date" }),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+    .notNull()
+    .defaultNow(),
+});

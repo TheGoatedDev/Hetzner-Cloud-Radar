@@ -12,9 +12,11 @@
     "db:migrate": "drizzle-kit migrate",
     "db:setup:local": "node src/scripts/setup-local-db.mjs && pnpm db:migrate",
     "db:studio": "drizzle-kit studio",
-    "poll:local": "node src/scripts/run-poll.mjs"
+    "poll:local": "node src/scripts/run-poll.mjs",
+    "email": "email dev --dir ./src/emails --port 3001"
   },
   "dependencies": {
+    "@react-email/components": "^1.0.12",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-query": "^5.100.9",
     "drizzle-orm": "^0.45.2",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@react-email/ui": "6.1.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -34,6 +37,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
+    "react-email": "^6.1.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

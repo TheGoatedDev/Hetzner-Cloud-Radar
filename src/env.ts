@@ -51,12 +51,14 @@ function createResendEnv() {
   return createEnv({
     server: {
       RESEND_API_KEY: z.string().min(1),
+      RESEND_FROM_EMAIL: z.email().default("dispatches@hetzner.thegoated.dev"),
       RESEND_MARKETING_SEGMENT_ID: z.string().min(1).optional(),
       RESEND_SOLD_OUT_TOPIC_ID: z.string().min(1).optional(),
       RESEND_RESTOCK_TOPIC_ID: z.string().min(1).optional(),
     },
     runtimeEnv: {
       RESEND_API_KEY: process.env.RESEND_API_KEY,
+      RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
       RESEND_MARKETING_SEGMENT_ID: process.env.RESEND_MARKETING_SEGMENT_ID,
       RESEND_SOLD_OUT_TOPIC_ID: process.env.RESEND_SOLD_OUT_TOPIC_ID,
       RESEND_RESTOCK_TOPIC_ID: process.env.RESEND_RESTOCK_TOPIC_ID,

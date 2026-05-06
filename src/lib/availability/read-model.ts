@@ -290,7 +290,10 @@ function makeDispatch(
   return null;
 }
 
-async function getDispatchEvents(latestAt: Date): Promise<StockEvent[]> {
+export async function getDispatchEvents(
+  latestAt: Date,
+  limit = 8,
+): Promise<StockEvent[]> {
   const rawSql = getSql();
   const cutoff = new Date(latestAt);
   cutoff.setUTCDate(cutoff.getUTCDate() - 30);
@@ -337,13 +340,13 @@ async function getDispatchEvents(latestAt: Date): Promise<StockEvent[]> {
       and ordered.prev_status in ('sold-out', 'not-offered')
     )
     order by ordered.observed_at desc
-    limit 16
+    limit ${Math.max(limit * 2, 16)}
   `;
 
   return transitions
     .map((transition) => makeDispatch(transition, latestAt))
     .filter((event): event is StockEvent => event !== null)
-    .slice(0, 8);
+    .slice(0, limit);
 }
 
 export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel> {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db/client";
 import { mailingSubscribers } from "@/lib/db/schema";
 import { syncMarketingContact } from "@/lib/marketing/resend";
+import { sendSubscriptionConfirmationEmail } from "@/lib/marketing/subscription-email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +58,10 @@ export async function POST(request: Request) {
           updatedAt: now,
         },
       });
+
+    sendSubscriptionConfirmationEmail(parsed.data).catch((error) => {
+      console.error("Subscription confirmation email failed", error);
+    });
 
     return Response.json({ ok: true, email: parsed.data.email });
   } catch (error) {
