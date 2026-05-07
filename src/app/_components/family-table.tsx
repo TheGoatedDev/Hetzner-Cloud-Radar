@@ -8,7 +8,7 @@ export function FamilyTable({ family }: { family: Family }) {
         {family.label} {family.kicker} availability per datacentre
       </caption>
       <thead>
-        <tr className="text-[10px] uppercase tracking-[0.08em] text-ink-faint sm:text-[11px] sm:tracking-[0.1em]">
+        <tr className="text-2xs uppercase tracking-[0.08em] text-ink-faint sm:text-xs sm:tracking-[0.1em]">
           <th
             scope="col"
             className="w-[64px] px-1 py-2 text-left font-medium sm:w-[88px] sm:px-2"
@@ -42,7 +42,7 @@ export function FamilyTable({ family }: { family: Family }) {
             >
               <div className="flex flex-col gap-0.5">
                 <span>{t.code}</span>
-                <span className="text-[10px] font-normal tracking-normal text-ink-faint sm:hidden">
+                <span className="text-2xs font-normal tracking-normal text-ink-faint sm:hidden">
                   {t.cores}c · {t.ram}G
                 </span>
               </div>

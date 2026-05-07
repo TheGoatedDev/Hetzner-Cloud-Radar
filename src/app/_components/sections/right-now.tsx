@@ -33,7 +33,7 @@ export function RightNow({
       <div className="flex items-baseline gap-4">
         <StockGlyph stock={topLine.state} />
         <span
-          className={`text-[11px] font-medium uppercase tracking-[0.12em] ${STOCK[topLine.state].textClass}`}
+          className={`text-xs font-medium uppercase tracking-[0.12em] ${STOCK[topLine.state].textClass}`}
         >
           Tight supply
         </span>
@@ -41,7 +41,7 @@ export function RightNow({
           as of {observedAt}
         </span>
       </div>
-      <p className="max-w-[68ch] font-sans text-[17px] leading-[1.55] text-ink">
+      <p className="max-w-[68ch] font-sans text-lg leading-[1.55] text-ink">
         {topLine.line}
       </p>
       <dl className="mt-1 flex flex-wrap gap-x-10 gap-y-2 text-xs">

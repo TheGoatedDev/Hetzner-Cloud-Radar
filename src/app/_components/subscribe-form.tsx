@@ -81,7 +81,7 @@ export function SubscribeForm() {
     <form onSubmit={onSubmit} className="flex flex-col gap-7" noValidate>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label htmlFor={emailId} className="flex flex-1 flex-col gap-1.5">
-          <span className="text-[11px] uppercase tracking-[0.1em] text-ink-faint">
+          <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
             Email address
           </span>
           <input
@@ -108,7 +108,7 @@ export function SubscribeForm() {
       </div>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-[11px] uppercase tracking-[0.1em] text-ink-faint">
+        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
           Tell me about
         </legend>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">

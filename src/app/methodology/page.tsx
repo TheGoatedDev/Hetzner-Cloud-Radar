@@ -70,10 +70,10 @@ export default async function MethodologyPage() {
         />
 
         <div className="flex flex-col gap-3 pt-2">
-          <h3 className="text-[15px] font-medium tracking-tight text-ink">
+          <h3 className="text-lg font-medium tracking-tight text-ink">
             What we poll
           </h3>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             Every {POLL_CADENCE}, the radar requests{" "}
             <a
               href="https://docs.hetzner.cloud/reference/cloud#tag/datacenters"
@@ -91,10 +91,10 @@ export default async function MethodologyPage() {
         </div>
 
         <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-[15px] font-medium tracking-tight text-ink">
+          <h3 className="text-lg font-medium tracking-tight text-ink">
             The four cell states
           </h3>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             Each cell on the matrix collapses the API response into one of four
             states. The Hetzner API itself only exposes binary purchase
             availability, so &ldquo;limited&rdquo; is derived from poll history.
@@ -117,7 +117,7 @@ export default async function MethodologyPage() {
                   </span>
                 </dt>
                 <dd className="flex flex-col gap-1.5">
-                  <p className="font-sans text-[15px] leading-[1.6] text-ink">
+                  <p className="max-w-[68ch] font-sans text-base leading-[1.6] text-ink">
                     {row.meaning}
                   </p>
                   <p className="font-mono text-xs text-ink-faint">{row.api}</p>
@@ -128,17 +128,17 @@ export default async function MethodologyPage() {
         </div>
 
         <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-[15px] font-medium tracking-tight text-ink">
+          <h3 className="text-lg font-medium tracking-tight text-ink">
             Cadence and freshness
           </h3>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             Polls run every {POLL_CADENCE} from a single observation point. A
             poll is considered successful only when the API responds with a full
             datacentre list and no rate-limit errors. Failed polls are recorded
             but never used to decide cell state, so a transient outage on the
             radar side never reads as a stock-out on yours.
           </p>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             The masthead timestamp on every page is the time of the most recent
             successful poll. If you ever see it stale by more than a few
             minutes, the radar is the one having a bad day.
@@ -146,13 +146,13 @@ export default async function MethodologyPage() {
         </div>
 
         <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-[15px] font-medium tracking-tight text-ink">
+          <h3 className="text-lg font-medium tracking-tight text-ink">
             What counts as a dispatch
           </h3>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             A dispatch is filed when a cell transitions in a way that matters:
           </p>
-          <ul className="flex flex-col gap-1.5 pl-5 font-sans text-[15px] leading-[1.6] text-ink-soft list-disc marker:text-ink-faint">
+          <ul className="flex flex-col gap-1.5 pl-5 max-w-[68ch] font-sans text-base leading-[1.65] text-ink-soft list-disc marker:text-ink-faint">
             <li>
               <span className="text-ink">Sold out:</span> a previously available
               cell becomes unavailable, and is still unavailable at publication
@@ -168,7 +168,7 @@ export default async function MethodologyPage() {
               capacity.
             </li>
           </ul>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             Brief flickers within a single day raise a cell to{" "}
             <span className="font-mono text-ink">limited</span> on the matrix
             but do not generate a separate dispatch.
@@ -176,10 +176,10 @@ export default async function MethodologyPage() {
         </div>
 
         <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-[15px] font-medium tracking-tight text-ink">
+          <h3 className="text-lg font-medium tracking-tight text-ink">
             Independence
           </h3>
-          <p className="font-sans text-[15px] leading-[1.65] text-ink-soft">
+          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
             Hetzner Cloud Radar is not affiliated with Hetzner Online GmbH. The
             radar reads only the public API. It does not represent Hetzner, does
             not speak on their behalf, and does not coordinate on incident

@@ -38,7 +38,7 @@ function DispatchRow({
         </span>
       </div>
       <div className="flex flex-col gap-2">
-        <h3 className="text-base font-medium tracking-tight text-ink">
+        <h3 className="text-lg font-medium tracking-tight text-ink">
           {event.title}
         </h3>
         <p className="max-w-[68ch] font-sans text-sm leading-[1.6] text-ink-soft">
@@ -126,7 +126,7 @@ export function DispatchList({
             key={key}
             className={`flex flex-col gap-2 ${groupIndex > 0 ? "pt-8" : ""}`}
           >
-            <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint">
+            <h3 className="text-xs font-medium uppercase tracking-[0.12em] text-ink-faint">
               {monthLabel(key)}
               <span className="ml-3 normal-case tracking-normal">
                 {monthEvents.length} dispatch
