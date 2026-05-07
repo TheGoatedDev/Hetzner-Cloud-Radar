@@ -160,7 +160,7 @@ function makeTopLine(families: Family[], observedAt: string) {
 
   return {
     state,
-    line: `${soldOut} server-type/datacentre pairs are sold out, ${limited} are flickering today, and ${unknown} are unknown. Last poll: ${observedAt}.`,
+    line: `${soldOut} server-type/datacentre pairs are sold out, ${limited} are flickering today, and ${unknown} are unknown.`,
   };
 }
 
