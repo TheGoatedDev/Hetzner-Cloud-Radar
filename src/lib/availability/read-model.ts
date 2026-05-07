@@ -27,7 +27,7 @@ export type AvailabilityReadModel = {
   usingFallback: boolean;
 };
 
-const POLL_CADENCE = "60 seconds";
+export const POLL_CADENCE = "60 seconds";
 const FAMILY_META: Array<Omit<Family, "types">> = [
   {
     id: "cx",
@@ -99,7 +99,7 @@ type DispatchTransition = {
   previous_sold_out_at: Date | string | null;
 };
 
-function formatObservedAt(date: Date) {
+export function formatObservedAt(date: Date) {
   return date
     .toISOString()
     .replace("T", " ")
@@ -290,13 +290,26 @@ function makeDispatch(
   return null;
 }
 
+export async function getLatestPollAt(): Promise<Date | null> {
+  const db = getDb();
+  const [latest] = await db
+    .select({ finishedAt: pollRuns.finishedAt })
+    .from(pollRuns)
+    .where(eq(pollRuns.status, "success"))
+    .orderBy(desc(pollRuns.finishedAt))
+    .limit(1);
+
+  return latest?.finishedAt ?? null;
+}
+
 export async function getDispatchEvents(
   latestAt: Date,
   limit = 8,
+  windowDays = 30,
 ): Promise<StockEvent[]> {
   const rawSql = getSql();
   const cutoff = new Date(latestAt);
-  cutoff.setUTCDate(cutoff.getUTCDate() - 30);
+  cutoff.setUTCDate(cutoff.getUTCDate() - windowDays);
   const cutoffIso = cutoff.toISOString();
   const transitions = await rawSql<DispatchTransition[]>`
     with ordered as (
