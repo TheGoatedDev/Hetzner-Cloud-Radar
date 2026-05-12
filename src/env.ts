@@ -5,6 +5,7 @@ let cachedDatabaseEnv: ReturnType<typeof createDatabaseEnv> | undefined;
 let cachedCronEnv: ReturnType<typeof createCronEnv> | undefined;
 let cachedHetznerEnv: ReturnType<typeof createHetznerEnv> | undefined;
 let cachedResendEnv: ReturnType<typeof createResendEnv> | undefined;
+let cachedUnsubscribeEnv: ReturnType<typeof createUnsubscribeEnv> | undefined;
 
 const commonOptions = {
   emptyStringAsUndefined: true,
@@ -67,6 +68,18 @@ function createResendEnv() {
   });
 }
 
+function createUnsubscribeEnv() {
+  return createEnv({
+    server: {
+      UNSUBSCRIBE_SECRET: z.string().min(32),
+    },
+    runtimeEnv: {
+      UNSUBSCRIBE_SECRET: process.env.UNSUBSCRIBE_SECRET,
+    },
+    ...commonOptions,
+  });
+}
+
 export function getDatabaseEnv() {
   cachedDatabaseEnv ??= createDatabaseEnv();
 
@@ -89,4 +102,10 @@ export function getResendEnv() {
   cachedResendEnv ??= createResendEnv();
 
   return cachedResendEnv;
+}
+
+export function getUnsubscribeEnv() {
+  cachedUnsubscribeEnv ??= createUnsubscribeEnv();
+
+  return cachedUnsubscribeEnv;
 }

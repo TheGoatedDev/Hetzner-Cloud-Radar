@@ -10,6 +10,7 @@ type Props = {
   regionCity: string;
   observedAt: string;
   baselineNote: string;
+  recipientEmail?: string;
 };
 
 const prose = {
@@ -32,6 +33,7 @@ export default function StockOut({
   regionCity = "Falkenstein",
   observedAt = "2026-05-06 14:32:18 UTC",
   baselineNote = "Baseline availability for this type in this region over the last 30 days is 92%.",
+  recipientEmail,
 }: Partial<Props>) {
   const title = `${serverType} sold out in ${region}`;
 
@@ -39,6 +41,7 @@ export default function StockOut({
     <Layout
       preview={`${serverType} went sold out in ${regionCity} (${region}).`}
       observedAt={observedAt}
+      recipientEmail={recipientEmail}
     >
       <DispatchMeta
         state="sold-out"

@@ -55,6 +55,7 @@ export async function POST(request: Request) {
           resendContactId: sql`excluded.resend_contact_id`,
           resendSyncedAt: sql`excluded.resend_synced_at`,
           resendErrorMessage: null,
+          unsubscribedAt: null,
           updatedAt: now,
         },
       });

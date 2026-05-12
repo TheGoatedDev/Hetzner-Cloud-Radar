@@ -97,3 +97,44 @@ export async function syncMarketingContact(input: SubscribeInput) {
 
   return { contactId: contact.id };
 }
+
+export async function unsubscribeMarketingContact(input: { email: string }) {
+  const env = getResendEnv();
+  const resend = new Resend(env.RESEND_API_KEY);
+
+  const topics: TopicSubscription[] = [];
+  if (env.RESEND_SOLD_OUT_TOPIC_ID) {
+    topics.push({
+      id: env.RESEND_SOLD_OUT_TOPIC_ID,
+      subscription: "opt_out",
+    });
+  }
+  if (env.RESEND_RESTOCK_TOPIC_ID) {
+    topics.push({
+      id: env.RESEND_RESTOCK_TOPIC_ID,
+      subscription: "opt_out",
+    });
+  }
+
+  if (topics.length > 0) {
+    const topicUpdate = await resend.contacts.topics.update({
+      email: input.email,
+      topics,
+    });
+
+    if (!topicUpdate.data && topicUpdate.error?.statusCode !== 404) {
+      throw new Error(
+        topicUpdate.error?.message ?? "Resend topic opt-out failed",
+      );
+    }
+  }
+
+  const updated = await resend.contacts.update({
+    email: input.email,
+    unsubscribed: true,
+  });
+
+  if (!updated.data && updated.error?.statusCode !== 404) {
+    throw new Error(updated.error?.message ?? "Resend unsubscribe failed");
+  }
+}

@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { inArray, isNull } from "drizzle-orm";
 import Restock from "@/emails/restock";
 import StockOut from "@/emails/stock-out";
 import { getResendEnv } from "@/env";
@@ -150,7 +150,10 @@ export async function sendPendingMarketingDispatches(
     };
   }
 
-  const subscribers = await db.select().from(mailingSubscribers);
+  const subscribers = await db
+    .select()
+    .from(mailingSubscribers)
+    .where(isNull(mailingSubscribers.unsubscribedAt));
   const scopes = pendingEvents.map((event) => splitScope(event.scope));
   const typeCodes = [...new Set(scopes.map((scope) => scope.serverType))];
   const locationCodes = [...new Set(scopes.map((scope) => scope.region))];
@@ -209,6 +212,7 @@ export async function sendPendingMarketingDispatches(
                 regionCity={regionCity}
                 observedAt={event.startedAt}
                 baselineNote={event.body}
+                recipientEmail={recipient.email}
               />
             ) : (
               <Restock
@@ -218,6 +222,7 @@ export async function sendPendingMarketingDispatches(
                 regionCity={regionCity}
                 observedAt={event.startedAt}
                 durationLabel={durationLabel(event)}
+                recipientEmail={recipient.email}
               />
             ),
           tags: [

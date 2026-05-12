@@ -10,6 +10,7 @@ type Props = {
   regionCity: string;
   observedAt: string;
   durationLabel: string;
+  recipientEmail?: string;
 };
 
 const prose = {
@@ -32,6 +33,7 @@ export default function Restock({
   regionCity = "Falkenstein",
   observedAt = "2026-05-04 11:02:14 UTC",
   durationLabel = "5 days, 2 hours",
+  recipientEmail,
 }: Partial<Props>) {
   const title = `${serverType} returned to ${region}`;
 
@@ -39,6 +41,7 @@ export default function Restock({
     <Layout
       preview={`${serverType} is back in ${regionCity} (${region}).`}
       observedAt={observedAt}
+      recipientEmail={recipientEmail}
     >
       <DispatchMeta
         state="available"

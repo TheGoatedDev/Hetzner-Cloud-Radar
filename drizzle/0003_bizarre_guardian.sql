@@ -1,0 +1,1 @@
+ALTER TABLE "mailing_subscribers" ADD COLUMN "unsubscribed_at" timestamp with time zone;

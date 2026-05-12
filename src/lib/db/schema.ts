@@ -133,6 +133,10 @@ export const mailingSubscribers = pgTable("mailing_subscribers", {
     mode: "date",
   }),
   resendErrorMessage: text("resend_error_message"),
+  unsubscribedAt: timestamp("unsubscribed_at", {
+    withTimezone: true,
+    mode: "date",
+  }),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .defaultNow(),

@@ -10,10 +10,24 @@ import {
   Text,
 } from "@react-email/components";
 import type { ReactNode } from "react";
+import { signEmail } from "@/lib/marketing/unsubscribe-token";
 import { fontStack, theme } from "./theme";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://hetzner.thegoated.dev";
+
+function buildUnsubscribeUrl(recipientEmail: string | undefined) {
+  if (!recipientEmail) return `${baseUrl}/unsubscribe`;
+
+  try {
+    const token = signEmail(recipientEmail);
+    return `${baseUrl}/unsubscribe?email=${encodeURIComponent(
+      recipientEmail,
+    )}&token=${token}`;
+  } catch {
+    return `${baseUrl}/unsubscribe`;
+  }
+}
 
 const body = {
   backgroundColor: theme.paper,
@@ -75,12 +89,16 @@ const link = {
 export function Layout({
   preview,
   observedAt,
+  recipientEmail,
   children,
 }: {
   preview: string;
   observedAt?: string;
+  recipientEmail?: string;
   children: ReactNode;
 }) {
+  const unsubscribeUrl = buildUnsubscribeUrl(recipientEmail);
+
   return (
     <Html lang="en">
       <Head />
@@ -110,7 +128,7 @@ export function Layout({
                 Open the radar
               </Link>
               {"  ·  "}
-              <Link href={`${baseUrl}/unsubscribe`} style={link}>
+              <Link href={unsubscribeUrl} style={link}>
                 Unsubscribe
               </Link>
             </Text>
