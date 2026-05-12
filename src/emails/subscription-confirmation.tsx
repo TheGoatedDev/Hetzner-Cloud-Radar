@@ -46,7 +46,10 @@ export default function SubscriptionConfirmation({
     .join(", ");
 
   return (
-    <Layout preview="You are subscribed to Hetzner Cloud Radar dispatches.">
+    <Layout
+      preview="You are subscribed to Hetzner Cloud Radar dispatches."
+      recipientEmail={email}
+    >
       <Section>
         <Text style={prose}>
           Thanks. <span style={{ fontFamily: fontStack.mono }}>{email}</span> is
