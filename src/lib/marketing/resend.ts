@@ -65,19 +65,21 @@ async function ensureContact(resend: Resend, input: SubscribeInput) {
 
 export async function syncMarketingContact(input: SubscribeInput) {
   const env = getResendEnv();
+  if (!env.RESEND_MARKETING_SEGMENT_ID) {
+    throw new Error("RESEND_MARKETING_SEGMENT_ID is not configured");
+  }
+
   const resend = new Resend(env.RESEND_API_KEY);
-  const contact = await ensureContact(resend, input);
+  await ensureContact(resend, input);
   const topics = contactTopics(input);
 
-  if (env.RESEND_MARKETING_SEGMENT_ID) {
-    const segment = await resend.contacts.segments.add({
-      email: input.email,
-      segmentId: env.RESEND_MARKETING_SEGMENT_ID,
-    });
+  const segment = await resend.contacts.segments.add({
+    email: input.email,
+    segmentId: env.RESEND_MARKETING_SEGMENT_ID,
+  });
 
-    if (!segment.data && segment.error?.statusCode !== 409) {
-      throw new Error(segment.error?.message ?? "Resend segment sync failed");
-    }
+  if (!segment.data && segment.error?.statusCode !== 409) {
+    throw new Error(segment.error?.message ?? "Resend segment sync failed");
   }
 
   if (topics.length > 0) {
@@ -90,12 +92,6 @@ export async function syncMarketingContact(input: SubscribeInput) {
       throw new Error(topicUpdate.error?.message ?? "Resend topic sync failed");
     }
   }
-
-  if (!contact.id) {
-    throw new Error("Resend contact response did not include an id");
-  }
-
-  return { contactId: contact.id };
 }
 
 export async function unsubscribeMarketingContact(input: { email: string }) {

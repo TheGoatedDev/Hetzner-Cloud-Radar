@@ -68,8 +68,8 @@ export function SubscribeForm() {
           list. A short note will land when {eventCopy}.
         </p>
         <p className="text-ink-soft">
-          We store the address and nothing else. Unsubscribe with the link in
-          any dispatch.
+          Resend manages the address and preferences. Unsubscribe with the link
+          in any dispatch.
         </p>
       </div>
     );
@@ -140,8 +140,8 @@ export function SubscribeForm() {
       ) : null}
 
       <p className="max-w-[60ch] font-sans text-xs leading-[1.55] text-ink-faint">
-        We store the email address and nothing else. No tracking pixels, no
-        third-party analytics. Unsubscribe with the link in any dispatch.
+        Resend manages the address and preferences. No third-party analytics.
+        Unsubscribe with the link in any dispatch.
       </p>
     </form>
   );

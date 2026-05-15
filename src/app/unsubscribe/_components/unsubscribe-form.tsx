@@ -8,14 +8,12 @@ type Props = {
   prefilledEmail: string;
   prefilledToken: string;
   emailLocked: boolean;
-  alreadyUnsubscribed: boolean;
 };
 
 export function UnsubscribeForm({
   prefilledEmail,
   prefilledToken,
   emailLocked,
-  alreadyUnsubscribed,
 }: Props) {
   const [email, setEmail] = useState(prefilledEmail);
   const [soldOut, setSoldOut] = useState(false);
@@ -93,13 +91,6 @@ export function UnsubscribeForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-7" noValidate>
-      {alreadyUnsubscribed ? (
-        <p className="font-sans text-sm leading-[1.55] text-ink-soft">
-          This address is already unsubscribed. Submitting below will refresh
-          your preferences if you want one type of alert back.
-        </p>
-      ) : null}
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label htmlFor={emailId} className="flex flex-1 flex-col gap-1.5">
           <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">

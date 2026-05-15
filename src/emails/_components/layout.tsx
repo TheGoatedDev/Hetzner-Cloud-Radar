@@ -17,7 +17,7 @@ const baseUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://hetzner.thegoated.dev";
 
 function buildUnsubscribeUrl(recipientEmail: string | undefined) {
-  if (!recipientEmail) return `${baseUrl}/unsubscribe`;
+  if (!recipientEmail) return "{{{RESEND_UNSUBSCRIBE_URL}}}";
 
   try {
     const token = signEmail(recipientEmail);

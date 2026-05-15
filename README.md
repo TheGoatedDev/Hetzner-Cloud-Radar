@@ -167,7 +167,6 @@ Tables:
 - `availability_observations`
 - `availability_current`
 - `daily_availability_state`
-- `mailing_subscribers`
 - `marketing_dispatch_sends`
 
 Generate migrations:
@@ -223,8 +222,8 @@ Body:
 }
 ```
 
-The endpoint syncs the address to Resend Contacts and upserts local subscriber
-preferences in `mailing_subscribers`.
+The endpoint syncs the address and preferences to Resend Contacts, Segments,
+and Topics. The app does not store subscriber email addresses locally.
 
 ## Project Layout
 

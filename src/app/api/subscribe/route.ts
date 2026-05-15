@@ -1,7 +1,4 @@
-import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "@/lib/db/client";
-import { mailingSubscribers } from "@/lib/db/schema";
 import { syncMarketingContact } from "@/lib/marketing/resend";
 import { sendSubscriptionConfirmationEmail } from "@/lib/marketing/subscription-email";
 
@@ -32,33 +29,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { contactId } = await syncMarketingContact(parsed.data);
-    const now = new Date();
-    const db = getDb();
-
-    await db
-      .insert(mailingSubscribers)
-      .values({
-        email: parsed.data.email,
-        wantsSoldOut: parsed.data.wantsSoldOut,
-        wantsRestock: parsed.data.wantsRestock,
-        resendContactId: contactId,
-        resendSyncedAt: now,
-        resendErrorMessage: null,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: mailingSubscribers.email,
-        set: {
-          wantsSoldOut: sql`excluded.wants_sold_out`,
-          wantsRestock: sql`excluded.wants_restock`,
-          resendContactId: sql`excluded.resend_contact_id`,
-          resendSyncedAt: sql`excluded.resend_synced_at`,
-          resendErrorMessage: null,
-          unsubscribedAt: null,
-          updatedAt: now,
-        },
-      });
+    await syncMarketingContact(parsed.data);
 
     sendSubscriptionConfirmationEmail(parsed.data).catch((error) => {
       console.error("Subscription confirmation email failed", error);

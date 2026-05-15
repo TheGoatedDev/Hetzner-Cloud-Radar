@@ -1,17 +1,12 @@
-import { inArray, isNull } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import Restock from "@/emails/restock";
 import StockOut from "@/emails/stock-out";
 import { getResendEnv } from "@/env";
 import type { StockEvent } from "@/lib/schema";
 import { getDispatchEvents } from "../availability/read-model";
 import { getDb } from "../db/client";
-import {
-  locations,
-  mailingSubscribers,
-  marketingDispatchSends,
-  serverTypes,
-} from "../db/schema";
-import { hasResendEmailConfig, sendDispatch } from "../email/send";
+import { locations, marketingDispatchSends, serverTypes } from "../db/schema";
+import { hasResendEmailConfig, sendBroadcast } from "../email/send";
 
 type SendMarketingDispatchesResult = {
   attemptedDispatches: number;
@@ -32,17 +27,6 @@ function eventTopicId(event: StockEvent) {
   return event.state === "ongoing-out"
     ? env.RESEND_SOLD_OUT_TOPIC_ID
     : env.RESEND_RESTOCK_TOPIC_ID;
-}
-
-function shouldReceiveDispatch(
-  event: StockEvent,
-  subscriber: typeof mailingSubscribers.$inferSelect,
-) {
-  if (event.state === "ongoing-out") {
-    return subscriber.wantsSoldOut;
-  }
-
-  return subscriber.wantsRestock;
 }
 
 function specLabel(type: typeof serverTypes.$inferSelect | undefined) {
@@ -112,6 +96,17 @@ export async function sendPendingMarketingDispatches(
   }
 
   const db = getDb();
+  const env = getResendEnv();
+
+  if (!env.RESEND_MARKETING_SEGMENT_ID) {
+    return {
+      attemptedDispatches: 0,
+      sentDispatches: 0,
+      sentEmails: 0,
+      skippedReason: "RESEND_MARKETING_SEGMENT_ID is not configured",
+    };
+  }
+
   const events = await getDispatchEvents(latestAt, 16);
 
   if (events.length === 0) {
@@ -150,10 +145,6 @@ export async function sendPendingMarketingDispatches(
     };
   }
 
-  const subscribers = await db
-    .select()
-    .from(mailingSubscribers)
-    .where(isNull(mailingSubscribers.unsubscribedAt));
   const scopes = pendingEvents.map((event) => splitScope(event.scope));
   const typeCodes = [...new Set(scopes.map((scope) => scope.serverType))];
   const locationCodes = [...new Set(scopes.map((scope) => scope.region))];
@@ -177,72 +168,63 @@ export async function sendPendingMarketingDispatches(
   );
 
   let sentDispatches = 0;
-  let sentEmails = 0;
+  const sentEmails = 0;
 
   for (const event of pendingEvents) {
-    const recipients = subscribers.filter((subscriber) =>
-      shouldReceiveDispatch(event, subscriber),
-    );
-
-    if (recipients.length === 0) {
-      await recordDispatchSend(event, "skipped", 0, []);
-      continue;
-    }
-
     const { serverType, region } = splitScope(event.scope);
     const type = typesByCode.get(serverType);
     const location = locationsByCode.get(region);
     const serverSpec = specLabel(type);
     const regionCity = location?.city ?? region;
     const topicId = eventTopicId(event);
-    const sentIds: string[] = [];
+
+    if (!topicId) {
+      await recordDispatchSend(
+        event,
+        "failed",
+        0,
+        [],
+        `${event.state} topic id is not configured`,
+      );
+      continue;
+    }
 
     try {
-      for (const recipient of recipients) {
-        const result = await sendDispatch({
-          to: recipient.email,
-          subject: event.title,
-          topicId,
-          react:
-            event.state === "ongoing-out" ? (
-              <StockOut
-                serverType={serverType}
-                serverSpec={serverSpec}
-                region={region}
-                regionCity={regionCity}
-                observedAt={event.startedAt}
-                baselineNote={event.body}
-                recipientEmail={recipient.email}
-              />
-            ) : (
-              <Restock
-                serverType={serverType}
-                serverSpec={serverSpec}
-                region={region}
-                regionCity={regionCity}
-                observedAt={event.startedAt}
-                durationLabel={durationLabel(event)}
-                recipientEmail={recipient.email}
-              />
-            ),
-          tags: [
-            { name: "kind", value: "stock-dispatch" },
-            { name: "state", value: event.state },
-          ],
-        });
+      const result = await sendBroadcast({
+        segmentId: env.RESEND_MARKETING_SEGMENT_ID,
+        subject: event.title,
+        topicId,
+        name: `Hetzner Cloud Radar: ${event.title}`,
+        react:
+          event.state === "ongoing-out" ? (
+            <StockOut
+              serverType={serverType}
+              serverSpec={serverSpec}
+              region={region}
+              regionCity={regionCity}
+              observedAt={event.startedAt}
+              baselineNote={event.body}
+            />
+          ) : (
+            <Restock
+              serverType={serverType}
+              serverSpec={serverSpec}
+              region={region}
+              regionCity={regionCity}
+              observedAt={event.startedAt}
+              durationLabel={durationLabel(event)}
+            />
+          ),
+      });
 
-        sentIds.push(result.id);
-      }
-
-      await recordDispatchSend(event, "sent", recipients.length, sentIds);
+      await recordDispatchSend(event, "sent", 0, [result.id]);
       sentDispatches += 1;
-      sentEmails += recipients.length;
     } catch (error) {
       await recordDispatchSend(
         event,
         "failed",
-        sentIds.length,
-        sentIds,
+        0,
+        [],
         error instanceof Error ? error.message : "Dispatch email send failed",
       );
     }
