@@ -1,7 +1,4 @@
-import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "@/lib/db/client";
-import { mailingSubscribers } from "@/lib/db/schema";
 import {
   syncMarketingContact,
   unsubscribeMarketingContact,
@@ -32,46 +29,14 @@ export async function POST(request: Request) {
   }
 
   const { email, wantsSoldOut, wantsRestock } = parsed.data;
-  const db = getDb();
 
   try {
-    const existing = await db
-      .select({ email: mailingSubscribers.email })
-      .from(mailingSubscribers)
-      .where(eq(mailingSubscribers.email, email))
-      .limit(1);
-
-    if (existing.length === 0) {
-      return Response.json({ ok: true, fullUnsubscribe: true });
-    }
-
     const fullUnsubscribe = !wantsSoldOut && !wantsRestock;
-    const now = new Date();
 
     if (fullUnsubscribe) {
       await unsubscribeMarketingContact({ email });
-      await db
-        .update(mailingSubscribers)
-        .set({
-          wantsSoldOut: false,
-          wantsRestock: false,
-          unsubscribedAt: now,
-          updatedAt: now,
-        })
-        .where(eq(mailingSubscribers.email, email));
     } else {
       await syncMarketingContact({ email, wantsSoldOut, wantsRestock });
-      await db
-        .update(mailingSubscribers)
-        .set({
-          wantsSoldOut,
-          wantsRestock,
-          unsubscribedAt: null,
-          resendSyncedAt: now,
-          resendErrorMessage: null,
-          updatedAt: now,
-        })
-        .where(eq(mailingSubscribers.email, email));
     }
 
     return Response.json({ ok: true, fullUnsubscribe });

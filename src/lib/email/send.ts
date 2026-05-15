@@ -12,6 +12,16 @@ type SendInput = {
   topicId?: string;
 };
 
+type BroadcastInput = {
+  segmentId: string;
+  subject: string;
+  react: ReactElement;
+  name?: string;
+  previewText?: string;
+  replyTo?: string | string[];
+  topicId?: string;
+};
+
 let cachedClient: Resend | null = null;
 
 function client() {
@@ -42,6 +52,27 @@ export async function sendDispatch(input: SendInput) {
 
   if (!result.data) {
     throw new Error(result.error?.message ?? "Resend dispatch send failed");
+  }
+
+  return { id: result.data.id };
+}
+
+export async function sendBroadcast(input: BroadcastInput) {
+  const env = getResendEnv();
+  const result = await client().broadcasts.create({
+    from: `${fromName} <${env.RESEND_FROM_EMAIL}>`,
+    segmentId: input.segmentId,
+    subject: input.subject,
+    react: input.react,
+    send: true,
+    name: input.name,
+    previewText: input.previewText,
+    replyTo: input.replyTo,
+    topicId: input.topicId,
+  });
+
+  if (!result.data) {
+    throw new Error(result.error?.message ?? "Resend broadcast send failed");
   }
 
   return { id: result.data.id };

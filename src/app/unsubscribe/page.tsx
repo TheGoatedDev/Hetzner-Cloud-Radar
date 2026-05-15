@@ -1,12 +1,9 @@
-import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import {
   formatObservedAt,
   getLatestPollAt,
   POLL_CADENCE,
 } from "@/lib/availability/read-model";
-import { getDb } from "@/lib/db/client";
-import { mailingSubscribers } from "@/lib/db/schema";
 import { verifyEmailToken } from "@/lib/marketing/unsubscribe-token";
 import { SectionHeader } from "../_components/section-header";
 import { Masthead } from "../_components/sections/masthead";
@@ -33,18 +30,6 @@ export default async function UnsubscribePage({
   const lower = email?.toLowerCase() ?? "";
   const tokenValid = !!lower && !!token && verifyEmailToken(lower, token);
 
-  let alreadyUnsubscribed = false;
-
-  if (tokenValid) {
-    const rows = await getDb()
-      .select({ unsubscribedAt: mailingSubscribers.unsubscribedAt })
-      .from(mailingSubscribers)
-      .where(eq(mailingSubscribers.email, lower))
-      .limit(1);
-
-    alreadyUnsubscribed = rows[0]?.unsubscribedAt != null;
-  }
-
   const latestAt = await getLatestPollAt();
   const observedAt = latestAt
     ? formatObservedAt(latestAt)
@@ -65,7 +50,6 @@ export default async function UnsubscribePage({
           prefilledEmail={tokenValid ? lower : ""}
           prefilledToken={tokenValid && token ? token : ""}
           emailLocked={tokenValid}
-          alreadyUnsubscribed={alreadyUnsubscribed}
         />
       </section>
 

@@ -37,8 +37,8 @@ export default function SubscriptionConfirmation({
           on the list. A short note will land when {eventCopy}.
         </Prose>
         <Prose tone="soft" spacing="subscription">
-          We store the address and nothing else. No tracking pixels, no
-          third-party analytics. Unsubscribe with the link in any dispatch.
+          Resend manages the address and preferences. No third-party analytics.
+          Unsubscribe with the link in any dispatch.
         </Prose>
         <MetaText>Subscribed to: {subscribedTo}</MetaText>
       </Section>

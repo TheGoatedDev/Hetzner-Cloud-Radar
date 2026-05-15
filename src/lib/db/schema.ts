@@ -123,28 +123,6 @@ export const dailyAvailabilityState = pgTable(
   }),
 );
 
-export const mailingSubscribers = pgTable("mailing_subscribers", {
-  email: text("email").primaryKey(),
-  wantsSoldOut: boolean("wants_sold_out").notNull().default(true),
-  wantsRestock: boolean("wants_restock").notNull().default(true),
-  resendContactId: text("resend_contact_id"),
-  resendSyncedAt: timestamp("resend_synced_at", {
-    withTimezone: true,
-    mode: "date",
-  }),
-  resendErrorMessage: text("resend_error_message"),
-  unsubscribedAt: timestamp("unsubscribed_at", {
-    withTimezone: true,
-    mode: "date",
-  }),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
-    .notNull()
-    .defaultNow(),
-});
-
 export const marketingDispatchSends = pgTable("marketing_dispatch_sends", {
   dispatchId: text("dispatch_id").primaryKey(),
   eventState: text("event_state", {
