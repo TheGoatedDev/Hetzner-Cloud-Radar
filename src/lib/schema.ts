@@ -10,6 +10,7 @@ type StockMeta = {
   glyph: string;
   textClass: string;
   bgClass: string;
+  cssVar: string;
 };
 
 export const STOCK: Record<Stock, StockMeta> = {
@@ -18,30 +19,35 @@ export const STOCK: Record<Stock, StockMeta> = {
     glyph: "●",
     textClass: "text-operational",
     bgClass: "bg-operational",
+    cssVar: "var(--status-operational)",
   },
   limited: {
     label: "Limited",
     glyph: "◐",
     textClass: "text-degraded",
     bgClass: "bg-degraded",
+    cssVar: "var(--status-degraded)",
   },
   "sold-out": {
     label: "Sold out",
     glyph: "■",
     textClass: "text-down",
     bgClass: "bg-down",
+    cssVar: "var(--status-down)",
   },
   "not-offered": {
     label: "Not offered",
     glyph: "·",
     textClass: "text-ink-faint",
     bgClass: "bg-ink-faint",
+    cssVar: "var(--ink-faint)",
   },
   unknown: {
     label: "Unknown",
     glyph: "○",
     textClass: "text-ink-faint",
     bgClass: "bg-ink-faint",
+    cssVar: "var(--ink-faint)",
   },
 };
 
@@ -92,3 +98,17 @@ export type SupplyDay = {
   limited: number;
   soldOut: number;
 };
+
+export const SUPPLY_SERIES = [
+  { key: "available", stock: "available" },
+  { key: "limited", stock: "limited", label: "Limited (flickered)" },
+  { key: "soldOut", stock: "sold-out" },
+] as const satisfies ReadonlyArray<{
+  key: keyof Omit<SupplyDay, "date">;
+  stock: Stock;
+  label?: string;
+}>;
+
+export function sumSupplyDay(day: SupplyDay) {
+  return SUPPLY_SERIES.reduce((total, series) => total + day[series.key], 0);
+}

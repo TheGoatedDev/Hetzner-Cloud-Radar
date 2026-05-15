@@ -1,30 +1,11 @@
-import { Section, Text } from "@react-email/components";
+import { Section } from "@react-email/components";
 import { Layout } from "./_components/layout";
-import { fontStack, theme } from "./_components/theme";
+import { fontStack } from "./_components/theme";
+import { MetaText, Prose } from "./_components/typography";
 
 type Props = {
   email: string;
   events: { soldOut: boolean; restock: boolean };
-};
-
-const prose = {
-  margin: "0 0 14px",
-  fontFamily: fontStack.sans,
-  fontSize: "15px",
-  lineHeight: 1.55,
-  color: theme.ink,
-};
-
-const proseSoft = {
-  ...prose,
-  color: theme.inkSoft,
-};
-
-const meta = {
-  margin: "16px 0 0",
-  fontFamily: fontStack.mono,
-  fontSize: "12px",
-  color: theme.inkFaint,
 };
 
 export default function SubscriptionConfirmation({
@@ -51,15 +32,15 @@ export default function SubscriptionConfirmation({
       recipientEmail={email}
     >
       <Section>
-        <Text style={prose}>
+        <Prose spacing="subscription">
           Thanks. <span style={{ fontFamily: fontStack.mono }}>{email}</span> is
           on the list. A short note will land when {eventCopy}.
-        </Text>
-        <Text style={proseSoft}>
+        </Prose>
+        <Prose tone="soft" spacing="subscription">
           We store the address and nothing else. No tracking pixels, no
           third-party analytics. Unsubscribe with the link in any dispatch.
-        </Text>
-        <Text style={meta}>Subscribed to: {subscribedTo}</Text>
+        </Prose>
+        <MetaText>Subscribed to: {subscribedTo}</MetaText>
       </Section>
     </Layout>
   );

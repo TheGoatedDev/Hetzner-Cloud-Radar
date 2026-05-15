@@ -142,7 +142,7 @@ function row(values: Partial<Record<DcCode, Stock>>) {
   ) as Record<DcCode, Stock>;
 }
 
-function makeTopLine(families: Family[], observedAt: string) {
+function makeTopLine(families: Family[]) {
   const cells = families.flatMap((family) =>
     family.types.flatMap((type) => DCS.map((dc) => type.stock[dc])),
   );
@@ -438,7 +438,7 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
 
     const observedAt = formatObservedAt(latestPoll[0].finishedAt);
     const observedDate = latestPoll[0].finishedAt.toISOString().slice(0, 10);
-    const topLine = makeTopLine(families, observedAt);
+    const topLine = makeTopLine(families);
     const sixtyDaysAgo = new Date(latestPoll[0].finishedAt);
     sixtyDaysAgo.setUTCDate(sixtyDaysAgo.getUTCDate() - 59);
     const [dailyRows, events] = await Promise.all([

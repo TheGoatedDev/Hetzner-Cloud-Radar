@@ -2,17 +2,16 @@
 
 import { type PointerEvent as ReactPointerEvent, useState } from "react";
 import { formatChartLabel } from "@/lib/chart";
-import type { SupplyDay } from "@/lib/schema";
+import {
+  STOCK,
+  SUPPLY_SERIES,
+  type SupplyDay,
+  sumSupplyDay,
+} from "@/lib/schema";
 
 const W = 600;
 const H = 100;
 const GAP = 1;
-
-const TOOLTIP_ROWS = [
-  { key: "available", label: "Available", color: "var(--status-operational)" },
-  { key: "limited", label: "Limited", color: "var(--status-degraded)" },
-  { key: "soldOut", label: "Sold out", color: "var(--status-down)" },
-] as const;
 
 function tooltipAnchor(index: number, total: number) {
   const ratio = index / Math.max(total - 1, 1);
@@ -25,10 +24,7 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const barW = (W - (days.length - 1) * GAP) / days.length;
-  const maxStack = Math.max(
-    ...days.map((d) => d.available + d.limited + d.soldOut),
-    1,
-  );
+  const maxStack = Math.max(...days.map(sumSupplyDay), 1);
   const yScale = (v: number) => (v / maxStack) * H;
 
   const tickIndices = [
@@ -82,41 +78,38 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
           />
           {days.map((d, i) => {
             const x = i * (barW + GAP);
-            const availableH = yScale(d.available);
-            const limitedH = yScale(d.limited);
-            const soldOutH = yScale(d.soldOut);
-            const totalH = availableH + limitedH + soldOutH;
+            const segments = SUPPLY_SERIES.map((series) => ({
+              ...series,
+              height: yScale(d[series.key]),
+              value: d[series.key],
+            }));
+            const totalH = segments.reduce(
+              (total, segment) => total + segment.height,
+              0,
+            );
+            let stackedH = 0;
+
             if (totalH === 0) return null;
+
             return (
               <g key={d.date}>
                 <title>{`${formatChartLabel(d.date)}: ${d.available} available, ${d.limited} limited, ${d.soldOut} sold out`}</title>
-                {d.available > 0 ? (
-                  <rect
-                    x={x}
-                    y={H - availableH}
-                    width={barW}
-                    height={availableH}
-                    fill="var(--status-operational)"
-                  />
-                ) : null}
-                {d.limited > 0 ? (
-                  <rect
-                    x={x}
-                    y={H - availableH - limitedH}
-                    width={barW}
-                    height={limitedH}
-                    fill="var(--status-degraded)"
-                  />
-                ) : null}
-                {d.soldOut > 0 ? (
-                  <rect
-                    x={x}
-                    y={H - totalH}
-                    width={barW}
-                    height={soldOutH}
-                    fill="var(--status-down)"
-                  />
-                ) : null}
+                {segments.map((segment) => {
+                  if (segment.value === 0) return null;
+
+                  stackedH += segment.height;
+
+                  return (
+                    <rect
+                      key={segment.key}
+                      x={x}
+                      y={H - stackedH}
+                      width={barW}
+                      height={segment.height}
+                      fill={STOCK[segment.stock].cssVar}
+                    />
+                  );
+                })}
               </g>
             );
           })}
@@ -147,7 +140,7 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
             <span className="tabular-nums text-ink">
               {formatChartLabel(hovered.date)}
             </span>
-            {TOOLTIP_ROWS.map((row) => (
+            {SUPPLY_SERIES.map((row) => (
               <span
                 key={row.key}
                 className="flex items-baseline gap-2 text-ink-soft"
@@ -155,12 +148,12 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
                 <span
                   aria-hidden
                   className="inline-block size-2"
-                  style={{ backgroundColor: row.color }}
+                  style={{ backgroundColor: STOCK[row.stock].cssVar }}
                 />
                 <span className="tabular-nums text-ink">
                   {hovered[row.key]}
                 </span>
-                <span>{row.label}</span>
+                <span>{STOCK[row.stock].label}</span>
               </span>
             ))}
           </div>

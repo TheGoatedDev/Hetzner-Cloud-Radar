@@ -1,15 +1,18 @@
 import { formatChartLabel } from "@/lib/chart";
-import type { SupplyDay } from "@/lib/schema";
+import {
+  STOCK,
+  SUPPLY_SERIES,
+  type SupplyDay,
+  sumSupplyDay,
+} from "@/lib/schema";
 import { SectionHeader } from "../section-header";
 import { SupplyChart } from "../supply-chart";
 
 export function SupplyTrend({ days }: { days: SupplyDay[] }) {
   const peakDay = days.reduce((a, b) =>
-    a.available + a.limited + a.soldOut >= b.available + b.limited + b.soldOut
-      ? a
-      : b,
+    sumSupplyDay(a) >= sumSupplyDay(b) ? a : b,
   );
-  const peakValue = peakDay.available + peakDay.limited + peakDay.soldOut;
+  const peakValue = sumSupplyDay(peakDay);
 
   return (
     <section className="flex flex-col gap-5 pt-10">
@@ -20,18 +23,17 @@ export function SupplyTrend({ days }: { days: SupplyDay[] }) {
       />
       <SupplyChart days={days} />
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-xs text-ink-soft">
-        <span className="flex items-baseline gap-2">
-          <span aria-hidden className="inline-block h-2.5 w-3 bg-operational" />
-          <span>Available</span>
-        </span>
-        <span className="flex items-baseline gap-2">
-          <span aria-hidden className="inline-block h-2.5 w-3 bg-degraded" />
-          <span>Limited (flickered)</span>
-        </span>
-        <span className="flex items-baseline gap-2">
-          <span aria-hidden className="inline-block h-2.5 w-3 bg-down" />
-          <span>Sold out</span>
-        </span>
+        {SUPPLY_SERIES.map((series) => (
+          <span key={series.key} className="flex items-baseline gap-2">
+            <span
+              aria-hidden
+              className={`inline-block h-2.5 w-3 ${STOCK[series.stock].bgClass}`}
+            />
+            <span>
+              {"label" in series ? series.label : STOCK[series.stock].label}
+            </span>
+          </span>
+        ))}
         <span className="ml-auto text-ink-faint">
           Peak <span className="text-ink tabular-nums">{peakValue}</span> on{" "}
           <span className="text-ink tabular-nums">

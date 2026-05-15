@@ -1,7 +1,6 @@
-import { Text } from "@react-email/components";
 import { DispatchMeta } from "./_components/dispatch-meta";
 import { Layout } from "./_components/layout";
-import { fontStack, theme } from "./_components/theme";
+import { Prose } from "./_components/typography";
 
 type Props = {
   serverType: string;
@@ -11,19 +10,6 @@ type Props = {
   observedAt: string;
   baselineNote: string;
   recipientEmail?: string;
-};
-
-const prose = {
-  margin: "20px 0 0",
-  fontFamily: fontStack.sans,
-  fontSize: "15px",
-  lineHeight: 1.6,
-  color: theme.ink,
-};
-
-const proseSoft = {
-  ...prose,
-  color: theme.inkSoft,
 };
 
 export default function StockOut({
@@ -53,12 +39,12 @@ export default function StockOut({
           { label: "Observed", value: observedAt },
         ]}
       />
-      <Text style={prose}>
+      <Prose>
         {serverType} is no longer available for new server creation in{" "}
         {regionCity}. Existing servers are unaffected. The next dispatch will
         land when {region} returns to stock.
-      </Text>
-      <Text style={proseSoft}>{baselineNote}</Text>
+      </Prose>
+      <Prose tone="soft">{baselineNote}</Prose>
     </Layout>
   );
 }

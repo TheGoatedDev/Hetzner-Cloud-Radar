@@ -1,7 +1,6 @@
-import { Text } from "@react-email/components";
 import { DispatchMeta } from "./_components/dispatch-meta";
 import { Layout } from "./_components/layout";
-import { fontStack, theme } from "./_components/theme";
+import { Prose } from "./_components/typography";
 
 type Props = {
   serverType: string;
@@ -11,19 +10,6 @@ type Props = {
   observedAt: string;
   durationLabel: string;
   recipientEmail?: string;
-};
-
-const prose = {
-  margin: "20px 0 0",
-  fontFamily: fontStack.sans,
-  fontSize: "15px",
-  lineHeight: 1.6,
-  color: theme.ink,
-};
-
-const proseSoft = {
-  ...prose,
-  color: theme.inkSoft,
 };
 
 export default function Restock({
@@ -54,14 +40,14 @@ export default function Restock({
           { label: "Observed", value: observedAt },
         ]}
       />
-      <Text style={prose}>
+      <Prose>
         {serverType} is available again for new server creation in {regionCity}.
         Inventory may be thin for the first day; the next dispatch will land
         only if it leaves stock again.
-      </Text>
-      <Text style={proseSoft}>
+      </Prose>
+      <Prose tone="soft">
         This restock follows a continuous sold-out window of {durationLabel}.
-      </Text>
+      </Prose>
     </Layout>
   );
 }
