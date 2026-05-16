@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { DCS, type DcCode, type FamilyId, type Stock } from "@/lib/schema";
+import {
+  DC_META,
+  DCS,
+  type DcCode,
+  type FamilyId,
+  type Stock,
+} from "@/lib/schema";
 import { getDb } from "../db/client";
 import {
   availabilityCurrent,
@@ -20,46 +26,16 @@ import {
 
 type BaseStatus = Exclude<Stock, "limited">;
 
-const TRACKED_LOCATION_META: Record<
+const TRACKED_LOCATION_API: Record<
   DcCode,
-  { apiName: string; city: string; country: string; networkZone: string }
+  { apiName: string; networkZone: string }
 > = {
-  NBG1: {
-    apiName: "nbg1",
-    city: "Nuremberg",
-    country: "DE",
-    networkZone: "eu-central",
-  },
-  FSN1: {
-    apiName: "fsn1",
-    city: "Falkenstein",
-    country: "DE",
-    networkZone: "eu-central",
-  },
-  HEL1: {
-    apiName: "hel1",
-    city: "Helsinki",
-    country: "FI",
-    networkZone: "eu-central",
-  },
-  ASH: {
-    apiName: "ash",
-    city: "Ashburn",
-    country: "US",
-    networkZone: "us-east",
-  },
-  HIL: {
-    apiName: "hil",
-    city: "Hillsboro",
-    country: "US",
-    networkZone: "us-west",
-  },
-  SIN: {
-    apiName: "sin",
-    city: "Singapore",
-    country: "SG",
-    networkZone: "ap-southeast",
-  },
+  NBG1: { apiName: "nbg1", networkZone: "eu-central" },
+  FSN1: { apiName: "fsn1", networkZone: "eu-central" },
+  HEL1: { apiName: "hel1", networkZone: "eu-central" },
+  ASH: { apiName: "ash", networkZone: "us-east" },
+  HIL: { apiName: "hil", networkZone: "us-west" },
+  SIN: { apiName: "sin", networkZone: "ap-southeast" },
 };
 
 function getFamily(code: string): FamilyId | "other" {
@@ -110,7 +86,7 @@ function findTrackedLocation(
   serverType: HetznerServerType,
   dc: DcCode,
 ): ReturnType<typeof readLocation> | null {
-  const expected = TRACKED_LOCATION_META[dc].apiName;
+  const expected = TRACKED_LOCATION_API[dc].apiName;
   const match = serverType.locations
     .map(readLocation)
     .find((location) => location.apiName === expected);
@@ -148,7 +124,7 @@ export async function pollAvailability() {
 
     const locationValues = DCS.map((dc) => {
       const fetched = fetchedLocations.get(dc);
-      const fallback = TRACKED_LOCATION_META[dc];
+      const fallback = { ...DC_META[dc], ...TRACKED_LOCATION_API[dc] };
 
       return {
         code: dc,

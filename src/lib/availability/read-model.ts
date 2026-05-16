@@ -106,6 +106,12 @@ export function formatObservedAt(date: Date) {
     .replace(/\.\d{3}Z$/, " UTC");
 }
 
+export async function getObservedAtLabel(fallback = "awaiting first poll") {
+  const latestAt = await getLatestPollAt();
+
+  return latestAt ? formatObservedAt(latestAt) : fallback;
+}
+
 function formatDispatchTime(date: Date) {
   return date.toLocaleString("en-US", {
     month: "short",
@@ -142,6 +148,20 @@ function row(values: Partial<Record<DcCode, Stock>>) {
   ) as Record<DcCode, Stock>;
 }
 
+function blankSupplyHistory(observedDate: string): SupplyDay[] {
+  return Array.from({ length: 60 }, (_, index) => {
+    const date = new Date(`${observedDate}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() - (59 - index));
+
+    return {
+      date: date.toISOString().slice(0, 10),
+      available: 0,
+      limited: 0,
+      soldOut: 0,
+    };
+  });
+}
+
 function makeTopLine(families: Family[]) {
   const cells = families.flatMap((family) =>
     family.types.flatMap((type) => DCS.map((dc) => type.stock[dc])),
@@ -175,18 +195,6 @@ function fallbackModel(): AvailabilityReadModel {
       stock: unknownStock,
     })),
   }));
-  const supplyHistory = Array.from({ length: 60 }, (_, index) => {
-    const date = new Date(`${observedDate}T00:00:00Z`);
-    date.setUTCDate(date.getUTCDate() - (59 - index));
-
-    return {
-      date: date.toISOString().slice(0, 10),
-      available: 0,
-      limited: 0,
-      soldOut: 0,
-    };
-  });
-
   return {
     families,
     observedAt: "No successful poll yet",
@@ -197,7 +205,7 @@ function fallbackModel(): AvailabilityReadModel {
       line: "No successful availability poll has been stored yet.",
     },
     events: [],
-    supplyHistory,
+    supplyHistory: blankSupplyHistory(observedDate),
     usingFallback: true,
   };
 }
@@ -470,14 +478,11 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
         },
       ]),
     );
-    const supplyHistory = Array.from({ length: 60 }, (_, index) => {
-      const date = new Date(`${observedDate}T00:00:00Z`);
-      date.setUTCDate(date.getUTCDate() - (59 - index));
-      const key = date.toISOString().slice(0, 10);
-      const day = dailyByDate.get(key);
+    const supplyHistory = blankSupplyHistory(observedDate).map((blank) => {
+      const day = dailyByDate.get(blank.date);
 
       return {
-        date: key,
+        date: blank.date,
         available: day?.available ?? 0,
         limited: day?.limited ?? 0,
         soldOut: day?.soldOut ?? 0,

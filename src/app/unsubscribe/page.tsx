@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import {
-  formatObservedAt,
-  getLatestPollAt,
-  POLL_CADENCE,
-} from "@/lib/availability/read-model";
+import { getObservedAtLabel } from "@/lib/availability/read-model";
 import { verifyEmailToken } from "@/lib/marketing/unsubscribe-token";
+import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
-import { Masthead } from "../_components/sections/masthead";
-import { PageFooter } from "../_components/sections/page-footer";
 import { UnsubscribeForm } from "./_components/unsubscribe-form";
 
 export const runtime = "nodejs";
@@ -30,15 +25,8 @@ export default async function UnsubscribePage({
   const lower = email?.toLowerCase() ?? "";
   const tokenValid = !!lower && !!token && verifyEmailToken(lower, token);
 
-  const latestAt = await getLatestPollAt();
-  const observedAt = latestAt
-    ? formatObservedAt(latestAt)
-    : "awaiting first poll";
-
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pt-10 pb-20 sm:px-10 sm:pt-16">
-      <Masthead observedAt={observedAt} />
-
+    <PageFrame observedAt={await getObservedAtLabel()}>
       <section className="flex flex-col gap-6 pt-10">
         <SectionHeader
           kicker="Mailing list"
@@ -52,8 +40,6 @@ export default async function UnsubscribePage({
           emailLocked={tokenValid}
         />
       </section>
-
-      <PageFooter pollCadence={POLL_CADENCE} />
-    </div>
+    </PageFrame>
   );
 }

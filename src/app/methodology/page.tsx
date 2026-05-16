@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import {
-  formatObservedAt,
-  getLatestPollAt,
+  getObservedAtLabel,
   POLL_CADENCE,
 } from "@/lib/availability/read-model";
 import { STOCK, type Stock } from "@/lib/schema";
+import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
-import { Masthead } from "../_components/sections/masthead";
-import { PageFooter } from "../_components/sections/page-footer";
 import { StockGlyph } from "../_components/stock-glyph";
 
 export const runtime = "nodejs";
@@ -19,13 +18,9 @@ export const metadata: Metadata = {
     "How Hetzner Cloud Radar observes Hetzner Cloud server-type availability per region.",
 };
 
-type StateRow = {
-  state: Stock;
-  meaning: string;
-  api: string;
-};
+const PROSE = "max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft";
 
-const STATE_ROWS: StateRow[] = [
+const STATE_ROWS = [
   {
     state: "available",
     meaning:
@@ -50,18 +45,28 @@ const STATE_ROWS: StateRow[] = [
       "The server type is not sold in this region at all. Distinct from sold out.",
     api: "Absent from datacentre.server_types.supported.",
   },
-];
+] satisfies { state: Stock; meaning: string; api: string }[];
+
+function CopyBlock({
+  title,
+  children,
+  first = false,
+}: {
+  title: string;
+  children: ReactNode;
+  first?: boolean;
+}) {
+  return (
+    <div className={`flex flex-col gap-3 ${first ? "pt-2" : "pt-6"}`}>
+      <h3 className="text-lg font-medium tracking-tight text-ink">{title}</h3>
+      {children}
+    </div>
+  );
+}
 
 export default async function MethodologyPage() {
-  const latestAt = await getLatestPollAt();
-  const observedAt = latestAt
-    ? formatObservedAt(latestAt)
-    : "awaiting first poll";
-
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pt-10 pb-20 sm:px-10 sm:pt-16">
-      <Masthead observedAt={observedAt} />
-
+    <PageFrame observedAt={await getObservedAtLabel()}>
       <section className="flex flex-col gap-5 pt-10">
         <SectionHeader
           kicker="How the radar works"
@@ -69,11 +74,8 @@ export default async function MethodologyPage() {
           blurb="Hetzner Cloud Radar is an independent observer. It polls the public Hetzner Cloud API on a fixed cadence, normalises the response into four states, and publishes the result. Nothing is inferred where data is missing; nothing is hidden where it is."
         />
 
-        <div className="flex flex-col gap-3 pt-2">
-          <h3 className="text-lg font-medium tracking-tight text-ink">
-            What we poll
-          </h3>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+        <CopyBlock title="What we poll" first>
+          <p className={PROSE}>
             Every {POLL_CADENCE}, the radar requests{" "}
             <a
               href="https://docs.hetzner.cloud/reference/cloud#tag/datacenters"
@@ -88,13 +90,10 @@ export default async function MethodologyPage() {
             <span className="font-mono text-ink">available_for_migration</span>.
             The radar only uses the first two.
           </p>
-        </div>
+        </CopyBlock>
 
-        <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-lg font-medium tracking-tight text-ink">
-            The four cell states
-          </h3>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+        <CopyBlock title="The four cell states">
+          <p className={PROSE}>
             Each cell on the matrix collapses the API response into one of four
             states. The Hetzner API itself only exposes binary purchase
             availability, so &ldquo;limited&rdquo; is derived from poll history.
@@ -125,31 +124,25 @@ export default async function MethodologyPage() {
               </div>
             ))}
           </dl>
-        </div>
+        </CopyBlock>
 
-        <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-lg font-medium tracking-tight text-ink">
-            Cadence and freshness
-          </h3>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+        <CopyBlock title="Cadence and freshness">
+          <p className={PROSE}>
             Polls run every {POLL_CADENCE} from a single observation point. A
             poll is considered successful only when the API responds with a full
             datacentre list and no rate-limit errors. Failed polls are recorded
             but never used to decide cell state, so a transient outage on the
             radar side never reads as a stock-out on yours.
           </p>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+          <p className={PROSE}>
             The masthead timestamp on every page is the time of the most recent
             successful poll. If you ever see it stale by more than a few
             minutes, the radar is the one having a bad day.
           </p>
-        </div>
+        </CopyBlock>
 
-        <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-lg font-medium tracking-tight text-ink">
-            What counts as a dispatch
-          </h3>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+        <CopyBlock title="What counts as a dispatch">
+          <p className={PROSE}>
             A dispatch is filed when a cell transitions in a way that matters:
           </p>
           <ul className="flex flex-col gap-1.5 pl-5 max-w-[68ch] font-sans text-base leading-[1.65] text-ink-soft list-disc marker:text-ink-faint">
@@ -168,28 +161,23 @@ export default async function MethodologyPage() {
               capacity.
             </li>
           </ul>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+          <p className={PROSE}>
             Brief flickers within a single day raise a cell to{" "}
             <span className="font-mono text-ink">limited</span> on the matrix
             but do not generate a separate dispatch.
           </p>
-        </div>
+        </CopyBlock>
 
-        <div className="flex flex-col gap-3 pt-6">
-          <h3 className="text-lg font-medium tracking-tight text-ink">
-            Independence
-          </h3>
-          <p className="max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft">
+        <CopyBlock title="Independence">
+          <p className={PROSE}>
             Hetzner Cloud Radar is not affiliated with Hetzner Online GmbH. The
             radar reads only the public API. It does not represent Hetzner, does
             not speak on their behalf, and does not coordinate on incident
             communication. When the radar disagrees with an official statement,
             the radar reports what it observed and lets the reader decide.
           </p>
-        </div>
+        </CopyBlock>
       </section>
-
-      <PageFooter pollCadence={POLL_CADENCE} />
-    </div>
+    </PageFrame>
   );
 }

@@ -63,7 +63,7 @@ export const DC_META: Record<DcCode, { city: string; country: string }> = {
   SIN: { city: "Singapore", country: "SG" },
 };
 
-export type ServerType = {
+type ServerType = {
   code: string;
   cores: number;
   ram: number;

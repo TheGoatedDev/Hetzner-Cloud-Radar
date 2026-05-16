@@ -3,12 +3,10 @@ import {
   formatObservedAt,
   getDispatchEvents,
   getLatestPollAt,
-  POLL_CADENCE,
 } from "@/lib/availability/read-model";
 import { DispatchList } from "../_components/dispatch-list";
+import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
-import { Masthead } from "../_components/sections/masthead";
-import { PageFooter } from "../_components/sections/page-footer";
 
 export const runtime = "nodejs";
 export const revalidate = 60;
@@ -30,16 +28,13 @@ export default async function DispatchesPage() {
   const observedAt = latestAt
     ? formatObservedAt(latestAt)
     : "awaiting first poll";
-
   const kicker =
     events.length === 0
       ? "Archive"
       : `${events.length} ${events.length === 1 ? "entry" : "entries"} · last ${WINDOW_DAYS} days`;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 pt-10 pb-20 sm:px-10 sm:pt-16">
-      <Masthead observedAt={observedAt} />
-
+    <PageFrame observedAt={observedAt} wide>
       <section className="flex flex-col gap-4 pt-10">
         <SectionHeader
           kicker={kicker}
@@ -48,8 +43,6 @@ export default async function DispatchesPage() {
         />
         <DispatchList events={events} groupByMonth asAnchors />
       </section>
-
-      <PageFooter pollCadence={POLL_CADENCE} />
-    </div>
+    </PageFrame>
   );
 }
