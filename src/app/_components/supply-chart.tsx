@@ -13,6 +13,31 @@ const W = 600;
 const H = 100;
 const GAP = 1;
 
+function availableStats(days: SupplyDay[]) {
+  const values = days
+    .filter((day) => sumSupplyDay(day) > 0)
+    .map((day) => day.available);
+  const total = values.reduce((sum, value) => sum + value, 0);
+
+  return {
+    average: values.length > 0 ? total / values.length : 0,
+    min: values.length > 0 ? Math.min(...values) : 0,
+    max: values.length > 0 ? Math.max(...values) : 0,
+  };
+}
+
+function formatSupplyStat(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+}
+
+function formatAverageDelta(value: number, average: number) {
+  const delta = value - average;
+
+  if (Math.abs(delta) < 0.05) return "avg";
+
+  return `${delta > 0 ? "+" : ""}${formatSupplyStat(delta)} vs avg`;
+}
+
 function tooltipAnchor(index: number, total: number) {
   const ratio = index / Math.max(total - 1, 1);
   if (ratio < 0.1) return { transform: "translate(0, -100%)", offsetX: -4 };
@@ -26,6 +51,36 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
   const barW = (W - (days.length - 1) * GAP) / days.length;
   const maxStack = Math.max(...days.map(sumSupplyDay), 1);
   const yScale = (v: number) => (v / maxStack) * H;
+  const stats = availableStats(days);
+  const statLines = [
+    {
+      key: "avg",
+      label: `Available avg ${formatSupplyStat(stats.average)}`,
+      value: stats.average,
+      opacity: 0.85,
+      dash: "4 3",
+      width: 1,
+    },
+    {
+      key: "min",
+      label: `Available min ${stats.min}`,
+      value: stats.min,
+      opacity: 0.42,
+      dash: "1 3",
+      width: 0.8,
+    },
+    {
+      key: "max",
+      label: `Available max ${stats.max}`,
+      value: stats.max,
+      opacity: 0.42,
+      dash: "1 3",
+      width: 0.8,
+    },
+  ].filter(
+    (line, index, lines) =>
+      index === lines.findIndex((candidate) => candidate.value === line.value),
+  );
 
   const tickIndices = [
     0,
@@ -113,6 +168,23 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
               </g>
             );
           })}
+          {statLines.map((line) => (
+            <line
+              key={line.key}
+              x1={0}
+              y1={H - yScale(line.value)}
+              x2={W}
+              y2={H - yScale(line.value)}
+              stroke="var(--ink)"
+              strokeDasharray={line.dash}
+              strokeWidth={line.width}
+              vectorEffect="non-scaling-stroke"
+              opacity={line.opacity}
+              pointerEvents="none"
+            >
+              <title>{line.label}</title>
+            </line>
+          ))}
           {hoverIndex !== null ? (
             <line
               x1={hoveredXSvg}
@@ -154,10 +226,26 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
                   {hovered[row.key]}
                 </span>
                 <span>{STOCK[row.stock].label}</span>
+                {row.key === "available" ? (
+                  <span className="text-ink-faint">
+                    {formatAverageDelta(hovered.available, stats.average)}
+                  </span>
+                ) : null}
               </span>
             ))}
           </div>
         ) : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs tabular-nums text-ink-faint">
+        <span className="flex items-center gap-2 text-ink-soft">
+          <span
+            aria-hidden
+            className="inline-block h-px w-5 border-t border-dashed border-ink"
+          />
+          Available avg {formatSupplyStat(stats.average)}
+        </span>
+        <span>min {stats.min}</span>
+        <span>max {stats.max}</span>
       </div>
       <figcaption className="grid grid-cols-5 text-2xs tabular-nums text-ink-faint">
         {tickIndices.map((idx, i) => (
