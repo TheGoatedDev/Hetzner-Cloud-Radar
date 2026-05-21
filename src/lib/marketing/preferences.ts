@@ -5,6 +5,13 @@ export type DispatchEvent = (typeof DISPATCH_EVENTS)[number];
 
 export const SERVER_FAMILIES = ["cx", "cax", "cpx", "ccx"] as const;
 
+export const SERVER_FAMILY_KICKERS: Record<FamilyId, string> = {
+  cx: "Shared Intel",
+  cax: "ARM Ampere",
+  cpx: "Shared AMD",
+  ccx: "Dedicated AMD",
+};
+
 export type DispatchPreferences = {
   events: DispatchEvent[];
   families: FamilyId[];

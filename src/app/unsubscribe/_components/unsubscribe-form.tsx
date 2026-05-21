@@ -1,13 +1,12 @@
 "use client";
 
 import { type FormEvent, useId, useState } from "react";
-import {
-  DISPATCH_EVENTS,
-  type DispatchEvent,
-  type DispatchPreferences,
-  SERVER_FAMILIES,
+import { PreferenceMatrix } from "@/app/_components/preference-matrix";
+import type {
+  DispatchEvent,
+  DispatchPreferences,
 } from "@/lib/marketing/preferences";
-import { DCS, type DcCode, type FamilyId } from "@/lib/schema";
+import type { DcCode, FamilyId } from "@/lib/schema";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 type FeedbackStatus = "idle" | "submitting" | "ok" | "error";
@@ -29,21 +28,6 @@ const feedbackReasons: Array<{
   { value: "just_testing", label: "Just testing" },
   { value: "other", label: "Other" },
 ];
-
-const EVENT_LABELS: Record<DispatchEvent, string> = {
-  soldout: "Sold-out events",
-  restock: "Restocks",
-};
-
-function toggleValue<T extends string>(
-  values: T[],
-  value: T,
-  checked: boolean,
-) {
-  return checked
-    ? [...new Set([...values, value])]
-    : values.filter((item) => item !== value);
-}
 
 type Props = {
   prefilledEmail: string;
@@ -249,8 +233,9 @@ export function UnsubscribeForm({
                 <p
                   id={feedbackErrorId}
                   role="alert"
-                  className="font-sans text-sm text-down"
+                  className="font-mono text-sm text-down"
                 >
+                  <span aria-hidden="true">✕ </span>
                   {feedbackErrorMsg}
                 </p>
               ) : null}
@@ -271,9 +256,10 @@ export function UnsubscribeForm({
 
   const disabled = status === "submitting";
   const preferenceControlsDisabled = disabled || Boolean(preferenceLoadError);
+  const wired = events.length * families.length * datacentres.length;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-7" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label htmlFor={emailId} className="flex flex-1 flex-col gap-1.5">
           <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
@@ -307,114 +293,41 @@ export function UnsubscribeForm({
       </div>
 
       {preferenceLoadError ? (
-        <p role="alert" className="font-sans text-sm text-down">
+        <p role="alert" className="font-mono text-sm text-down">
+          <span aria-hidden="true">✕ </span>
           Current preferences could not load. Try again in a minute.
         </p>
       ) : null}
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
-          Keep receiving
-        </legend>
-        <p className="font-sans text-xs leading-[1.55] text-ink-faint">
-          Leave any group empty to unsubscribe entirely. Tick choices to keep
-          that stream of alerts.
-        </p>
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          {DISPATCH_EVENTS.map((event) => (
-            <label
-              key={event}
-              className="flex cursor-pointer items-baseline gap-2"
-            >
-              <input
-                type="checkbox"
-                checked={events.includes(event)}
-                disabled={preferenceControlsDisabled}
-                onChange={(e) =>
-                  setEvents((current) =>
-                    toggleValue(current, event, e.target.checked),
-                  )
-                }
-                className="size-3.5 accent-accent"
-              />
-              <span className="text-ink">{EVENT_LABELS[event]}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <p className="max-w-[60ch] font-sans text-xs leading-[1.55] text-ink-faint">
+        Tick choices to keep that stream of alerts. Clearing any group entirely
+        unsubscribes you from every dispatch.
+      </p>
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
-          Server families
-        </legend>
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          {SERVER_FAMILIES.map((family) => (
-            <label
-              key={family}
-              className="flex cursor-pointer items-baseline gap-2"
-            >
-              <input
-                type="checkbox"
-                checked={families.includes(family)}
-                disabled={preferenceControlsDisabled}
-                onChange={(e) =>
-                  setFamilies((current) =>
-                    toggleValue(current, family, e.target.checked),
-                  )
-                }
-                className="size-3.5 accent-accent"
-              />
-              <span className="text-ink">{family.toUpperCase()}</span>
-            </label>
-          ))}
-        </div>
-        <button
-          type="button"
-          disabled={preferenceControlsDisabled}
-          onClick={() => setFamilies([...SERVER_FAMILIES])}
-          className="w-fit font-mono text-xs text-accent underline-offset-4 hover:underline disabled:opacity-50"
-        >
-          Select all families
-        </button>
-      </fieldset>
+      <PreferenceMatrix
+        events={events}
+        families={families}
+        datacentres={datacentres}
+        onEventsChange={setEvents}
+        onFamiliesChange={setFamilies}
+        onDatacentresChange={setDatacentres}
+        disabled={preferenceControlsDisabled}
+      />
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
-          Datacentres
-        </legend>
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          {DCS.map((datacentre) => (
-            <label
-              key={datacentre}
-              className="flex cursor-pointer items-baseline gap-2"
-            >
-              <input
-                type="checkbox"
-                checked={datacentres.includes(datacentre)}
-                disabled={preferenceControlsDisabled}
-                onChange={(e) =>
-                  setDatacentres((current) =>
-                    toggleValue(current, datacentre, e.target.checked),
-                  )
-                }
-                className="size-3.5 accent-accent"
-              />
-              <span className="text-ink">{datacentre}</span>
-            </label>
-          ))}
-        </div>
-        <button
-          type="button"
-          disabled={preferenceControlsDisabled}
-          onClick={() => setDatacentres([...DCS])}
-          className="w-fit font-mono text-xs text-accent underline-offset-4 hover:underline disabled:opacity-50"
-        >
-          Select all datacentres
-        </button>
-      </fieldset>
+      <div className="flex items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink-faint">
+        <span>
+          {fullUnsubscribe
+            ? "→ Submit empties = full unsubscribe"
+            : `→ ${wired} alert${wired === 1 ? "" : "s"} wired`}
+        </span>
+        <span aria-hidden="true">
+          {events.length} × {families.length} × {datacentres.length}
+        </span>
+      </div>
 
       {status === "error" && errorMsg ? (
-        <p id={errorId} role="alert" className="font-sans text-sm text-down">
+        <p id={errorId} role="alert" className="font-mono text-sm text-down">
+          <span aria-hidden="true">✕ </span>
           {errorMsg}
         </p>
       ) : null}
