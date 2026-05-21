@@ -1,0 +1,1 @@
+CREATE INDEX "availability_observations_cell_observed_at_idx" ON "availability_observations" USING btree ("server_type_code","location_code","observed_at");

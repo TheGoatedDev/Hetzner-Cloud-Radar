@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -70,6 +71,9 @@ export const availabilityObservations = pgTable(
     pollTypeLocation: uniqueIndex(
       "availability_observations_poll_type_location_idx",
     ).on(table.pollRunId, table.serverTypeCode, table.locationCode),
+    cellObservedAt: index(
+      "availability_observations_cell_observed_at_idx",
+    ).on(table.serverTypeCode, table.locationCode, table.observedAt),
   }),
 );
 
