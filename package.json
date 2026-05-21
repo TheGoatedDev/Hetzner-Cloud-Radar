@@ -12,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:setup:local": "node src/scripts/setup-local-db.mjs && pnpm db:migrate",
     "db:studio": "drizzle-kit studio",
+    "resend:migrate-filter-topics": "node src/scripts/migrate-resend-filter-topics.mjs",
     "poll:local": "node src/scripts/run-poll.mjs",
     "email": "email dev --dir ./src/emails --port 3001"
   },

@@ -5,6 +5,7 @@ let cachedDatabaseEnv: ReturnType<typeof createDatabaseEnv> | undefined;
 let cachedCronEnv: ReturnType<typeof createCronEnv> | undefined;
 let cachedHetznerEnv: ReturnType<typeof createHetznerEnv> | undefined;
 let cachedResendEnv: ReturnType<typeof createResendEnv> | undefined;
+let cachedDiscordEnv: ReturnType<typeof createDiscordEnv> | undefined;
 let cachedUnsubscribeEnv: ReturnType<typeof createUnsubscribeEnv> | undefined;
 
 const commonOptions = {
@@ -80,6 +81,19 @@ function createUnsubscribeEnv() {
   });
 }
 
+function createDiscordEnv() {
+  return createEnv({
+    server: {
+      DISCORD_UNSUBSCRIBE_FEEDBACK_WEBHOOK_URL: z.url().optional(),
+    },
+    runtimeEnv: {
+      DISCORD_UNSUBSCRIBE_FEEDBACK_WEBHOOK_URL:
+        process.env.DISCORD_UNSUBSCRIBE_FEEDBACK_WEBHOOK_URL,
+    },
+    ...commonOptions,
+  });
+}
+
 export function getDatabaseEnv() {
   cachedDatabaseEnv ??= createDatabaseEnv();
 
@@ -102,6 +116,12 @@ export function getResendEnv() {
   cachedResendEnv ??= createResendEnv();
 
   return cachedResendEnv;
+}
+
+export function getDiscordEnv() {
+  cachedDiscordEnv ??= createDiscordEnv();
+
+  return cachedDiscordEnv;
 }
 
 export function getUnsubscribeEnv() {

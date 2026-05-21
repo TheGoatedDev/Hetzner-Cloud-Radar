@@ -1,33 +1,98 @@
 "use client";
 
 import { type FormEvent, useId, useState } from "react";
+import {
+  DISPATCH_EVENTS,
+  type DispatchEvent,
+  type DispatchPreferences,
+  SERVER_FAMILIES,
+} from "@/lib/marketing/preferences";
+import { DCS, type DcCode, type FamilyId } from "@/lib/schema";
 
 type Status = "idle" | "submitting" | "ok" | "error";
+type FeedbackStatus = "idle" | "submitting" | "ok" | "error";
+type FeedbackReason =
+  | ""
+  | "too_many_emails"
+  | "not_useful_anymore"
+  | "wrong_alerts"
+  | "just_testing"
+  | "other";
+
+const feedbackReasons: Array<{
+  value: Exclude<FeedbackReason, "">;
+  label: string;
+}> = [
+  { value: "too_many_emails", label: "Too many emails" },
+  { value: "not_useful_anymore", label: "Not useful anymore" },
+  { value: "wrong_alerts", label: "Wrong alerts" },
+  { value: "just_testing", label: "Just testing" },
+  { value: "other", label: "Other" },
+];
+
+const EVENT_LABELS: Record<DispatchEvent, string> = {
+  soldout: "Sold-out events",
+  restock: "Restocks",
+};
+
+function toggleValue<T extends string>(
+  values: T[],
+  value: T,
+  checked: boolean,
+) {
+  return checked
+    ? [...new Set([...values, value])]
+    : values.filter((item) => item !== value);
+}
 
 type Props = {
   prefilledEmail: string;
   prefilledToken: string;
   emailLocked: boolean;
+  initialPreferences: DispatchPreferences | null;
+  preferenceLoadError: string | null;
 };
 
 export function UnsubscribeForm({
   prefilledEmail,
   prefilledToken,
   emailLocked,
+  initialPreferences,
+  preferenceLoadError,
 }: Props) {
   const [email, setEmail] = useState(prefilledEmail);
-  const [soldOut, setSoldOut] = useState(false);
-  const [restock, setRestock] = useState(false);
+  const [events, setEvents] = useState<DispatchEvent[]>(
+    initialPreferences?.events ?? [],
+  );
+  const [families, setFamilies] = useState<FamilyId[]>(
+    initialPreferences?.families ?? [],
+  );
+  const [datacentres, setDatacentres] = useState<DcCode[]>(
+    initialPreferences?.datacentres ?? [],
+  );
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [resultFullUnsubscribe, setResultFullUnsubscribe] = useState(true);
+  const [feedbackReason, setFeedbackReason] = useState<FeedbackReason>("");
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
+  const [feedbackErrorMsg, setFeedbackErrorMsg] = useState("");
   const emailId = useId();
   const errorId = useId();
+  const feedbackReasonId = useId();
+  const feedbackNoteId = useId();
+  const feedbackErrorId = useId();
 
-  const fullUnsubscribe = !soldOut && !restock;
+  const fullUnsubscribe =
+    events.length === 0 || families.length === 0 || datacentres.length === 0;
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (preferenceLoadError && emailLocked) {
+      setStatus("error");
+      setErrorMsg("Current preferences could not load. Try again in a minute.");
+      return;
+    }
     setStatus("submitting");
     setErrorMsg("");
 
@@ -41,8 +106,9 @@ export function UnsubscribeForm({
         body: JSON.stringify({
           email,
           token: prefilledToken || undefined,
-          wantsSoldOut: soldOut,
-          wantsRestock: restock,
+          events,
+          families,
+          datacentres,
         }),
       });
       const body = (await response.json().catch(() => null)) as {
@@ -64,9 +130,52 @@ export function UnsubscribeForm({
     }
   }
 
+  async function onFeedbackSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!feedbackReason) {
+      setFeedbackStatus("error");
+      setFeedbackErrorMsg("Pick a reason.");
+      return;
+    }
+
+    setFeedbackStatus("submitting");
+    setFeedbackErrorMsg("");
+
+    try {
+      const response = await fetch("/api/unsubscribe/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          token: prefilledToken || undefined,
+          reason: feedbackReason,
+          note: feedbackNote || undefined,
+        }),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(body?.error ?? "Feedback failed.");
+      }
+
+      setFeedbackStatus("ok");
+    } catch (error) {
+      setFeedbackStatus("error");
+      setFeedbackErrorMsg(
+        error instanceof Error ? error.message : "Feedback failed.",
+      );
+    }
+  }
+
   if (status === "ok") {
     return (
-      <div className="flex flex-col gap-3 font-sans text-sm leading-[1.6]">
+      <div className="flex flex-col gap-6 font-sans text-sm leading-[1.6]">
         <p className="text-ink">
           {resultFullUnsubscribe ? (
             <>
@@ -83,11 +192,85 @@ export function UnsubscribeForm({
         <p className="text-ink-soft">
           Changed your mind? Resubscribe any time from the homepage.
         </p>
+
+        {resultFullUnsubscribe ? (
+          feedbackStatus === "ok" ? (
+            <p className="text-ink-soft">Thanks. That note was sent.</p>
+          ) : (
+            <form
+              onSubmit={onFeedbackSubmit}
+              className="flex max-w-[42rem] flex-col gap-5 border-t border-hairline pt-5"
+              noValidate
+            >
+              <fieldset className="flex flex-col gap-3">
+                <legend className="mb-1 text-xs uppercase tracking-[0.1em] text-ink-faint">
+                  Why are you leaving?
+                </legend>
+                <select
+                  id={feedbackReasonId}
+                  required
+                  value={feedbackReason}
+                  onChange={(e) =>
+                    setFeedbackReason(e.target.value as FeedbackReason)
+                  }
+                  disabled={feedbackStatus === "submitting"}
+                  aria-invalid={feedbackStatus === "error" || undefined}
+                  aria-describedby={
+                    feedbackStatus === "error" ? feedbackErrorId : undefined
+                  }
+                  className="max-w-[18rem] border-0 border-b-2 border-hairline-strong bg-transparent pb-2 font-mono text-sm text-ink focus:border-accent focus-visible:outline-none disabled:opacity-50"
+                >
+                  <option value="">Pick a reason</option>
+                  {feedbackReasons.map((reason) => (
+                    <option key={reason.value} value={reason.value}>
+                      {reason.label}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
+
+              <label htmlFor={feedbackNoteId} className="flex flex-col gap-1.5">
+                <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
+                  Note
+                </span>
+                <textarea
+                  id={feedbackNoteId}
+                  value={feedbackNote}
+                  onChange={(e) => setFeedbackNote(e.target.value)}
+                  disabled={feedbackStatus === "submitting"}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Optional"
+                  className="resize-y border-0 border-b-2 border-hairline-strong bg-transparent pb-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+                />
+              </label>
+
+              {feedbackStatus === "error" && feedbackErrorMsg ? (
+                <p
+                  id={feedbackErrorId}
+                  role="alert"
+                  className="font-sans text-sm text-down"
+                >
+                  {feedbackErrorMsg}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={feedbackStatus === "submitting"}
+                className="w-fit rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {feedbackStatus === "submitting" ? "Sending…" : "Send feedback"}
+              </button>
+            </form>
+          )
+        ) : null}
       </div>
     );
   }
 
   const disabled = status === "submitting";
+  const preferenceControlsDisabled = disabled || Boolean(preferenceLoadError);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-7" noValidate>
@@ -123,34 +306,111 @@ export function UnsubscribeForm({
         </button>
       </div>
 
+      {preferenceLoadError ? (
+        <p role="alert" className="font-sans text-sm text-down">
+          Current preferences could not load. Try again in a minute.
+        </p>
+      ) : null}
+
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
           Keep receiving
         </legend>
         <p className="font-sans text-xs leading-[1.55] text-ink-faint">
-          Leave both unchecked to unsubscribe entirely. Tick one to keep that
-          stream of alerts.
+          Leave any group empty to unsubscribe entirely. Tick choices to keep
+          that stream of alerts.
         </p>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <label className="flex cursor-pointer items-baseline gap-2">
-            <input
-              type="checkbox"
-              checked={soldOut}
-              onChange={(e) => setSoldOut(e.target.checked)}
-              className="size-3.5 accent-accent"
-            />
-            <span className="text-ink">Sold-out events</span>
-          </label>
-          <label className="flex cursor-pointer items-baseline gap-2">
-            <input
-              type="checkbox"
-              checked={restock}
-              onChange={(e) => setRestock(e.target.checked)}
-              className="size-3.5 accent-accent"
-            />
-            <span className="text-ink">Restocks</span>
-          </label>
+          {DISPATCH_EVENTS.map((event) => (
+            <label
+              key={event}
+              className="flex cursor-pointer items-baseline gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={events.includes(event)}
+                disabled={preferenceControlsDisabled}
+                onChange={(e) =>
+                  setEvents((current) =>
+                    toggleValue(current, event, e.target.checked),
+                  )
+                }
+                className="size-3.5 accent-accent"
+              />
+              <span className="text-ink">{EVENT_LABELS[event]}</span>
+            </label>
+          ))}
         </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
+          Server families
+        </legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {SERVER_FAMILIES.map((family) => (
+            <label
+              key={family}
+              className="flex cursor-pointer items-baseline gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={families.includes(family)}
+                disabled={preferenceControlsDisabled}
+                onChange={(e) =>
+                  setFamilies((current) =>
+                    toggleValue(current, family, e.target.checked),
+                  )
+                }
+                className="size-3.5 accent-accent"
+              />
+              <span className="text-ink">{family.toUpperCase()}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={preferenceControlsDisabled}
+          onClick={() => setFamilies([...SERVER_FAMILIES])}
+          className="w-fit font-mono text-xs text-accent underline-offset-4 hover:underline disabled:opacity-50"
+        >
+          Select all families
+        </button>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
+          Datacentres
+        </legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {DCS.map((datacentre) => (
+            <label
+              key={datacentre}
+              className="flex cursor-pointer items-baseline gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={datacentres.includes(datacentre)}
+                disabled={preferenceControlsDisabled}
+                onChange={(e) =>
+                  setDatacentres((current) =>
+                    toggleValue(current, datacentre, e.target.checked),
+                  )
+                }
+                className="size-3.5 accent-accent"
+              />
+              <span className="text-ink">{datacentre}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={preferenceControlsDisabled}
+          onClick={() => setDatacentres([...DCS])}
+          className="w-fit font-mono text-xs text-accent underline-offset-4 hover:underline disabled:opacity-50"
+        >
+          Select all datacentres
+        </button>
       </fieldset>
 
       {status === "error" && errorMsg ? (

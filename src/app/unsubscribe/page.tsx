@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getObservedAtLabel } from "@/lib/availability/read-model";
+import type { DispatchPreferences } from "@/lib/marketing/preferences";
+import { getMarketingContactPreferences } from "@/lib/marketing/resend";
 import { verifyEmailToken } from "@/lib/marketing/unsubscribe-token";
 import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
@@ -24,6 +26,21 @@ export default async function UnsubscribePage({
   const { email, token } = await searchParams;
   const lower = email?.toLowerCase() ?? "";
   const tokenValid = !!lower && !!token && verifyEmailToken(lower, token);
+  let initialPreferences: DispatchPreferences | null = null;
+  let preferenceLoadError: string | null = null;
+
+  if (tokenValid) {
+    try {
+      initialPreferences = await getMarketingContactPreferences({
+        email: lower,
+      });
+    } catch (error) {
+      preferenceLoadError =
+        error instanceof Error
+          ? error.message
+          : "Could not load current preferences.";
+    }
+  }
 
   return (
     <PageFrame observedAt={await getObservedAtLabel()}>
@@ -38,6 +55,8 @@ export default async function UnsubscribePage({
           prefilledEmail={tokenValid ? lower : ""}
           prefilledToken={tokenValid && token ? token : ""}
           emailLocked={tokenValid}
+          initialPreferences={initialPreferences}
+          preferenceLoadError={preferenceLoadError}
         />
       </section>
     </PageFrame>

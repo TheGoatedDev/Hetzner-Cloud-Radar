@@ -2,11 +2,13 @@ import { inArray } from "drizzle-orm";
 import Restock from "@/emails/restock";
 import StockOut from "@/emails/stock-out";
 import { getResendEnv } from "@/env";
-import type { StockEvent } from "@/lib/schema";
+import { DCS, type DcCode, type FamilyId, type StockEvent } from "@/lib/schema";
 import { getDispatchEvents } from "../availability/read-model";
 import { getDb } from "../db/client";
 import { locations, marketingDispatchSends, serverTypes } from "../db/schema";
 import { hasResendEmailConfig, sendBroadcast } from "../email/send";
+import { dispatchEventFromState } from "./preferences";
+import { ensureTopicId } from "./resend";
 
 type SendMarketingDispatchesResult = {
   attemptedDispatches: number;
@@ -21,18 +23,22 @@ function splitScope(scope: string) {
   return { serverType: serverType ?? scope, region: region ?? "unknown" };
 }
 
-function eventTopicId(event: StockEvent) {
-  const env = getResendEnv();
-
-  return event.state === "ongoing-out"
-    ? env.RESEND_SOLD_OUT_TOPIC_ID
-    : env.RESEND_RESTOCK_TOPIC_ID;
-}
-
 function specLabel(type: typeof serverTypes.$inferSelect | undefined) {
   if (!type) return "tracked server type";
 
   return `${type.cores} vCPU - ${type.memoryGb} GB RAM - ${type.diskGb} GB`;
+}
+
+function familyId(type: typeof serverTypes.$inferSelect | undefined) {
+  if (!type || type.family === "other") return null;
+
+  return type.family as FamilyId;
+}
+
+function datacentreCode(region: string) {
+  const upper = region.toUpperCase();
+
+  return DCS.includes(upper as DcCode) ? (upper as DcCode) : null;
 }
 
 function durationLabel(event: StockEvent) {
@@ -176,20 +182,26 @@ export async function sendPendingMarketingDispatches(
     const location = locationsByCode.get(region);
     const serverSpec = specLabel(type);
     const regionCity = location?.city ?? region;
-    const topicId = eventTopicId(event);
+    const family = familyId(type);
+    const datacentre = datacentreCode(region);
 
-    if (!topicId) {
+    if (!family || !datacentre) {
       await recordDispatchSend(
         event,
         "failed",
         0,
         [],
-        `${event.state} topic id is not configured`,
+        "Dispatch topic could not be resolved",
       );
       continue;
     }
 
     try {
+      const topicId = await ensureTopicId({
+        event: dispatchEventFromState(event.state),
+        family,
+        datacentre,
+      });
       const result = await sendBroadcast({
         segmentId: env.RESEND_MARKETING_SEGMENT_ID,
         subject: event.title,

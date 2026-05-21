@@ -1,10 +1,10 @@
 import SubscriptionConfirmation from "@/emails/subscription-confirmation";
 import { hasResendEmailConfig, sendDispatch } from "../email/send";
+import type { DispatchPreferences } from "./preferences";
 
 type SubscriptionEmailInput = {
   email: string;
-  wantsSoldOut: boolean;
-  wantsRestock: boolean;
+  preferences: DispatchPreferences;
 };
 
 export async function sendSubscriptionConfirmationEmail(
@@ -20,10 +20,7 @@ export async function sendSubscriptionConfirmationEmail(
     react: (
       <SubscriptionConfirmation
         email={input.email}
-        events={{
-          soldOut: input.wantsSoldOut,
-          restock: input.wantsRestock,
-        }}
+        preferences={input.preferences}
       />
     ),
     tags: [{ name: "kind", value: "subscription-confirmation" }],

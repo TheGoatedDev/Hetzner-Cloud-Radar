@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { DISPATCH_EVENTS, SERVER_FAMILIES } from "@/lib/marketing/preferences";
 import {
   syncMarketingContact,
   unsubscribeMarketingContact,
 } from "@/lib/marketing/resend";
+import { DCS } from "@/lib/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,8 +12,9 @@ export const dynamic = "force-dynamic";
 const unsubscribeSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
   token: z.string().optional(),
-  wantsSoldOut: z.boolean(),
-  wantsRestock: z.boolean(),
+  events: z.array(z.enum(DISPATCH_EVENTS)),
+  families: z.array(z.enum(SERVER_FAMILIES)),
+  datacentres: z.array(z.enum(DCS)),
 });
 
 export async function POST(request: Request) {
@@ -28,15 +31,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, wantsSoldOut, wantsRestock } = parsed.data;
+  const { email, events, families, datacentres } = parsed.data;
 
   try {
-    const fullUnsubscribe = !wantsSoldOut && !wantsRestock;
+    const fullUnsubscribe =
+      events.length === 0 || families.length === 0 || datacentres.length === 0;
 
     if (fullUnsubscribe) {
       await unsubscribeMarketingContact({ email });
     } else {
-      await syncMarketingContact({ email, wantsSoldOut, wantsRestock });
+      await syncMarketingContact({
+        email,
+        preferences: { events, families, datacentres },
+      });
     }
 
     return Response.json({ ok: true, fullUnsubscribe });

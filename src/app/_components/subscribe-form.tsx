@@ -1,13 +1,42 @@
 "use client";
 
 import { type FormEvent, useId, useState } from "react";
+import {
+  DEFAULT_DISPATCH_PREFERENCES,
+  DISPATCH_EVENTS,
+  type DispatchEvent,
+  SERVER_FAMILIES,
+} from "@/lib/marketing/preferences";
+import { DCS, type DcCode, type FamilyId } from "@/lib/schema";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
+const EVENT_LABELS: Record<DispatchEvent, string> = {
+  soldout: "Sold-out events",
+  restock: "Restocks",
+};
+
+function toggleValue<T extends string>(
+  values: T[],
+  value: T,
+  checked: boolean,
+) {
+  return checked
+    ? [...new Set([...values, value])]
+    : values.filter((item) => item !== value);
+}
+
 export function SubscribeForm() {
   const [email, setEmail] = useState("");
-  const [soldOut, setSoldOut] = useState(true);
-  const [restock, setRestock] = useState(true);
+  const [events, setEvents] = useState<DispatchEvent[]>(
+    DEFAULT_DISPATCH_PREFERENCES.events,
+  );
+  const [families, setFamilies] = useState<FamilyId[]>(
+    DEFAULT_DISPATCH_PREFERENCES.families,
+  );
+  const [datacentres, setDatacentres] = useState<DcCode[]>(
+    DEFAULT_DISPATCH_PREFERENCES.datacentres,
+  );
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const emailId = useId();
@@ -15,9 +44,19 @@ export function SubscribeForm() {
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!soldOut && !restock) {
+    if (events.length === 0) {
       setStatus("error");
       setErrorMsg("Pick at least one type of event.");
+      return;
+    }
+    if (families.length === 0) {
+      setStatus("error");
+      setErrorMsg("Pick at least one server family.");
+      return;
+    }
+    if (datacentres.length === 0) {
+      setStatus("error");
+      setErrorMsg("Pick at least one datacentre.");
       return;
     }
     setStatus("submitting");
@@ -32,8 +71,9 @@ export function SubscribeForm() {
         },
         body: JSON.stringify({
           email,
-          wantsSoldOut: soldOut,
-          wantsRestock: restock,
+          events,
+          families,
+          datacentres,
         }),
       });
       const body = (await response.json().catch(() => null)) as {
@@ -54,10 +94,12 @@ export function SubscribeForm() {
   }
 
   if (status === "ok") {
+    const wantsSoldOut = events.includes("soldout");
+    const wantsRestock = events.includes("restock");
     const eventCopy =
-      soldOut && restock
+      wantsSoldOut && wantsRestock
         ? "a server type goes sold out or returns to stock"
-        : soldOut
+        : wantsSoldOut
           ? "a server type goes sold out"
           : "a server type returns to stock";
 
@@ -70,6 +112,10 @@ export function SubscribeForm() {
         <p className="text-ink-soft">
           Resend manages the address and preferences. Unsubscribe with the link
           in any dispatch.
+        </p>
+        <p className="text-ink-soft">
+          Watching {families.map((family) => family.toUpperCase()).join(", ")}{" "}
+          in {datacentres.join(", ")}.
         </p>
       </div>
     );
@@ -112,25 +158,93 @@ export function SubscribeForm() {
           Tell me about
         </legend>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <label className="flex cursor-pointer items-baseline gap-2">
-            <input
-              type="checkbox"
-              checked={soldOut}
-              onChange={(e) => setSoldOut(e.target.checked)}
-              className="size-3.5 accent-accent"
-            />
-            <span className="text-ink">Sold-out events</span>
-          </label>
-          <label className="flex cursor-pointer items-baseline gap-2">
-            <input
-              type="checkbox"
-              checked={restock}
-              onChange={(e) => setRestock(e.target.checked)}
-              className="size-3.5 accent-accent"
-            />
-            <span className="text-ink">Restocks</span>
-          </label>
+          {DISPATCH_EVENTS.map((event) => (
+            <label
+              key={event}
+              className="flex cursor-pointer items-baseline gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={events.includes(event)}
+                onChange={(e) =>
+                  setEvents((current) =>
+                    toggleValue(current, event, e.target.checked),
+                  )
+                }
+                className="size-3.5 accent-accent"
+              />
+              <span className="text-ink">{EVENT_LABELS[event]}</span>
+            </label>
+          ))}
         </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
+          Server families
+        </legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {SERVER_FAMILIES.map((family) => (
+            <label
+              key={family}
+              className="flex cursor-pointer items-baseline gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={families.includes(family)}
+                onChange={(e) =>
+                  setFamilies((current) =>
+                    toggleValue(current, family, e.target.checked),
+                  )
+                }
+                className="size-3.5 accent-accent"
+              />
+              <span className="text-ink">{family.toUpperCase()}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setFamilies([...SERVER_FAMILIES])}
+          className="w-fit font-mono text-xs text-accent underline-offset-4 hover:underline disabled:opacity-50"
+        >
+          Select all families
+        </button>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-xs uppercase tracking-[0.1em] text-ink-faint">
+          Datacentres
+        </legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {DCS.map((datacentre) => (
+            <label
+              key={datacentre}
+              className="flex cursor-pointer items-baseline gap-2"
+            >
+              <input
+                type="checkbox"
+                checked={datacentres.includes(datacentre)}
+                onChange={(e) =>
+                  setDatacentres((current) =>
+                    toggleValue(current, datacentre, e.target.checked),
+                  )
+                }
+                className="size-3.5 accent-accent"
+              />
+              <span className="text-ink">{datacentre}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setDatacentres([...DCS])}
+          className="w-fit font-mono text-xs text-accent underline-offset-4 hover:underline disabled:opacity-50"
+        >
+          Select all datacentres
+        </button>
       </fieldset>
 
       {status === "error" && errorMsg ? (

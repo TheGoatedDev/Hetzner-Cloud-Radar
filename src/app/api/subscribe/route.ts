@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { DISPATCH_EVENTS, SERVER_FAMILIES } from "@/lib/marketing/preferences";
 import { syncMarketingContact } from "@/lib/marketing/resend";
 import { sendSubscriptionConfirmationEmail } from "@/lib/marketing/subscription-email";
+import { DCS } from "@/lib/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,12 +10,21 @@ export const dynamic = "force-dynamic";
 const subscribeSchema = z
   .object({
     email: z.email().transform((email) => email.toLowerCase()),
-    wantsSoldOut: z.boolean(),
-    wantsRestock: z.boolean(),
+    events: z.array(z.enum(DISPATCH_EVENTS)),
+    families: z.array(z.enum(SERVER_FAMILIES)),
+    datacentres: z.array(z.enum(DCS)),
   })
-  .refine((value) => value.wantsSoldOut || value.wantsRestock, {
+  .refine((value) => value.events.length > 0, {
     message: "Pick at least one type of event.",
-    path: ["wantsSoldOut"],
+    path: ["events"],
+  })
+  .refine((value) => value.families.length > 0, {
+    message: "Pick at least one server family.",
+    path: ["families"],
+  })
+  .refine((value) => value.datacentres.length > 0, {
+    message: "Pick at least one datacentre.",
+    path: ["datacentres"],
   });
 
 export async function POST(request: Request) {
@@ -29,13 +40,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    await syncMarketingContact(parsed.data);
+    const { email, events, families, datacentres } = parsed.data;
+    const preferences = { events, families, datacentres };
 
-    sendSubscriptionConfirmationEmail(parsed.data).catch((error) => {
+    await syncMarketingContact({ email, preferences });
+
+    sendSubscriptionConfirmationEmail({ email, preferences }).catch((error) => {
       console.error("Subscription confirmation email failed", error);
     });
 
-    return Response.json({ ok: true, email: parsed.data.email });
+    return Response.json({ ok: true, email });
   } catch (error) {
     console.error("Subscribe failed", error);
 

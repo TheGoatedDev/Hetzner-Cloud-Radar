@@ -1,27 +1,37 @@
 import { Section } from "@react-email/components";
+import type { DispatchPreferences } from "@/lib/marketing/preferences";
+import { DEFAULT_DISPATCH_PREFERENCES } from "@/lib/marketing/preferences";
 import { Layout } from "./_components/layout";
 import { fontStack } from "./_components/theme";
 import { MetaText, Prose } from "./_components/typography";
 
 type Props = {
   email: string;
-  events: { soldOut: boolean; restock: boolean };
+  preferences: DispatchPreferences;
 };
 
 export default function SubscriptionConfirmation({
   email = "you@example.com",
-  events = { soldOut: true, restock: true },
+  preferences = DEFAULT_DISPATCH_PREFERENCES,
 }: Partial<Props>) {
+  const wantsSoldOut = preferences.events.includes("soldout");
+  const wantsRestock = preferences.events.includes("restock");
   const eventCopy =
-    events.soldOut && events.restock
+    wantsSoldOut && wantsRestock
       ? "a server type goes sold out or returns to stock"
-      : events.soldOut
+      : wantsSoldOut
         ? "a server type goes sold out"
         : "a server type returns to stock";
 
   const subscribedTo = [
-    events.soldOut ? "Sold-out events" : null,
-    events.restock ? "Restocks" : null,
+    wantsSoldOut ? "Sold-out events" : null,
+    wantsRestock ? "Restocks" : null,
+    preferences.families.length > 0
+      ? `Families: ${preferences.families.map((family) => family.toUpperCase()).join(", ")}`
+      : null,
+    preferences.datacentres.length > 0
+      ? `Datacentres: ${preferences.datacentres.join(", ")}`
+      : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -48,5 +58,5 @@ export default function SubscriptionConfirmation({
 
 SubscriptionConfirmation.PreviewProps = {
   email: "claude@login.thegoated.dev",
-  events: { soldOut: true, restock: true },
+  preferences: DEFAULT_DISPATCH_PREFERENCES,
 } satisfies Props;
