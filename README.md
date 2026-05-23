@@ -151,6 +151,23 @@ Successful poll response includes:
 
 After success, the cron route revalidates `/` and `/api/availability`.
 
+## CDN Caching
+
+Public read routes should be cached at the CDN:
+
+- `/`
+- `/api/availability`
+- `/dispatches`
+- `/feed.atom`
+
+The app sends `Cloudflare-CDN-Cache-Control` for those routes with a 60 second
+fresh TTL, 5 minute stale-while-revalidate window, and 24 hour stale-if-error
+window. Cloudflare still needs a Cache Rule that caches HTML and JSON for these
+paths; Cloudflare does not cache HTML or JSON by default.
+
+Do not apply the cache rule to `/api/subscribe`, `/api/unsubscribe`,
+`/api/unsubscribe/feedback`, or `/api/cron/poll-availability`.
+
 ## Database
 
 Schema lives in:

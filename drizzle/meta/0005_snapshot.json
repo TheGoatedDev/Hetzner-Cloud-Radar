@@ -57,12 +57,8 @@
           "name": "availability_current_server_type_code_server_types_code_fk",
           "tableFrom": "availability_current",
           "tableTo": "server_types",
-          "columnsFrom": [
-            "server_type_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["server_type_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -70,12 +66,8 @@
           "name": "availability_current_location_code_locations_code_fk",
           "tableFrom": "availability_current",
           "tableTo": "locations",
-          "columnsFrom": [
-            "location_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["location_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -83,10 +75,7 @@
       "compositePrimaryKeys": {
         "availability_current_server_type_code_location_code_pk": {
           "name": "availability_current_server_type_code_location_code_pk",
-          "columns": [
-            "server_type_code",
-            "location_code"
-          ]
+          "columns": ["server_type_code", "location_code"]
         }
       },
       "uniqueConstraints": {},
@@ -214,12 +203,8 @@
           "name": "availability_observations_poll_run_id_poll_runs_id_fk",
           "tableFrom": "availability_observations",
           "tableTo": "poll_runs",
-          "columnsFrom": [
-            "poll_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["poll_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -227,12 +212,8 @@
           "name": "availability_observations_server_type_code_server_types_code_fk",
           "tableFrom": "availability_observations",
           "tableTo": "server_types",
-          "columnsFrom": [
-            "server_type_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["server_type_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -240,12 +221,8 @@
           "name": "availability_observations_location_code_locations_code_fk",
           "tableFrom": "availability_observations",
           "tableTo": "locations",
-          "columnsFrom": [
-            "location_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["location_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -306,12 +283,8 @@
           "name": "daily_availability_state_server_type_code_server_types_code_fk",
           "tableFrom": "daily_availability_state",
           "tableTo": "server_types",
-          "columnsFrom": [
-            "server_type_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["server_type_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -319,12 +292,8 @@
           "name": "daily_availability_state_location_code_locations_code_fk",
           "tableFrom": "daily_availability_state",
           "tableTo": "locations",
-          "columnsFrom": [
-            "location_code"
-          ],
-          "columnsTo": [
-            "code"
-          ],
+          "columnsFrom": ["location_code"],
+          "columnsTo": ["code"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -332,11 +301,7 @@
       "compositePrimaryKeys": {
         "daily_availability_state_date_utc_server_type_code_location_code_pk": {
           "name": "daily_availability_state_date_utc_server_type_code_location_code_pk",
-          "columns": [
-            "date_utc",
-            "server_type_code",
-            "location_code"
-          ]
+          "columns": ["date_utc", "server_type_code", "location_code"]
         }
       },
       "uniqueConstraints": {},
@@ -392,9 +357,7 @@
         "locations_api_name_unique": {
           "name": "locations_api_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "api_name"
-          ]
+          "columns": ["api_name"]
         }
       },
       "policies": {},
