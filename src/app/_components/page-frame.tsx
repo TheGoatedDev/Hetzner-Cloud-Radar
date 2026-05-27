@@ -13,7 +13,7 @@ export function PageFrame({
 }>) {
   return (
     <div
-      className={`mx-auto flex w-full ${wide ? "max-w-5xl" : "max-w-3xl"} flex-1 flex-col px-6 pt-10 pb-20 sm:px-10 sm:pt-16`}
+      className={`mx-auto flex w-full ${wide ? "max-w-5xl" : "max-w-3xl"} flex-1 flex-col px-6 py-6 sm:px-10`}
     >
       <Masthead observedAt={observedAt} />
       {children}

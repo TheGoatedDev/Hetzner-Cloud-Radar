@@ -52,7 +52,7 @@ export function RadarView() {
   const totals = tally(allCells);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 pt-10 pb-20 sm:px-10 sm:pt-16">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-6 sm:px-10">
       <Masthead observedAt={data.observedAt} />
       <RightNow
         totals={totals}
