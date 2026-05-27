@@ -59,21 +59,26 @@ export async function sendDispatch(input: SendInput) {
 
 export async function sendBroadcast(input: BroadcastInput) {
   const env = getResendEnv();
-  const result = await client().broadcasts.create({
+  const created = await client().broadcasts.create({
     from: `${fromName} <${env.RESEND_FROM_EMAIL}>`,
     segmentId: input.segmentId,
     subject: input.subject,
     react: input.react,
-    send: true,
     name: input.name,
     previewText: input.previewText,
     replyTo: input.replyTo,
     topicId: input.topicId,
   });
 
-  if (!result.data) {
-    throw new Error(result.error?.message ?? "Resend broadcast send failed");
+  if (!created.data) {
+    throw new Error(created.error?.message ?? "Resend broadcast create failed");
   }
 
-  return { id: result.data.id };
+  const sent = await client().broadcasts.send(created.data.id);
+
+  if (!sent.data) {
+    throw new Error(sent.error?.message ?? "Resend broadcast send failed");
+  }
+
+  return { id: sent.data.id };
 }
