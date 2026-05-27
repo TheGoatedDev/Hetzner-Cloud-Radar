@@ -5,6 +5,7 @@ config({ path: ".env.local", quiet: true });
 config({ quiet: true });
 
 const APPLY = process.argv.includes("--apply");
+const DEFAULT_ALL_ACTIVE = process.argv.includes("--default-all-active");
 const EVENTS = ["soldout", "restock"];
 const FAMILIES = ["cx", "cax", "cpx", "ccx"];
 const DCS = ["NBG1", "FSN1", "HEL1", "ASH", "HIL", "SIN"];
@@ -71,13 +72,42 @@ async function listAllContacts() {
 }
 
 async function listAllTopics() {
-  const listed = await resendCall("List topics", () => resend.topics.list());
+  const topics = [];
+  let after;
 
-  return new Map(listed.data.map((topic) => [topic.name, topic.id]));
+  do {
+    const params = new URLSearchParams({ limit: String(PAGE_LIMIT) });
+    if (after) params.set("after", after);
+    const page = await resendCall("List topics", async () => {
+      const response = await fetch(
+        `https://api.resend.com/topics?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        },
+      );
+      const body = await response.json().catch(() => null);
+
+      return response.ok
+        ? { data: body }
+        : {
+            data: null,
+            error: { message: body?.message, statusCode: response.status },
+          };
+    });
+
+    topics.push(...page.data);
+    after = page.data.at(-1)?.id;
+    if (!page.has_more) break;
+  } while (after);
+
+  return topics;
 }
 
 async function ensureTopicIds() {
-  const topicsByName = await listAllTopics();
+  const topics = await listAllTopics();
+  const topicsByName = new Map(topics.map((topic) => [topic.name, topic.id]));
   const topicIds = new Map();
 
   for (const part of allTopicParts()) {
@@ -105,7 +135,17 @@ async function ensureTopicIds() {
     topicIds.set(name, created.id);
   }
 
-  return topicIds;
+  return {
+    byName: topicIds,
+    allHcrIds: [
+      ...new Set([
+        ...topics
+          .filter((topic) => topic.name.startsWith(`${TOPIC_PREFIX}:`))
+          .map((topic) => topic.id),
+        ...topicIds.values(),
+      ]),
+    ],
+  };
 }
 
 async function contactTopicEvents(email) {
@@ -132,10 +172,19 @@ function targetTopicIds(events, topicIds) {
   );
 }
 
+function allConcreteTopicIds(topicIds) {
+  return EVENTS.flatMap((event) =>
+    FAMILIES.flatMap((family) =>
+      DCS.map((dc) => topicIds.get(topicKey(event, family, dc))),
+    ),
+  );
+}
+
 const contacts = await listAllContacts();
 const topicIds = await ensureTopicIds();
 const summary = {
   apply: APPLY,
+  defaultAllActive: DEFAULT_ALL_ACTIVE,
   contacts: contacts.length,
   skippedUnsubscribed: 0,
   skippedNoLegacyPreference: 0,
@@ -143,6 +192,10 @@ const summary = {
   updated: 0,
   failed: 0,
 };
+const defaultAllIds =
+  topicIds.allHcrIds.length > 0
+    ? topicIds.allHcrIds
+    : allConcreteTopicIds(topicIds.byName);
 
 for (const [index, contact] of contacts.entries()) {
   if (contact.unsubscribed) {
@@ -152,11 +205,15 @@ for (const [index, contact] of contacts.entries()) {
 
   try {
     const events = await contactTopicEvents(contact.email);
-    const ids = targetTopicIds(events, topicIds);
+    let ids = targetTopicIds(events, topicIds.byName);
 
     if (ids.length === 0) {
-      summary.skippedNoLegacyPreference += 1;
-      continue;
+      if (!DEFAULT_ALL_ACTIVE) {
+        summary.skippedNoLegacyPreference += 1;
+        continue;
+      }
+
+      ids = defaultAllIds;
     }
 
     summary.wouldUpdate += 1;

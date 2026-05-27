@@ -26,6 +26,12 @@ type ContactTopic = ResendTopic & {
   subscription: "opt_in" | "opt_out";
 };
 
+type ResendListResponse<T> = {
+  object?: "list";
+  has_more?: boolean;
+  data: T[];
+};
+
 type TopicCreateInput = {
   name: string;
   description?: string;
@@ -39,18 +45,50 @@ function resendClient() {
   return new Resend(getResendEnv().RESEND_API_KEY);
 }
 
+async function resendGet<T>(path: string) {
+  const response = await fetch(`https://api.resend.com${path}`, {
+    headers: {
+      Authorization: `Bearer ${getResendEnv().RESEND_API_KEY}`,
+    },
+  });
+  const body = (await response.json().catch(() => null)) as
+    | (T & { message?: string })
+    | null;
+
+  if (!response.ok) {
+    throw new Error(body?.message ?? `Resend GET ${path} failed`);
+  }
+
+  return body as T;
+}
+
 function topicDescription(parts: TopicParts) {
   return `Hetzner Cloud Radar ${parts.event} dispatches for ${parts.family.toUpperCase()} in ${parts.datacentre}`;
 }
 
+async function listAllTopics() {
+  const topics: ResendTopic[] = [];
+  let after: string | undefined;
+
+  do {
+    const params = new URLSearchParams({ limit: "100" });
+    if (after) params.set("after", after);
+    const page = await resendGet<ResendListResponse<ResendTopic>>(
+      `/topics?${params.toString()}`,
+    );
+
+    topics.push(...page.data);
+    after = page.data.at(-1)?.id;
+    if (!page.has_more) break;
+  } while (after);
+
+  return topics;
+}
+
 async function refreshTopicCache(resend: Resend) {
-  const listed = await resend.topics.list();
+  void resend;
 
-  if (!listed.data) {
-    throw new Error(listed.error?.message ?? "Resend topic list failed");
-  }
-
-  for (const topic of listed.data.data as ResendTopic[]) {
+  for (const topic of await listAllTopics()) {
     topicIdsByName.set(topic.name, topic.id);
   }
 }
