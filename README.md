@@ -47,9 +47,12 @@ Display status:
 - latest `available` without flicker -> `available`
 - `not-offered` and `unknown` pass through
 
-Tracked families are `CX`, `CAX`, `CPX`, and `CCX`. Server types are discovered
-from the live Hetzner API by family prefix, so current active types such as
-`CX23`, `CX33`, `CX43`, and `CX53` are shown instead of stale legacy codes.
+Server types are discovered from the live Hetzner API by family prefix, so
+current active types such as `CX23`, `CX33`, `CX43`, and `CX53` are shown instead
+of stale legacy codes. Family metadata in `src/lib/server-families.ts` controls
+which discovered families are visible publicly and which are dispatch-enabled.
+Run `pnpm families:audit` to detect new Hetzner server families that need local
+metadata review.
 
 ## Environment
 

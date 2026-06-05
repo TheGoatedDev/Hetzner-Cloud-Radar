@@ -1,4 +1,5 @@
 import { DCS, type DcCode, type Stock } from "@/lib/schema";
+import { visibleServerFamilyIds } from "@/lib/server-families";
 import { getSql } from "../db/client";
 
 export const HISTORY_WINDOW_DAYS = 14;
@@ -80,9 +81,14 @@ async function loadAvailabilityHistory(
   dc: DcCode,
 ): Promise<AvailabilityHistory> {
   const rawSql = getSql();
+  const visibleFamilies = visibleServerFamilyIds();
   const windowEnd = new Date();
   const windowStart = new Date(windowEnd);
   windowStart.setUTCDate(windowStart.getUTCDate() - HISTORY_WINDOW_DAYS);
+
+  if (visibleFamilies.length === 0) {
+    return emptyAvailabilityHistory(type, dc, windowStart, windowEnd);
+  }
 
   const rows = await rawSql<ObservationRow[]>`
     with obs as (
@@ -92,8 +98,10 @@ async function loadAvailabilityHistory(
         lag(observed_at) over w as prev_at,
         lag(base_status) over w as prev_status
       from availability_observations
+      join server_types on server_types.code = availability_observations.server_type_code
       where server_type_code = ${type}
         and location_code = ${dc}
+        and server_types.family = any(${visibleFamilies})
         and observed_at >= ${windowStart.toISOString()}
       window w as (order by observed_at)
     )
@@ -128,6 +136,29 @@ async function loadAvailabilityHistory(
     runs,
     totals,
     lastChangeAt,
+  };
+}
+
+function emptyAvailabilityHistory(
+  type: string,
+  dc: DcCode,
+  windowStart: Date,
+  windowEnd: Date,
+): AvailabilityHistory {
+  return {
+    type,
+    dc,
+    windowStart: windowStart.toISOString(),
+    windowEnd: windowEnd.toISOString(),
+    runs: [
+      {
+        from: windowStart.toISOString(),
+        to: windowEnd.toISOString(),
+        state: "unknown",
+      },
+    ],
+    totals: emptyTotals(),
+    lastChangeAt: null,
   };
 }
 

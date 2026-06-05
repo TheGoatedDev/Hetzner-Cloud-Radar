@@ -32,13 +32,6 @@ type ResendListResponse<T> = {
   data: T[];
 };
 
-type TopicCreateInput = {
-  name: string;
-  description?: string;
-  defaultSubscription: "opt_in" | "opt_out";
-  visibility?: "public" | "private";
-};
-
 const topicIdsByName = new Map<string, string>();
 
 function resendClient() {
@@ -60,10 +53,6 @@ async function resendGet<T>(path: string) {
   }
 
   return body as T;
-}
-
-function topicDescription(parts: TopicParts) {
-  return `Hetzner Cloud Radar ${parts.event} dispatches for ${parts.family.toUpperCase()} in ${parts.datacentre}`;
 }
 
 async function listAllTopics() {
@@ -105,20 +94,7 @@ export async function ensureTopicId(
   const refreshed = topicIdsByName.get(name);
   if (refreshed) return refreshed;
 
-  const created = await resend.topics.create({
-    name,
-    description: topicDescription(parts),
-    defaultSubscription: "opt_out",
-    visibility: "private",
-  } as TopicCreateInput);
-
-  if (!created.data) {
-    throw new Error(created.error?.message ?? "Resend topic create failed");
-  }
-
-  topicIdsByName.set(name, created.data.id);
-
-  return created.data.id;
+  throw new Error(`Resend topic ${name} is missing; run topic migration`);
 }
 
 async function ensureAllCurrentTopicIds(resend: Resend) {

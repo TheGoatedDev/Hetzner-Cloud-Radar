@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { DISPATCH_EVENTS, SERVER_FAMILIES } from "@/lib/marketing/preferences";
+import {
+  DISPATCH_EVENTS,
+  DISPATCH_SERVER_FAMILIES,
+} from "@/lib/marketing/preferences";
 import {
   syncMarketingContact,
   unsubscribeMarketingContact,
@@ -13,7 +16,12 @@ const unsubscribeSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
   token: z.string().optional(),
   events: z.array(z.enum(DISPATCH_EVENTS)),
-  families: z.array(z.enum(SERVER_FAMILIES)),
+  families: z.array(
+    z
+      .string()
+      .transform((family) => family.toLowerCase())
+      .refine((family) => DISPATCH_SERVER_FAMILIES.includes(family)),
+  ),
   datacentres: z.array(z.enum(DCS)),
 });
 

@@ -1,4 +1,4 @@
-import { desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import {
   DCS,
   type DcCode,
@@ -8,6 +8,11 @@ import {
   type StockEvent,
   type SupplyDay,
 } from "@/lib/schema";
+import {
+  serverFamilyOrder,
+  visibleServerFamilies,
+  visibleServerFamilyIds,
+} from "@/lib/server-families";
 import { getDb, getSql } from "../db/client";
 import {
   availabilityCurrent,
@@ -28,66 +33,6 @@ export type AvailabilityReadModel = {
 };
 
 export const POLL_CADENCE = "60 seconds";
-const FAMILY_META: Array<Omit<Family, "types">> = [
-  {
-    id: "cx",
-    label: "CX",
-    kicker: "Shared Intel",
-    blurb: "Intel Xeon, shared vCPU. The default starter line.",
-  },
-  {
-    id: "cax",
-    label: "CAX",
-    kicker: "ARM Ampere",
-    blurb:
-      "Ampere Altra ARM. Originally EU-only; rollout to North America is in progress.",
-  },
-  {
-    id: "cpx",
-    label: "CPX",
-    kicker: "Shared AMD",
-    blurb: "AMD EPYC, shared vCPU. Higher single-thread than CX.",
-  },
-  {
-    id: "ccx",
-    label: "CCX",
-    kicker: "Dedicated AMD",
-    blurb:
-      "AMD EPYC, dedicated vCPU. The historically-tight line; supply is the story.",
-  },
-];
-const FALLBACK_TYPES: Record<
-  FamilyId,
-  Array<{ code: string; cores: number; ram: number; disk: number }>
-> = {
-  cx: [
-    { code: "CX23", cores: 2, ram: 4, disk: 40 },
-    { code: "CX33", cores: 4, ram: 8, disk: 80 },
-    { code: "CX43", cores: 8, ram: 16, disk: 160 },
-    { code: "CX53", cores: 16, ram: 32, disk: 320 },
-  ],
-  cax: [
-    { code: "CAX11", cores: 2, ram: 4, disk: 40 },
-    { code: "CAX21", cores: 4, ram: 8, disk: 80 },
-    { code: "CAX31", cores: 8, ram: 16, disk: 160 },
-    { code: "CAX41", cores: 16, ram: 32, disk: 320 },
-  ],
-  cpx: [
-    { code: "CPX11", cores: 2, ram: 2, disk: 40 },
-    { code: "CPX21", cores: 3, ram: 4, disk: 80 },
-    { code: "CPX31", cores: 4, ram: 8, disk: 160 },
-    { code: "CPX41", cores: 8, ram: 16, disk: 240 },
-    { code: "CPX51", cores: 16, ram: 32, disk: 360 },
-  ],
-  ccx: [
-    { code: "CCX13", cores: 2, ram: 8, disk: 80 },
-    { code: "CCX23", cores: 4, ram: 16, disk: 160 },
-    { code: "CCX33", cores: 8, ram: 32, disk: 240 },
-    { code: "CCX43", cores: 16, ram: 64, disk: 360 },
-    { code: "CCX53", cores: 32, ram: 128, disk: 600 },
-    { code: "CCX63", cores: 48, ram: 192, disk: 960 },
-  ],
-};
 
 type DispatchTransition = {
   observed_at: Date | string;
@@ -188,9 +133,12 @@ function fallbackModel(): AvailabilityReadModel {
   const now = new Date();
   const observedDate = now.toISOString().slice(0, 10);
   const unknownStock = row({});
-  const families = FAMILY_META.map((family) => ({
-    ...family,
-    types: FALLBACK_TYPES[family.id].map((type) => ({
+  const families = visibleServerFamilies().map(({ id, meta }) => ({
+    id,
+    label: meta.label,
+    kicker: meta.kicker,
+    blurb: meta.blurb,
+    types: meta.fallbackTypes.map((type) => ({
       ...type,
       stock: unknownStock,
     })),
@@ -217,10 +165,6 @@ function isActiveServerType(row: typeof serverTypes.$inferSelect) {
     "missingFromApi" in row.raw &&
     row.raw.missingFromApi === true
   );
-}
-
-function familyOrder(family: FamilyId) {
-  return ["cx", "cax", "cpx", "ccx"].indexOf(family);
 }
 
 function serverTypeOrder(code: string) {
@@ -316,6 +260,10 @@ export async function getDispatchEvents(
   windowDays = 30,
 ): Promise<StockEvent[]> {
   const rawSql = getSql();
+  const visibleFamilies = visibleServerFamilyIds();
+
+  if (visibleFamilies.length === 0) return [];
+
   const cutoff = new Date(latestAt);
   cutoff.setUTCDate(cutoff.getUTCDate() - windowDays);
   const cutoffIso = cutoff.toISOString();
@@ -334,8 +282,10 @@ export async function getDispatchEvents(
             rows between unbounded preceding and 1 preceding
           ) as previous_sold_out_at
       from availability_observations o
+      join server_types st on st.code = o.server_type_code
       where o.observed_at >= ${cutoffIso}
         and o.base_status in ('available', 'sold-out', 'not-offered')
+        and st.family = any(${visibleFamilies})
       window cell_order as (
         partition by o.server_type_code, o.location_code
         order by o.observed_at
@@ -399,12 +349,14 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
         current.displayStatus as Stock,
       ]),
     );
+    const visibleFamilies = visibleServerFamilies();
+    const visibleFamilyIds = visibleFamilies.map(({ id }) => id);
     const activeTypes = typeRows
       .filter(isActiveServerType)
-      .filter((type) => type.family !== "other")
+      .filter((type) => visibleFamilyIds.includes(type.family))
       .sort((a, b) => {
         const familyDelta =
-          familyOrder(a.family as FamilyId) - familyOrder(b.family as FamilyId);
+          serverFamilyOrder(a.family) - serverFamilyOrder(b.family);
 
         if (familyDelta !== 0) return familyDelta;
 
@@ -418,7 +370,13 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
       specs.push(type);
       typesByFamily.set(family, specs);
     }
-    const families = FAMILY_META.flatMap((family) => {
+    const families = visibleFamilies.flatMap(({ id, meta }) => {
+      const family = {
+        id,
+        label: meta.label,
+        kicker: meta.kicker,
+        blurb: meta.blurb,
+      };
       const specs = typesByFamily.get(family.id) ?? [];
 
       if (specs.length === 0) {
@@ -458,10 +416,17 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
           soldOut: sql<number>`sum(case when ${dailyAvailabilityState.sawSoldOut} and not ${dailyAvailabilityState.sawAvailable} then 1 else 0 end)`,
         })
         .from(dailyAvailabilityState)
+        .innerJoin(
+          serverTypes,
+          eq(dailyAvailabilityState.serverTypeCode, serverTypes.code),
+        )
         .where(
-          gte(
-            dailyAvailabilityState.dateUtc,
-            sixtyDaysAgo.toISOString().slice(0, 10),
+          and(
+            gte(
+              dailyAvailabilityState.dateUtc,
+              sixtyDaysAgo.toISOString().slice(0, 10),
+            ),
+            inArray(serverTypes.family, visibleFamilyIds),
           ),
         )
         .groupBy(dailyAvailabilityState.dateUtc)

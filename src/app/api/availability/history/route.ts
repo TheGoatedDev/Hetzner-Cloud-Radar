@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const type = url.searchParams.get("type");
-  const dc = url.searchParams.get("dc");
+  const type = url.searchParams.get("type")?.toUpperCase();
+  const dc = url.searchParams.get("dc")?.toUpperCase();
 
   if (!type || !dc) {
     return Response.json(
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
-  if (!/^[A-Z]{2,4}\d{1,3}$/.test(type)) {
+  if (!/^[A-Z]+\d+$/u.test(type) || type.length > 16) {
     return Response.json({ error: "invalid type" }, { status: 400 });
   }
   if (!isValidDc(dc)) {

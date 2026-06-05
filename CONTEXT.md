@@ -21,7 +21,7 @@ A subscriber's rule limiting future dispatches by the infrastructure they care a
 _Avoid_: Notification filter, alert filter
 
 **Server family**:
-A Hetzner Cloud product line grouping related server types under one label.
+A Hetzner Cloud product line derived from a server type prefix and exposed only when local metadata acknowledges it.
 _Avoid_: Server class, server category
 
 **Datacentre**:
@@ -43,6 +43,7 @@ _Avoid_: Cell timeline, stock trail, region history
 - A **Preference update** keeps one or more future **Dispatch** types enabled for the subscriber.
 - A **Dispatch filter** narrows future **Dispatches** by one or more **Server families** and **Datacentres**.
 - **Unsubscribe feedback** belongs to a **Full unsubscribe**.
+- The public availability read model includes visible **Server families** only.
 
 ## Example dialogue
 

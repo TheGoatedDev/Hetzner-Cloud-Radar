@@ -24,9 +24,7 @@ export const pollRuns = pgTable("poll_runs", {
 export const serverTypes = pgTable("server_types", {
   code: text("code").primaryKey(),
   hetznerId: integer("hetzner_id").notNull(),
-  family: text("family", { enum: ["cx", "cax", "cpx", "ccx", "other"] })
-    .notNull()
-    .default("other"),
+  family: text("family").notNull(),
   cores: integer("cores").notNull(),
   memoryGb: integer("memory_gb").notNull(),
   diskGb: integer("disk_gb").notNull(),

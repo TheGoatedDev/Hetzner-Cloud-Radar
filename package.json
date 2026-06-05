@@ -2,6 +2,7 @@
   "name": "hetzner-cloud-radar",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,6 +14,7 @@
     "db:setup:local": "node src/scripts/setup-local-db.mjs && pnpm db:migrate",
     "db:studio": "drizzle-kit studio",
     "resend:migrate-filter-topics": "node src/scripts/migrate-resend-filter-topics.mjs",
+    "families:audit": "node src/scripts/audit-server-families.mjs",
     "poll:local": "node src/scripts/run-poll.mjs",
     "email": "email dev --dir ./src/emails --port 3001"
   },

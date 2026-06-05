@@ -1,0 +1,1 @@
+ALTER TABLE "server_types" ALTER COLUMN "family" DROP DEFAULT;

@@ -3,6 +3,7 @@ import Restock from "@/emails/restock";
 import StockOut from "@/emails/stock-out";
 import { getResendEnv } from "@/env";
 import { DCS, type DcCode, type FamilyId, type StockEvent } from "@/lib/schema";
+import { isDispatchEnabledServerFamily } from "@/lib/server-families";
 import { getDispatchEvents } from "../availability/read-model";
 import { getDb } from "../db/client";
 import { locations, marketingDispatchSends, serverTypes } from "../db/schema";
@@ -30,7 +31,7 @@ function specLabel(type: typeof serverTypes.$inferSelect | undefined) {
 }
 
 function familyId(type: typeof serverTypes.$inferSelect | undefined) {
-  if (!type || type.family === "other") return null;
+  if (!type) return null;
 
   return type.family as FamilyId;
 }
@@ -188,10 +189,21 @@ export async function sendPendingMarketingDispatches(
     if (!family || !datacentre) {
       await recordDispatchSend(
         event,
-        "failed",
+        "skipped",
         0,
         [],
         "Dispatch topic could not be resolved",
+      );
+      continue;
+    }
+
+    if (!isDispatchEnabledServerFamily(family)) {
+      await recordDispatchSend(
+        event,
+        "skipped",
+        0,
+        [],
+        `Dispatch disabled for family ${family.toUpperCase()}`,
       );
       continue;
     }

@@ -71,7 +71,7 @@ type ServerType = {
   stock: Record<DcCode, Stock>;
 };
 
-export type FamilyId = "cx" | "cax" | "cpx" | "ccx";
+export type FamilyId = string;
 
 export type Family = {
   id: FamilyId;

@@ -2,11 +2,13 @@
 
 import {
   DISPATCH_EVENTS,
+  DISPATCH_SERVER_FAMILIES,
   type DispatchEvent,
-  SERVER_FAMILIES,
-  SERVER_FAMILY_KICKERS,
 } from "@/lib/marketing/preferences";
 import { DC_META, DCS, type DcCode, type FamilyId } from "@/lib/schema";
+import { dispatchServerFamilies } from "@/lib/server-families";
+
+const FAMILY_OPTIONS = dispatchServerFamilies();
 
 const EVENT_LABELS: Record<DispatchEvent, string> = {
   soldout: "Sold-out events",
@@ -150,27 +152,27 @@ export function PreferenceMatrix({
         <GroupHeader
           label="Server families"
           selected={families.length}
-          total={SERVER_FAMILIES.length}
+          total={DISPATCH_SERVER_FAMILIES.length}
           disabled={disabled}
           onToggleAll={() =>
             onFamiliesChange(
-              families.length === SERVER_FAMILIES.length
+              families.length === DISPATCH_SERVER_FAMILIES.length
                 ? []
-                : [...SERVER_FAMILIES],
+                : [...DISPATCH_SERVER_FAMILIES],
             )
           }
         />
         <div className="grid grid-cols-1 sm:grid-cols-2">
-          {SERVER_FAMILIES.map((family) => (
+          {FAMILY_OPTIONS.map(({ id, meta }) => (
             <CheckRow
-              key={family}
-              checked={families.includes(family)}
+              key={id}
+              checked={families.includes(id)}
               disabled={disabled}
               onChange={(checked) =>
-                onFamiliesChange(toggleValue(families, family, checked))
+                onFamiliesChange(toggleValue(families, id, checked))
               }
-              code={family.toUpperCase()}
-              subtitle={SERVER_FAMILY_KICKERS[family]}
+              code={meta.label}
+              subtitle={meta.kicker}
             />
           ))}
         </div>

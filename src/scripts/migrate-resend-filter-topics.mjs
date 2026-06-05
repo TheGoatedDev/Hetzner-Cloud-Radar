@@ -7,6 +7,7 @@ config({ quiet: true });
 const APPLY = process.argv.includes("--apply");
 const DEFAULT_ALL_ACTIVE = process.argv.includes("--default-all-active");
 const EVENTS = ["soldout", "restock"];
+// Keep in sync with dispatchEnabled families in src/lib/server-families.ts.
 const FAMILIES = ["cx", "cax", "cpx", "ccx"];
 const DCS = ["NBG1", "FSN1", "HEL1", "ASH", "HIL", "SIN"];
 const TOPIC_PREFIX = "hcr";

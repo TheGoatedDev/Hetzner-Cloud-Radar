@@ -1,12 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
+import { DC_META, DCS, type DcCode, type Stock } from "@/lib/schema";
 import {
-  DC_META,
-  DCS,
-  type DcCode,
-  type FamilyId,
-  type Stock,
-} from "@/lib/schema";
+  deriveServerFamilyId,
+  isConfiguredServerFamily,
+} from "@/lib/server-families";
 import { getDb } from "../db/client";
 import {
   availabilityCurrent,
@@ -25,6 +23,7 @@ import {
 } from "./hetzner";
 
 type BaseStatus = Exclude<Stock, "limited">;
+type TrackedServerType = HetznerServerType & { family: string };
 
 const TRACKED_LOCATION_API: Record<
   DcCode,
@@ -37,17 +36,6 @@ const TRACKED_LOCATION_API: Record<
   HIL: { apiName: "hil", networkZone: "us-west" },
   SIN: { apiName: "sin", networkZone: "ap-southeast" },
 };
-
-function getFamily(code: string): FamilyId | "other" {
-  const normalized = code.toLowerCase();
-
-  if (normalized.startsWith("cax")) return "cax";
-  if (normalized.startsWith("cpx")) return "cpx";
-  if (normalized.startsWith("ccx")) return "ccx";
-  if (normalized.startsWith("cx")) return "cx";
-
-  return "other";
-}
 
 function toDateUtc(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -83,7 +71,7 @@ function errorMessage(error: unknown) {
 }
 
 function findTrackedLocation(
-  serverType: HetznerServerType,
+  serverType: TrackedServerType,
   dc: DcCode,
 ): ReturnType<typeof readLocation> | null {
   const expected = TRACKED_LOCATION_API[dc].apiName;
@@ -109,9 +97,27 @@ export async function pollAvailability() {
     });
 
     const fetchedServerTypes = await fetchHetznerServerTypes();
-    const trackedServerTypes = fetchedServerTypes.filter(
-      (serverType) => getFamily(serverType.name) !== "other",
-    );
+    const skippedMalformedServerTypes: string[] = [];
+    const trackedServerTypes: TrackedServerType[] = [];
+
+    for (const serverType of fetchedServerTypes) {
+      const family = deriveServerFamilyId(serverType.name);
+
+      if (!family) {
+        skippedMalformedServerTypes.push(serverType.name);
+        continue;
+      }
+
+      trackedServerTypes.push({ ...serverType, family });
+    }
+
+    const unknownFamilies = [
+      ...new Set(
+        trackedServerTypes
+          .map((serverType) => serverType.family)
+          .filter((family) => !isConfiguredServerFamily(family)),
+      ),
+    ].sort();
     const fetchedLocations = new Map<string, ReturnType<typeof readLocation>>();
 
     for (const serverType of trackedServerTypes) {
@@ -157,7 +163,7 @@ export async function pollAvailability() {
           trackedServerTypes.map((serverType) => ({
             code: serverType.name,
             hetznerId: serverType.id,
-            family: getFamily(serverType.name),
+            family: serverType.family,
             cores: serverType.cores,
             memoryGb: serverType.memory,
             diskGb: serverType.disk,
@@ -177,6 +183,27 @@ export async function pollAvailability() {
             raw: sql`excluded.raw`,
           },
         });
+    }
+
+    const fetchedCodes = new Set(
+      trackedServerTypes.map((serverType) => serverType.name),
+    );
+    const storedServerTypes = await db.select().from(serverTypes);
+    const missingFromApiAt = observedAt.toISOString();
+
+    for (const stored of storedServerTypes) {
+      if (fetchedCodes.has(stored.code)) continue;
+
+      await db
+        .update(serverTypes)
+        .set({
+          raw: {
+            ...(stored.raw && typeof stored.raw === "object" ? stored.raw : {}),
+            missingFromApi: true,
+            missingFromApiAt,
+          },
+        })
+        .where(sql`${serverTypes.code} = ${stored.code}`);
     }
 
     const observationValues = trackedServerTypes.flatMap((serverType) =>
@@ -314,6 +341,8 @@ export async function pollAvailability() {
       observedAt: observedAt.toISOString(),
       insertedObservations: observationValues.length,
       currentUpdated: currentRows.length,
+      unknownFamilies,
+      skippedMalformedServerTypes,
       emailDispatches,
       status: "success" as const,
     };

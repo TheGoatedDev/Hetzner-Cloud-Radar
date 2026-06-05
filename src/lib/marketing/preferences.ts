@@ -1,16 +1,10 @@
 import { DCS, type DcCode, type FamilyId } from "@/lib/schema";
+import { dispatchServerFamilyIds } from "@/lib/server-families";
 
 export const DISPATCH_EVENTS = ["soldout", "restock"] as const;
 export type DispatchEvent = (typeof DISPATCH_EVENTS)[number];
 
-export const SERVER_FAMILIES = ["cx", "cax", "cpx", "ccx"] as const;
-
-export const SERVER_FAMILY_KICKERS: Record<FamilyId, string> = {
-  cx: "Shared Intel",
-  cax: "ARM Ampere",
-  cpx: "Shared AMD",
-  ccx: "Dedicated AMD",
-};
+export const DISPATCH_SERVER_FAMILIES = dispatchServerFamilyIds();
 
 export type DispatchPreferences = {
   events: DispatchEvent[];
@@ -26,7 +20,7 @@ export type TopicParts = {
 
 export const DEFAULT_DISPATCH_PREFERENCES: DispatchPreferences = {
   events: [...DISPATCH_EVENTS],
-  families: [...SERVER_FAMILIES],
+  families: [...DISPATCH_SERVER_FAMILIES],
   datacentres: [...DCS],
 };
 
@@ -37,7 +31,7 @@ export function normalizeDispatchPreferences(
 ): DispatchPreferences {
   return {
     events: DISPATCH_EVENTS.filter((event) => input.events.includes(event)),
-    families: SERVER_FAMILIES.filter((family) =>
+    families: DISPATCH_SERVER_FAMILIES.filter((family) =>
       input.families.includes(family),
     ),
     datacentres: DCS.filter((datacentre) =>
@@ -57,11 +51,13 @@ export function topicKey(parts: TopicParts) {
 
 export function parseTopicKey(name: string): TopicParts | null {
   const [prefix, event, family, datacentre] = name.split(":");
+  const normalizedFamily = family?.toLowerCase();
 
   if (
     prefix !== TOPIC_PREFIX ||
     !DISPATCH_EVENTS.includes(event as DispatchEvent) ||
-    !SERVER_FAMILIES.includes(family as FamilyId)
+    !normalizedFamily ||
+    !DISPATCH_SERVER_FAMILIES.includes(normalizedFamily)
   ) {
     return null;
   }
@@ -71,14 +67,14 @@ export function parseTopicKey(name: string): TopicParts | null {
 
   return {
     event: event as DispatchEvent,
-    family: family as FamilyId,
+    family: normalizedFamily,
     datacentre: dc as DcCode,
   };
 }
 
 export function allTopicParts(): TopicParts[] {
   return DISPATCH_EVENTS.flatMap((event) =>
-    SERVER_FAMILIES.flatMap((family) =>
+    DISPATCH_SERVER_FAMILIES.flatMap((family) =>
       DCS.map((datacentre) => ({ event, family, datacentre })),
     ),
   );

@@ -43,6 +43,13 @@
       "when": 1779375936975,
       "tag": "0005_rare_ben_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780648024797,
+      "tag": "0006_absurd_warbound",
+      "breakpoints": true
     }
   ]
 }
