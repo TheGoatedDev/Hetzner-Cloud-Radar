@@ -1,0 +1,61 @@
+{
+    "name": "Hetzner Cloud Radar",
+    "dockerComposeFile": "docker-compose.yaml",
+    "service": "app",
+    "remoteUser": "vscode",
+    "features": {
+        "ghcr.io/devcontainers/features/node:2": {
+            "version": "24",
+            "pnpmVersion": "11.9.0"
+        },
+        "ghcr.io/devcontainer-community/devcontainer-features/opencode.ai:1": {
+            "version": "latest"
+        }
+    },
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "forwardPorts": [
+        3000,
+        3001
+    ],
+    "containerEnv": {
+        "DATABASE_URL": "postgres://postgres:password@db:5432/hetzner_cloud_radar",
+        "CRON_SECRET": "dev_cron_secret",
+        "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+    },
+    "mounts": [
+        // opencode stores provider credentials here on macOS/Linux hosts.
+        "source=${localEnv:HOME}/.local/share/opencode/auth.json,target=/home/vscode/.local/share/opencode/auth.json,type=bind,readonly",
+        // opencode stores user configuration here on macOS/Linux hosts.
+        "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind,readonly"
+        // Windows hosts use this source instead:
+        // "source=${localEnv:USERPROFILE}/.local/share/opencode/auth.json,target=/home/vscode/.local/share/opencode/auth.json,type=bind,readonly"
+        // "source=${localEnv:USERPROFILE}/.config/opencode,target=/home/vscode/.config/opencode,type=bind,readonly"
+    ],
+    "postCreateCommand": "bash .devcontainer/postCreate.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "biomejs.biome"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.fixAll": "explicit",
+                    "source.organizeImports": "explicit"
+                },
+                "[typescript]": {
+                    "editor.defaultFormatter": "biomejs.biome"
+                },
+                "[typescriptreact]": {
+                    "editor.defaultFormatter": "biomejs.biome"
+                },
+                "[javascript]": {
+                    "editor.defaultFormatter": "biomejs.biome"
+                },
+                "[javascriptreact]": {
+                    "editor.defaultFormatter": "biomejs.biome"
+                }
+            }
+        }
+    }
+}

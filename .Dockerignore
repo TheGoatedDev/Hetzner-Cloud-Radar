@@ -1,0 +1,27 @@
+# Docker only needs source and lockfiles; keep local weight and secrets out of the build context.
+.git
+.gitignore
+
+# Local dependencies and generated app output.
+**/node_modules
+**/.next
+**/out
+**/build
+**/coverage
+**/.cache
+**/.turbo
+
+# Secrets and local machine state.
+**/.env
+**/.env.*
+**/*.pem
+.DS_Store
+**/.DS_Store
+
+# Logs and transient TypeScript/Next files.
+**/*debug.log*
+**/*.tsbuildinfo
+**/next-env.d.ts
+
+# Deploy metadata.
+**/.vercel

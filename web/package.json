@@ -2,7 +2,7 @@
   "name": "hetzner-cloud-radar",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
