@@ -9,7 +9,6 @@ import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
 import { StockGlyph } from "../_components/stock-glyph";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {

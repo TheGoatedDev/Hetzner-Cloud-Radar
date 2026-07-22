@@ -6,7 +6,6 @@ import {
 import { getAvailabilityReadModel } from "@/lib/availability/read-model";
 import { RadarView } from "./_components/radar-view";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export default async function Home() {
