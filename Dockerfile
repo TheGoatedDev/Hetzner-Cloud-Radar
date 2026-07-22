@@ -16,7 +16,8 @@ RUN pnpm install --frozen-lockfile --prefer-offline
 # Copy source code
 COPY . .
 
-# Build the application (migrations will run via preDeployCommand at runtime)
+# Build the application with validation skipped (migrations will run via preDeployCommand at runtime)
+ENV SKIP_ENV_VALIDATION=true
 RUN pnpm run build
 
 # Production stage
