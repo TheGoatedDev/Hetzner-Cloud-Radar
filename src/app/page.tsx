@@ -7,7 +7,6 @@ import { getAvailabilityReadModel } from "@/lib/availability/read-model";
 import { RadarView } from "./_components/radar-view";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
 
 export default async function Home() {
   const queryClient = createAvailabilityQueryClient();
@@ -23,3 +22,4 @@ export default async function Home() {
     </HydrationBoundary>
   );
 }
+
