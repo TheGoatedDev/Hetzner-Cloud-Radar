@@ -16,10 +16,7 @@ RUN pnpm install --frozen-lockfile --prefer-offline
 # Copy source code
 COPY . .
 
-# Run database migration
-RUN pnpm db:migrate
-
-# Build the application
+# Build the application (migrations will run via preDeployCommand at runtime)
 RUN pnpm run build
 
 # Production stage
