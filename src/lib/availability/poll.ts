@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql } from "drizzle-orm";
+import { and, eq, lt, or, sql } from "drizzle-orm";
 import { DC_META, DCS, type DcCode, type Stock } from "@/lib/schema";
 import {
   deriveServerFamilyId,
@@ -13,6 +13,7 @@ import {
   locations,
   pollRuns,
   serverTypes,
+  stockEvents,
 } from "../db/schema";
 import { sendPendingMarketingDispatches } from "../marketing/dispatch-email";
 import {
@@ -234,6 +235,109 @@ export async function pollAvailability() {
 
     if (observationValues.length > 0) {
       await db.insert(availabilityObservations).values(observationValues);
+    }
+
+    // Diff against prior current snapshot → stock_events (not every poll row).
+    const previousCurrent = await db.select().from(availabilityCurrent);
+    const previousByCell = new Map(
+      previousCurrent.map((row) => [
+        `${row.serverTypeCode}:${row.locationCode}`,
+        row,
+      ]),
+    );
+    const transitionCandidates = observationValues.flatMap((observation) => {
+      const previous = previousByCell.get(
+        `${observation.serverTypeCode}:${observation.locationCode}`,
+      );
+      const prevStatus = previous?.baseStatus ?? null;
+      const nextStatus = observation.baseStatus;
+
+      const isSoldOutStart =
+        nextStatus === "sold-out" &&
+        (prevStatus === null || prevStatus !== "sold-out");
+      const isRestockOrRollout =
+        nextStatus === "available" &&
+        (prevStatus === "sold-out" || prevStatus === "not-offered");
+
+      if (!isSoldOutStart && !isRestockOrRollout) return [];
+
+      return [
+        {
+          id: randomUUID(),
+          observedAt,
+          serverTypeCode: observation.serverTypeCode,
+          locationCode: observation.locationCode,
+          baseStatus: nextStatus,
+          prevStatus,
+          // Filled below for restocks when we know the sold-out start.
+          previousSoldOutAt: null as Date | null,
+          needsSoldOutLookup: prevStatus === "sold-out",
+        },
+      ];
+    });
+
+    if (transitionCandidates.length > 0) {
+      const restockCells = transitionCandidates
+        .filter((event) => event.needsSoldOutLookup)
+        .map((event) => ({
+          serverTypeCode: event.serverTypeCode,
+          locationCode: event.locationCode,
+        }));
+
+      const soldOutStartedAt = new Map<string, Date>();
+
+      if (restockCells.length > 0) {
+        const cellMatch = or(
+          ...restockCells.map((cell) =>
+            and(
+              eq(stockEvents.serverTypeCode, cell.serverTypeCode),
+              eq(stockEvents.locationCode, cell.locationCode),
+            ),
+          ),
+        );
+
+        // Latest prior sold-out event per restocking cell.
+        const priorSoldOut = cellMatch
+          ? await db
+              .select({
+                serverTypeCode: stockEvents.serverTypeCode,
+                locationCode: stockEvents.locationCode,
+                observedAt: stockEvents.observedAt,
+              })
+              .from(stockEvents)
+              .where(
+                and(
+                  cellMatch,
+                  eq(stockEvents.baseStatus, "sold-out"),
+                  lt(stockEvents.observedAt, observedAt),
+                ),
+              )
+              .orderBy(sql`${stockEvents.observedAt} desc`)
+          : [];
+
+        for (const row of priorSoldOut) {
+          const key = `${row.serverTypeCode}:${row.locationCode}`;
+          if (!soldOutStartedAt.has(key)) {
+            soldOutStartedAt.set(key, row.observedAt);
+          }
+        }
+      }
+
+      await db.insert(stockEvents).values(
+        transitionCandidates.map((candidate) => ({
+          id: candidate.id,
+          observedAt: candidate.observedAt,
+          serverTypeCode: candidate.serverTypeCode,
+          locationCode: candidate.locationCode,
+          baseStatus: candidate.baseStatus,
+          prevStatus: candidate.prevStatus,
+          previousSoldOutAt: candidate.needsSoldOutLookup
+            ? (soldOutStartedAt.get(
+                `${candidate.serverTypeCode}:${candidate.locationCode}`,
+              ) ?? null)
+            : null,
+        })),
+      );
     }
 
     for (const observation of observationValues) {

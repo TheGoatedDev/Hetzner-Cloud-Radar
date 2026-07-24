@@ -7,6 +7,8 @@ import { getAvailabilityReadModel } from "@/lib/availability/read-model";
 import { RadarView } from "./_components/radar-view";
 
 export const runtime = "nodejs";
+// Match poll cadence; cron revalidatePath("/") busts on new data.
+export const revalidate = 60;
 
 export default async function Home() {
   const queryClient = createAvailabilityQueryClient();
@@ -22,4 +24,3 @@ export default async function Home() {
     </HydrationBoundary>
   );
 }
-

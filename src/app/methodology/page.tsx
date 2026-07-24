@@ -10,6 +10,7 @@ import { SectionHeader } from "../_components/section-header";
 import { StockGlyph } from "../_components/stock-glyph";
 
 export const runtime = "nodejs";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Methodology · Hetzner Cloud Radar",
@@ -46,17 +47,15 @@ const STATE_ROWS = [
   },
 ] satisfies { state: Stock; meaning: string; api: string }[];
 
-function CopyBlock(
-  {
-    title,
-    children,
-    first = false,
-  }: {
-    title: string;
-    children: ReactNode;
-    first?: boolean;
-  }
-) {
+function CopyBlock({
+  title,
+  children,
+  first = false,
+}: {
+  title: string;
+  children: ReactNode;
+  first?: boolean;
+}) {
   return (
     <div className={`flex flex-col gap-3 ${first ? "pt-2" : "pt-6"}`}>
       <h3 className="text-lg font-medium tracking-tight text-ink">{title}</h3>
@@ -182,4 +181,3 @@ export default async function MethodologyPage() {
     </PageFrame>
   );
 }
-

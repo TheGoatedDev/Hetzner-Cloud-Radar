@@ -10,7 +10,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node src/scripts/migrate.mjs",
     "db:setup:local": "node src/scripts/setup-local-db.mjs && pnpm db:migrate",
     "db:studio": "drizzle-kit studio",
     "resend:migrate-filter-topics": "node src/scripts/migrate-resend-filter-topics.mjs",

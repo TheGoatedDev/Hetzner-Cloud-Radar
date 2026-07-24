@@ -8,7 +8,7 @@ export function createAvailabilityQueryClient() {
       queries: {
         refetchOnWindowFocus: false,
         retry: 1,
-        staleTime: 15_000,
+        staleTime: 60_000,
       },
     },
   });

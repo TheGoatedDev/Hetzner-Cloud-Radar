@@ -127,6 +127,40 @@ export const dailyAvailabilityState = pgTable(
   }),
 );
 
+// Written only when base_status changes — keeps dispatch reads O(events), not O(polls).
+// No FKs: matches prod migration (server_types PK quirks).
+export const stockEvents = pgTable(
+  "stock_events",
+  {
+    id: text("id").primaryKey(),
+    observedAt: timestamp("observed_at", {
+      withTimezone: true,
+      mode: "date",
+    }).notNull(),
+    serverTypeCode: text("server_type_code").notNull(),
+    locationCode: text("location_code").notNull(),
+    baseStatus: text("base_status", {
+      enum: ["available", "sold-out", "not-offered", "unknown"],
+    }).notNull(),
+    prevStatus: text("prev_status", {
+      enum: ["available", "sold-out", "not-offered", "unknown"],
+    }),
+    // For restock duration labels; null when unknown / not a restock.
+    previousSoldOutAt: timestamp("previous_sold_out_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+  },
+  (table) => ({
+    observedAtIdx: index("stock_events_observed_at_idx").on(table.observedAt),
+    cellObservedAtIdx: index("stock_events_cell_observed_at_idx").on(
+      table.serverTypeCode,
+      table.locationCode,
+      table.observedAt,
+    ),
+  }),
+);
+
 export const marketingDispatchSends = pgTable("marketing_dispatch_sends", {
   dispatchId: text("dispatch_id").primaryKey(),
   eventState: text("event_state", {

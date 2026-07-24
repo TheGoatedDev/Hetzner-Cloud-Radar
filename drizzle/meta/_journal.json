@@ -50,6 +50,13 @@
       "when": 1780648024797,
       "tag": "0006_absurd_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784822400000,
+      "tag": "0007_stock_events",
+      "breakpoints": true
     }
   ]
 }

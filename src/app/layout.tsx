@@ -3,8 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-export const dynamic = "force-dynamic";
-
+// ponytail: no root force-dynamic — kills ISR/CDN. Mark auth/write routes only.
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   weight: ["400", "500", "600"],
@@ -41,4 +40,3 @@ export default function RootLayout({
     </html>
   );
 }
-

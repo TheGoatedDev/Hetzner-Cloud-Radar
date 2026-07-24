@@ -13,12 +13,13 @@ import {
   visibleServerFamilies,
   visibleServerFamilyIds,
 } from "@/lib/server-families";
-import { getDb, getSql } from "../db/client";
+import { getDb } from "../db/client";
 import {
   availabilityCurrent,
   dailyAvailabilityState,
   pollRuns,
   serverTypes,
+  stockEvents,
 } from "../db/schema";
 
 export type AvailabilityReadModel = {
@@ -243,15 +244,21 @@ function makeDispatch(
 }
 
 export async function getLatestPollAt(): Promise<Date | null> {
-  const db = getDb();
-  const [latest] = await db
-    .select({ finishedAt: pollRuns.finishedAt })
-    .from(pollRuns)
-    .where(eq(pollRuns.status, "success"))
-    .orderBy(desc(pollRuns.finishedAt))
-    .limit(1);
+  // Build/prerender has no DB; callers treat null as "no poll yet".
+  try {
+    const db = getDb();
+    const [latest] = await db
+      .select({ finishedAt: pollRuns.finishedAt })
+      .from(pollRuns)
+      .where(eq(pollRuns.status, "success"))
+      .orderBy(desc(pollRuns.finishedAt))
+      .limit(1);
 
-  return latest?.finishedAt ?? null;
+    return latest?.finishedAt ?? null;
+  } catch (error) {
+    console.error("Latest poll lookup failed", error);
+    return null;
+  }
 }
 
 export async function getDispatchEvents(
@@ -259,63 +266,58 @@ export async function getDispatchEvents(
   limit = 8,
   windowDays = 30,
 ): Promise<StockEvent[]> {
-  const rawSql = getSql();
   const visibleFamilies = visibleServerFamilyIds();
 
   if (visibleFamilies.length === 0) return [];
 
   const cutoff = new Date(latestAt);
   cutoff.setUTCDate(cutoff.getUTCDate() - windowDays);
-  const cutoffIso = cutoff.toISOString();
-  const transitions = await rawSql<DispatchTransition[]>`
-    with ordered as (
-      select
-        o.server_type_code,
-        o.location_code,
-        o.observed_at,
-        o.base_status,
-        lag(o.base_status) over cell_order as prev_status,
-        max(case when o.base_status = 'sold-out' then o.observed_at end)
-          over (
-            partition by o.server_type_code, o.location_code
-            order by o.observed_at
-            rows between unbounded preceding and 1 preceding
-          ) as previous_sold_out_at
-      from availability_observations o
-      join server_types st on st.code = o.server_type_code
-      where o.observed_at >= ${cutoffIso}
-        and o.base_status in ('available', 'sold-out', 'not-offered')
-        and st.family = any(${visibleFamilies})
-      window cell_order as (
-        partition by o.server_type_code, o.location_code
-        order by o.observed_at
-      )
-    )
-    select
-      ordered.observed_at,
-      ordered.server_type_code,
-      ordered.location_code,
-      ordered.base_status,
-      ordered.prev_status,
-      ordered.previous_sold_out_at,
-      c.display_status as current_status
-    from ordered
-    left join availability_current c
-      on c.server_type_code = ordered.server_type_code
-     and c.location_code = ordered.location_code
-    where (
-      ordered.base_status = 'sold-out'
-      and (ordered.prev_status is null or ordered.prev_status <> 'sold-out')
-    ) or (
-      ordered.base_status = 'available'
-      and ordered.prev_status in ('sold-out', 'not-offered')
-    )
-    order by ordered.observed_at desc
-    limit ${Math.max(limit * 2, 16)}
-  `;
 
-  return transitions
-    .map((transition) => makeDispatch(transition, latestAt))
+  // stock_events is one row per status change — not one per poll.
+  const db = getDb();
+  const rows = await db
+    .select({
+      observedAt: stockEvents.observedAt,
+      serverTypeCode: stockEvents.serverTypeCode,
+      locationCode: stockEvents.locationCode,
+      baseStatus: stockEvents.baseStatus,
+      prevStatus: stockEvents.prevStatus,
+      previousSoldOutAt: stockEvents.previousSoldOutAt,
+      currentStatus: availabilityCurrent.displayStatus,
+    })
+    .from(stockEvents)
+    .innerJoin(serverTypes, eq(stockEvents.serverTypeCode, serverTypes.code))
+    .leftJoin(
+      availabilityCurrent,
+      and(
+        eq(availabilityCurrent.serverTypeCode, stockEvents.serverTypeCode),
+        eq(availabilityCurrent.locationCode, stockEvents.locationCode),
+      ),
+    )
+    .where(
+      and(
+        gte(stockEvents.observedAt, cutoff),
+        inArray(serverTypes.family, visibleFamilies),
+      ),
+    )
+    .orderBy(desc(stockEvents.observedAt))
+    .limit(Math.max(limit * 2, 16));
+
+  return rows
+    .map((row) =>
+      makeDispatch(
+        {
+          observed_at: row.observedAt,
+          server_type_code: row.serverTypeCode,
+          location_code: row.locationCode,
+          base_status: row.baseStatus,
+          prev_status: row.prevStatus,
+          previous_sold_out_at: row.previousSoldOutAt,
+          current_status: (row.currentStatus as Stock | null) ?? null,
+        },
+        latestAt,
+      ),
+    )
     .filter((event): event is StockEvent => event !== null)
     .slice(0, limit);
 }
@@ -323,21 +325,21 @@ export async function getDispatchEvents(
 export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel> {
   try {
     const db = getDb();
-    const latestPoll = await db
-      .select()
-      .from(pollRuns)
-      .where(eq(pollRuns.status, "success"))
-      .orderBy(desc(pollRuns.finishedAt))
-      .limit(1);
+    // Parallel first round — current/types don't depend on latest poll row.
+    const [latestPoll, currentRows, typeRows] = await Promise.all([
+      db
+        .select()
+        .from(pollRuns)
+        .where(eq(pollRuns.status, "success"))
+        .orderBy(desc(pollRuns.finishedAt))
+        .limit(1),
+      db.select().from(availabilityCurrent),
+      db.select().from(serverTypes),
+    ]);
 
     if (!latestPoll[0]?.finishedAt) {
       return fallbackModel();
     }
-
-    const [currentRows, typeRows] = await Promise.all([
-      db.select().from(availabilityCurrent),
-      db.select().from(serverTypes),
-    ]);
 
     if (currentRows.length === 0 || typeRows.length === 0) {
       return fallbackModel();

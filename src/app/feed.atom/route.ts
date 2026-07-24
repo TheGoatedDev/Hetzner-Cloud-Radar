@@ -7,7 +7,7 @@ import type { StockEvent } from "@/lib/schema";
 export const runtime = "nodejs";
 // Feed generation depends on live dispatch history, so keep it out of build-time
 // prerendering and let CDN headers handle public caching.
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const WINDOW_DAYS = 365;
 const LIMIT = 200;
