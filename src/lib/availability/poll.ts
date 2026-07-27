@@ -26,6 +26,18 @@ import {
 type BaseStatus = Exclude<Stock, "limited">;
 type TrackedServerType = HetznerServerType & { family: string };
 
+// ponytail: inline deletes on poll success; chunked deletes if one shot times out on backlog
+async function pruneOlderThan(db: ReturnType<typeof getDb>, days: number) {
+  const cutoff = new Date(Date.now() - days * 86_400_000);
+  const cutoffDay = cutoff.toISOString().slice(0, 10);
+  // observations cascade from poll_runs
+  await db.delete(pollRuns).where(lt(pollRuns.startedAt, cutoff));
+  await db
+    .delete(dailyAvailabilityState)
+    .where(lt(dailyAvailabilityState.dateUtc, cutoffDay));
+  await db.delete(stockEvents).where(lt(stockEvents.observedAt, cutoff));
+}
+
 const TRACKED_LOCATION_API: Record<
   DcCode,
   { apiName: string; networkZone: string }
@@ -439,6 +451,11 @@ export async function pollAvailability() {
       skippedReason:
         error instanceof Error ? error.message : "Email dispatch failed",
     }));
+
+    // Drop history past 60d so tables don't grow forever. Failures must not fail the poll.
+    await pruneOlderThan(db, 60).catch((error) => {
+      console.error("Retention prune failed", error);
+    });
 
     return {
       pollRunId,

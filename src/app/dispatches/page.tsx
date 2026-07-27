@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "Full archive of Hetzner Cloud stock-out, restock, and rollout events observed by the radar.",
 };
 
-const WINDOW_DAYS = 365;
+const WINDOW_DAYS = 60;
 const LIMIT = 200;
 
 export default async function DispatchesPage() {

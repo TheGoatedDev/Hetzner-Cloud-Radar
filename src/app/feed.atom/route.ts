@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 // prerendering and let CDN headers handle public caching.
 export const revalidate = 60;
 
-const WINDOW_DAYS = 365;
+const WINDOW_DAYS = 60;
 const LIMIT = 200;
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://hetzner.thegoated.dev";
