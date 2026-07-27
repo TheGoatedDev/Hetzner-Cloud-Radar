@@ -26,11 +26,9 @@ import {
 type BaseStatus = Exclude<Stock, "limited">;
 type TrackedServerType = HetznerServerType & { family: string };
 
-// One-shot DELETE of months of poll_runs cascades millions of observations and
-// locks the table long enough that /api/availability/history times out (~100s+).
-// Drain a small batch each success instead; backlog clears over subsequent polls.
-const PRUNE_POLL_RUN_BATCH = 25;
-const PRUNE_POLL_RUN_ROUNDS = 8;
+// Cascade deletes lock observations — keep batches tiny; backlog drains over polls.
+const PRUNE_POLL_RUN_BATCH = 10;
+const PRUNE_POLL_RUN_ROUNDS = 3;
 
 async function pruneOlderThan(db: ReturnType<typeof getDb>, days: number) {
   const cutoff = new Date(Date.now() - days * 86_400_000);
@@ -472,8 +470,8 @@ export async function pollAvailability() {
         error instanceof Error ? error.message : "Email dispatch failed",
     }));
 
-    // Drop history past 60d so tables don't grow forever. Failures must not fail the poll.
-    await pruneOlderThan(db, 60).catch((error) => {
+    // Don't await — prune IO must not stretch the poll or contend with history reads.
+    void pruneOlderThan(db, 60).catch((error) => {
       console.error("Retention prune failed", error);
     });
 

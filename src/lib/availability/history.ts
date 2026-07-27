@@ -21,11 +21,13 @@ export type AvailabilityHistory = {
   lastChangeAt: string | null;
 };
 
-type ObservationRow = {
+type StatusRow = {
   observed_at: Date | string;
   base_status: "available" | "sold-out" | "not-offered" | "unknown";
-  prev_at: Date | string | null;
-  prev_status: "available" | "sold-out" | "not-offered" | "unknown" | null;
+};
+
+type PollRow = {
+  started_at: Date | string;
 };
 
 type CacheEntry = {
@@ -85,35 +87,112 @@ async function loadAvailabilityHistory(
   const windowEnd = new Date();
   const windowStart = new Date(windowEnd);
   windowStart.setUTCDate(windowStart.getUTCDate() - HISTORY_WINDOW_DAYS);
+  const startIso = windowStart.toISOString();
 
   if (visibleFamilies.length === 0) {
     return emptyAvailabilityHistory(type, dc, windowStart, windowEnd);
   }
 
-  const rows = await rawSql<ObservationRow[]>`
-    with obs as (
-      select
-        observed_at,
-        base_status,
-        lag(observed_at) over w as prev_at,
-        lag(base_status) over w as prev_status
+  // One-row gate — never join server_types onto the observation stream.
+  const typeRows = await rawSql<{ family: string }[]>`
+    select family from server_types
+    where code = ${type}
+    limit 1
+  `;
+  if (!typeRows[0] || !visibleFamilies.includes(typeRows[0].family)) {
+    return emptyAvailabilityHistory(type, dc, windowStart, windowEnd);
+  }
+
+  // stock_events is sparse (status changes only). poll_runs drives gap→unknown.
+  // Avoid scanning availability_observations (millions of rows / prune locks).
+  const [priorEventRows, eventRows, priorPollRows, pollRows] =
+    await Promise.all([
+      rawSql<StatusRow[]>`
+        select observed_at, base_status
+        from stock_events
+        where server_type_code = ${type}
+          and location_code = ${dc}
+          and observed_at < ${startIso}
+        order by observed_at desc
+        limit 1
+      `,
+      rawSql<StatusRow[]>`
+        select observed_at, base_status
+        from stock_events
+        where server_type_code = ${type}
+          and location_code = ${dc}
+          and observed_at >= ${startIso}
+        order by observed_at
+      `,
+      // Need the poll just before the window so a gap straddling windowStart is visible.
+      rawSql<PollRow[]>`
+        select started_at
+        from poll_runs
+        where status = 'success'
+          and started_at < ${startIso}
+        order by started_at desc
+        limit 1
+      `,
+      rawSql<PollRow[]>`
+        select started_at
+        from poll_runs
+        where status = 'success'
+          and started_at >= ${startIso}
+        order by started_at
+      `,
+    ]);
+
+  let priorStatus: Stock | null = priorEventRows[0]?.base_status ?? null;
+
+  // Steady cells may have zero stock_events — one index lookup for seed state.
+  if (priorStatus === null) {
+    const seed = await rawSql<StatusRow[]>`
+      select observed_at, base_status
       from availability_observations
-      join server_types on server_types.code = availability_observations.server_type_code
       where server_type_code = ${type}
         and location_code = ${dc}
-        and server_types.family = any(${visibleFamilies})
-        and observed_at >= ${windowStart.toISOString()}
-      window w as (order by observed_at)
-    )
-    select observed_at, base_status, prev_at, prev_status
-    from obs
-    where prev_at is null
-      or prev_status is distinct from base_status
-      or extract(epoch from (observed_at - prev_at)) > ${HISTORY_GAP_THRESHOLD_SECONDS}
-    order by observed_at
-  `;
+        and observed_at < ${startIso}
+      order by observed_at desc
+      limit 1
+    `;
+    priorStatus = seed[0]?.base_status ?? null;
+  }
 
-  const runs = buildRuns(rows, windowStart, windowEnd);
+  const events = eventRows.map((row) => ({
+    at: toDate(row.observed_at),
+    status: row.base_status as Stock,
+  }));
+
+  // No transitions at all — seed from first in-window observation if present.
+  if (priorStatus === null && events.length === 0) {
+    const firstIn = await rawSql<StatusRow[]>`
+      select observed_at, base_status
+      from availability_observations
+      where server_type_code = ${type}
+        and location_code = ${dc}
+        and observed_at >= ${startIso}
+      order by observed_at asc
+      limit 1
+    `;
+    if (firstIn[0]) {
+      events.push({
+        at: toDate(firstIn[0].observed_at),
+        status: firstIn[0].base_status,
+      });
+    }
+  }
+
+  const pollTimes = [...priorPollRows, ...pollRows].map((row) =>
+    toDate(row.started_at),
+  );
+
+  const runs = buildRunsFromEvents(
+    windowStart,
+    windowEnd,
+    priorStatus,
+    events,
+    pollTimes,
+  );
   const totals = emptyTotals();
   let lastChangeAt: string | null = null;
   let prevState: Stock | null = null;
@@ -162,12 +241,17 @@ function emptyAvailabilityHistory(
   };
 }
 
-function buildRuns(
-  rows: ObservationRow[],
+function buildRunsFromEvents(
   windowStart: Date,
   windowEnd: Date,
+  priorStatus: Stock | null,
+  events: { at: Date; status: Stock }[],
+  pollTimes: Date[],
 ): HistoryRun[] {
-  if (rows.length === 0) {
+  const startMs = windowStart.getTime();
+  const endMs = windowEnd.getTime();
+
+  if (priorStatus === null && events.length === 0) {
     return [
       {
         from: windowStart.toISOString(),
@@ -177,45 +261,118 @@ function buildRuns(
     ];
   }
 
-  const runs: HistoryRun[] = [];
-  let currentState: Stock = "unknown";
-  let currentFrom: Date = windowStart;
+  type Mark = { at: number; status: Stock };
+  const marks: Mark[] = [];
 
-  const pushRun = (to: Date) => {
-    if (to.getTime() <= currentFrom.getTime()) return;
+  if (priorStatus !== null) {
+    marks.push({ at: startMs, status: priorStatus });
+  } else {
+    marks.push({ at: startMs, status: "unknown" });
+  }
+
+  for (const event of events) {
+    const at = event.at.getTime();
+    if (at < startMs || at > endMs) continue;
+    const last = marks[marks.length - 1];
+    if (last && last.status === event.status) continue;
+    marks.push({ at, status: event.status });
+  }
+
+  let runs: HistoryRun[] = [];
+  for (let i = 0; i < marks.length; i++) {
+    const from = marks[i].at;
+    const to = i + 1 < marks.length ? marks[i + 1].at : endMs;
+    if (to <= from) continue;
     runs.push({
-      from: currentFrom.toISOString(),
-      to: to.toISOString(),
-      state: currentState,
+      from: new Date(from).toISOString(),
+      to: new Date(to).toISOString(),
+      state: marks[i].status,
     });
+  }
+
+  const gapMs = HISTORY_GAP_THRESHOLD_SECONDS * 1000;
+  for (let i = 1; i < pollTimes.length; i++) {
+    const prev = pollTimes[i - 1].getTime();
+    const curr = pollTimes[i].getTime();
+    if (curr - prev <= gapMs) continue;
+    runs = punchUnknown(runs, prev + gapMs, curr);
+  }
+
+  if (pollTimes.length > 0) {
+    const lastPoll = pollTimes[pollTimes.length - 1].getTime();
+    if (endMs - lastPoll > gapMs) {
+      runs = punchUnknown(runs, lastPoll + gapMs, endMs);
+    }
+  }
+
+  return mergeAdjacent(runs);
+}
+
+function punchUnknown(
+  runs: HistoryRun[],
+  gapFrom: number,
+  gapTo: number,
+): HistoryRun[] {
+  if (gapTo <= gapFrom) return runs;
+
+  const out: HistoryRun[] = [];
+  let emittedUnknown = false;
+
+  const emitUnknown = () => {
+    if (emittedUnknown) return;
+    out.push({
+      from: new Date(gapFrom).toISOString(),
+      to: new Date(gapTo).toISOString(),
+      state: "unknown",
+    });
+    emittedUnknown = true;
   };
 
-  for (const row of rows) {
-    const observedAt = toDate(row.observed_at);
-    const prevAt = row.prev_at ? toDate(row.prev_at) : null;
-    const gapSeconds = prevAt
-      ? (observedAt.getTime() - prevAt.getTime()) / 1000
-      : null;
+  for (const run of runs) {
+    const a = new Date(run.from).getTime();
+    const b = new Date(run.to).getTime();
 
-    if (prevAt && gapSeconds && gapSeconds > HISTORY_GAP_THRESHOLD_SECONDS) {
-      const gapStart = new Date(
-        prevAt.getTime() + HISTORY_GAP_THRESHOLD_SECONDS * 1000,
-      );
-      pushRun(gapStart);
-      currentState = "unknown";
-      currentFrom = gapStart;
-      pushRun(observedAt);
-      currentState = row.base_status;
-      currentFrom = observedAt;
+    if (b <= gapFrom || a >= gapTo) {
+      out.push(run);
       continue;
     }
 
-    pushRun(observedAt);
-    currentState = row.base_status;
-    currentFrom = observedAt;
+    if (a < gapFrom) {
+      out.push({
+        from: run.from,
+        to: new Date(gapFrom).toISOString(),
+        state: run.state,
+      });
+    }
+
+    emitUnknown();
+
+    if (b > gapTo) {
+      out.push({
+        from: new Date(gapTo).toISOString(),
+        to: run.to,
+        state: run.state,
+      });
+    }
   }
 
-  pushRun(windowEnd);
+  if (!emittedUnknown) emitUnknown();
 
-  return runs;
+  return out;
+}
+
+function mergeAdjacent(runs: HistoryRun[]): HistoryRun[] {
+  if (runs.length === 0) return runs;
+
+  const out: HistoryRun[] = [{ ...runs[0] }];
+  for (let i = 1; i < runs.length; i++) {
+    const prev = out[out.length - 1];
+    const cur = runs[i];
+    if (prev.state === cur.state && prev.to === cur.from) {
+      prev.to = cur.to;
+    } else {
+      out.push({ ...cur });
+    }
+  }
+  return out;
 }
