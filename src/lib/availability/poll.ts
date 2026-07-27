@@ -5,7 +5,7 @@ import {
   deriveServerFamilyId,
   isConfiguredServerFamily,
 } from "@/lib/server-families";
-import { getDb } from "../db/client";
+import { getDb, getSql } from "../db/client";
 import {
   availabilityCurrent,
   availabilityObservations,
@@ -26,12 +26,32 @@ import {
 type BaseStatus = Exclude<Stock, "limited">;
 type TrackedServerType = HetznerServerType & { family: string };
 
-// ponytail: inline deletes on poll success; chunked deletes if one shot times out on backlog
+// One-shot DELETE of months of poll_runs cascades millions of observations and
+// locks the table long enough that /api/availability/history times out (~100s+).
+// Drain a small batch each success instead; backlog clears over subsequent polls.
+const PRUNE_POLL_RUN_BATCH = 25;
+const PRUNE_POLL_RUN_ROUNDS = 8;
+
 async function pruneOlderThan(db: ReturnType<typeof getDb>, days: number) {
   const cutoff = new Date(Date.now() - days * 86_400_000);
   const cutoffDay = cutoff.toISOString().slice(0, 10);
-  // observations cascade from poll_runs
-  await db.delete(pollRuns).where(lt(pollRuns.startedAt, cutoff));
+  const rawSql = getSql();
+
+  for (let round = 0; round < PRUNE_POLL_RUN_ROUNDS; round++) {
+    // observations FK ON DELETE CASCADE — keep batches small
+    const deleted = await rawSql`
+      delete from poll_runs
+      where id in (
+        select id from poll_runs
+        where started_at < ${cutoff}
+        order by started_at
+        limit ${PRUNE_POLL_RUN_BATCH}
+      )
+      returning id
+    `;
+    if (deleted.length === 0) break;
+  }
+
   await db
     .delete(dailyAvailabilityState)
     .where(lt(dailyAvailabilityState.dateUtc, cutoffDay));
