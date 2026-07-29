@@ -7,6 +7,7 @@ import type {
   DispatchPreferences,
 } from "@/lib/marketing/preferences";
 import type { DcCode, FamilyId } from "@/lib/schema";
+import { posthog } from "../../../../instrumentation-client";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 type FeedbackStatus = "idle" | "submitting" | "ok" | "error";
@@ -104,7 +105,20 @@ export function UnsubscribeForm({
         throw new Error(body?.error ?? "Unsubscribe failed.");
       }
 
-      setResultFullUnsubscribe(body?.fullUnsubscribe ?? fullUnsubscribe);
+      const didFullyUnsubscribe = body?.fullUnsubscribe ?? fullUnsubscribe;
+      posthog.capture(
+        didFullyUnsubscribe
+          ? "dispatch_subscription_cancelled"
+          : "dispatch_preferences_updated",
+        {
+          event_types_selected: events.length,
+          server_families_selected: families.length,
+          datacentres_selected: datacentres.length,
+          alerts_wired: events.length * families.length * datacentres.length,
+          source: emailLocked ? "email_link" : "manual_email",
+        },
+      );
+      setResultFullUnsubscribe(didFullyUnsubscribe);
       setStatus("ok");
     } catch (error) {
       setStatus("error");
@@ -148,6 +162,10 @@ export function UnsubscribeForm({
         throw new Error(body?.error ?? "Feedback failed.");
       }
 
+      posthog.capture("unsubscribe_feedback_submitted", {
+        reason: feedbackReason,
+        source: emailLocked ? "email_link" : "manual_email",
+      });
       setFeedbackStatus("ok");
     } catch (error) {
       setFeedbackStatus("error");
