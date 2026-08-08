@@ -4,6 +4,7 @@ import {
   getLatestPollAt,
 } from "@/lib/availability/read-model";
 import type { StockEvent } from "@/lib/schema";
+import { SITE_URL } from "@/lib/site";
 
 export const runtime = "nodejs";
 // Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
@@ -11,8 +12,6 @@ export const revalidate = 300;
 
 const WINDOW_DAYS = 60;
 const LIMIT = 200;
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://hetzner.thegoated.dev";
 const FEED_URL = `${SITE_URL}/feed.atom`;
 const ARCHIVE_URL = `${SITE_URL}/dispatches`;
 

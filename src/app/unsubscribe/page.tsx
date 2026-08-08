@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Unsubscribe · Hetzner Cloud Radar",
+  title: "Unsubscribe",
   description: "Unsubscribe from Hetzner Cloud Radar dispatches.",
   robots: { index: false, follow: false },
 };

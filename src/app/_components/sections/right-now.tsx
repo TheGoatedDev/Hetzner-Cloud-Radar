@@ -30,6 +30,9 @@ export function RightNow({
   return (
     <section className="flex flex-col gap-5 border-b border-hairline pt-8 pb-10">
       <Eyebrow>Right now</Eyebrow>
+      <h1 className="font-sans text-2xl font-medium tracking-tight text-ink">
+        Hetzner Cloud server availability
+      </h1>
       <div className="flex items-baseline gap-4">
         <StockGlyph stock={topLine.state} />
         <span

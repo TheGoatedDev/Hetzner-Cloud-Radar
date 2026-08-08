@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { SITE_URL } from "@/lib/site";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -18,10 +19,36 @@ const plexSans = IBM_Plex_Sans({
   display: "swap",
 });
 
+const title = "Hetzner Cloud availability · live stock by datacentre";
+const description =
+  "Independent Hetzner Cloud server availability tracker. Live stock by datacentre for CX, CAX, CPX, and CCX — with stock-out history and email dispatches.";
+
 export const metadata: Metadata = {
-  title: "Hetzner Cloud Radar",
-  description:
-    "Independent uptime dispatch for Hetzner Cloud. Probes server, network, and region availability from outside, records history, and reports it honestly.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: title,
+    template: "%s · Hetzner Cloud Radar",
+  },
+  description,
+  alternates: {
+    canonical: "/",
+    types: {
+      "application/atom+xml": "/feed.atom",
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_GB",
+    url: "/",
+    siteName: "Hetzner Cloud Radar",
+    title,
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default function RootLayout({

@@ -13,9 +13,10 @@ export const runtime = "nodejs";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "All dispatches · Hetzner Cloud Radar",
+  title: "All dispatches",
   description:
     "Full archive of Hetzner Cloud stock-out, restock, and rollout events observed by the radar.",
+  alternates: { canonical: "/dispatches" },
 };
 
 const WINDOW_DAYS = 60;
@@ -38,6 +39,7 @@ export default async function DispatchesPage() {
     <PageFrame observedAt={observedAt} wide>
       <section className="flex flex-col gap-4 pt-10">
         <SectionHeader
+          as="h1"
           kicker={kicker}
           title="All dispatches"
           blurb="Every notable stock-out, restock, and rollout event we have on file. Each row is signed by the timestamp of its first observation. Click a date to share a link to that dispatch."

@@ -12,10 +12,12 @@ export function Counter({
   return (
     <div className="flex items-baseline gap-2">
       <dt className="text-ink-soft">{label}</dt>
-      <dd className="text-ink tabular-nums">{value}</dd>
-      {delta ? (
-        <span className="text-ink-faint tabular-nums">{delta}</span>
-      ) : null}
+      <dd className="text-ink tabular-nums">
+        {value}
+        {delta ? (
+          <span className="ml-2 text-ink-faint tabular-nums">{delta}</span>
+        ) : null}
+      </dd>
     </div>
   );
 }

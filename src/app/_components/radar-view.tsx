@@ -55,18 +55,20 @@ export function RadarView() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-6 sm:px-10">
       <Masthead observedAt={data.observedAt} />
-      <RightNow
-        totals={totals}
-        topLine={data.topLine}
-        observedAt={data.observedAt}
-      />
-      <SupplyTrend days={data.supplyHistory} />
-      <Legend />
-      {data.families.map((f, i) => (
-        <FamilySection key={f.id} family={f} first={i === 0} />
-      ))}
-      <Subscribe />
-      <Dispatches events={data.events} />
+      <main>
+        <RightNow
+          totals={totals}
+          topLine={data.topLine}
+          observedAt={data.observedAt}
+        />
+        <SupplyTrend days={data.supplyHistory} />
+        <Legend />
+        {data.families.map((f, i) => (
+          <FamilySection key={f.id} family={f} first={i === 0} />
+        ))}
+        <Subscribe />
+        <Dispatches events={data.events} />
+      </main>
       <PageFooter pollCadence={data.pollCadence} />
     </div>
   );

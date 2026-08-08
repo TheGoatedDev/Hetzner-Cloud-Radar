@@ -12,9 +12,10 @@ export const runtime = "nodejs";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Methodology · Hetzner Cloud Radar",
+  title: "Methodology",
   description:
     "How Hetzner Cloud Radar observes Hetzner Cloud server-type availability per region.",
+  alternates: { canonical: "/methodology" },
 };
 
 const PROSE = "max-w-[68ch] font-sans text-base leading-[1.7] text-ink-soft";
@@ -68,6 +69,7 @@ export default async function MethodologyPage() {
     <PageFrame observedAt={await getObservedAtLabel()}>
       <section className="flex flex-col gap-5 pt-10">
         <SectionHeader
+          as="h1"
           kicker="How the radar works"
           title="Methodology"
           blurb="Hetzner Cloud Radar is an independent observer. It polls the public Hetzner Cloud API on a fixed cadence, normalises the response into four states, and publishes the result. Nothing is inferred where data is missing; nothing is hidden where it is."
