@@ -38,7 +38,6 @@ async function main() {
     await warmPublicReads(appUrl);
   }
 
-  // Drain pool so fire-and-forget prune can finish before exit.
   await getSql().end({ timeout: 5 });
 
   process.exitCode = result.status === "success" ? 0 : 1;

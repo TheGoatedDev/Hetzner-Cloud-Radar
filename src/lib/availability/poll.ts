@@ -22,40 +22,60 @@ import {
   normalizeLocationCode,
   readLocation,
 } from "./hetzner";
+import { HISTORY_WINDOW_DAYS } from "./history";
 
 type BaseStatus = Exclude<Stock, "limited">;
 type TrackedServerType = HetznerServerType & { family: string };
 
-// Cascade deletes lock observations — keep batches tiny; backlog drains over polls.
-const PRUNE_POLL_RUN_BATCH = 10;
-const PRUNE_POLL_RUN_ROUNDS = 3;
+// Raw poll rows only needed for history (14d). Events/dispatches keep longer.
+const EVENT_RETENTION_DAYS = 60;
+// CASCADE obs deletes lock — batch + wall budget; backlog drains across polls.
+const PRUNE_POLL_RUN_BATCH = 50;
+const PRUNE_BUDGET_MS = 45_000;
 
-async function pruneOlderThan(db: ReturnType<typeof getDb>, days: number) {
-  const cutoff = new Date(Date.now() - days * 86_400_000);
-  const cutoffIso = cutoff.toISOString();
-  const cutoffDay = cutoffIso.slice(0, 10);
+export type PruneResult = {
+  deletedPollRuns: number;
+  hitBudget: boolean;
+};
+
+async function pruneRetention(
+  db: ReturnType<typeof getDb>,
+): Promise<PruneResult> {
+  const rawCutoff = new Date(Date.now() - HISTORY_WINDOW_DAYS * 86_400_000);
+  const eventCutoff = new Date(Date.now() - EVENT_RETENTION_DAYS * 86_400_000);
+  const rawCutoffIso = rawCutoff.toISOString();
+  const eventCutoffDay = eventCutoff.toISOString().slice(0, 10);
   const rawSql = getSql();
+  const deadline = Date.now() + PRUNE_BUDGET_MS;
+  let deletedPollRuns = 0;
+  let hitBudget = false;
 
-  for (let round = 0; round < PRUNE_POLL_RUN_ROUNDS; round++) {
-    // observations FK ON DELETE CASCADE — keep batches small
-    // postgres.js raw templates need ISO strings, not Date instances
+  // observations FK ON DELETE CASCADE — postgres.js needs ISO strings, not Date
+  for (;;) {
+    if (Date.now() >= deadline) {
+      hitBudget = true;
+      break;
+    }
     const deleted = await rawSql`
       delete from poll_runs
       where id in (
         select id from poll_runs
-        where started_at < ${cutoffIso}
+        where started_at < ${rawCutoffIso}
         order by started_at
         limit ${PRUNE_POLL_RUN_BATCH}
       )
       returning id
     `;
+    deletedPollRuns += deleted.length;
     if (deleted.length === 0) break;
   }
 
   await db
     .delete(dailyAvailabilityState)
-    .where(lt(dailyAvailabilityState.dateUtc, cutoffDay));
-  await db.delete(stockEvents).where(lt(stockEvents.observedAt, cutoff));
+    .where(lt(dailyAvailabilityState.dateUtc, eventCutoffDay));
+  await db.delete(stockEvents).where(lt(stockEvents.observedAt, eventCutoff));
+
+  return { deletedPollRuns, hitBudget };
 }
 
 const TRACKED_LOCATION_API: Record<
@@ -472,9 +492,9 @@ export async function pollAvailability() {
         error instanceof Error ? error.message : "Email dispatch failed",
     }));
 
-    // Don't await — prune IO must not stretch the poll or contend with history reads.
-    void pruneOlderThan(db, 60).catch((error) => {
+    const prune = await pruneRetention(db).catch((error) => {
       console.error("Retention prune failed", error);
+      return { deletedPollRuns: 0, hitBudget: false } satisfies PruneResult;
     });
 
     return {
@@ -485,6 +505,7 @@ export async function pollAvailability() {
       unknownFamilies,
       skippedMalformedServerTypes,
       emailDispatches,
+      prune,
       status: "success" as const,
     };
   } catch (error) {
