@@ -30,9 +30,6 @@ export function RightNow({
   return (
     <section className="flex flex-col gap-5 border-b border-hairline pt-8 pb-10">
       <Eyebrow>Right now</Eyebrow>
-      <h1 className="font-sans text-2xl font-medium tracking-tight text-ink">
-        Hetzner Cloud server availability
-      </h1>
       <div className="flex items-baseline gap-4">
         <StockGlyph stock={topLine.state} />
         <span
@@ -44,9 +41,9 @@ export function RightNow({
           as of {observedAt}
         </span>
       </div>
-      <p className="max-w-[68ch] font-sans text-lg leading-[1.55] text-ink">
+      <h1 className="max-w-[68ch] font-sans text-lg font-normal leading-[1.55] text-ink">
         {topLine.line}
-      </p>
+      </h1>
       <dl className="mt-1 flex flex-wrap gap-x-10 gap-y-2 text-xs">
         <Counter label="Tracked" value={totals.tracked} />
         <Counter
