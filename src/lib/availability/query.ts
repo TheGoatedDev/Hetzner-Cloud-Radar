@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { POLL_INTERVAL_MS } from "./cadence";
 
 export const AVAILABILITY_QUERY_KEY = ["availability"] as const;
 
@@ -8,7 +9,7 @@ export function createAvailabilityQueryClient() {
       queries: {
         refetchOnWindowFocus: false,
         retry: 1,
-        staleTime: 60_000,
+        staleTime: POLL_INTERVAL_MS,
       },
     },
   });

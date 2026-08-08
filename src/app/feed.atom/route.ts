@@ -1,3 +1,4 @@
+import { POLL_INTERVAL_SECONDS } from "@/lib/availability/cadence";
 import {
   getDispatchEvents,
   getLatestPollAt,
@@ -5,9 +6,8 @@ import {
 import type { StockEvent } from "@/lib/schema";
 
 export const runtime = "nodejs";
-// Feed generation depends on live dispatch history, so keep it out of build-time
-// prerendering and let CDN headers handle public caching.
-export const revalidate = 60;
+// Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
+export const revalidate = 300;
 
 const WINDOW_DAYS = 60;
 const LIMIT = 200;
@@ -99,7 +99,7 @@ export async function GET() {
   return new Response(xml, {
     headers: {
       "Content-Type": "application/atom+xml; charset=utf-8",
-      "Cache-Control": "public, max-age=60, s-maxage=60",
+      "Cache-Control": `public, max-age=${POLL_INTERVAL_SECONDS}, s-maxage=${POLL_INTERVAL_SECONDS}`,
     },
   });
 }

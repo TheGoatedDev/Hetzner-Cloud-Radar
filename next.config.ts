@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
+import { POLL_INTERVAL_SECONDS } from "./src/lib/availability/cadence";
 
-const PUBLIC_READ_CACHE =
-  "public, max-age=60, stale-while-revalidate=300, stale-if-error=86400";
+const PUBLIC_READ_CACHE = `public, max-age=${POLL_INTERVAL_SECONDS}, stale-while-revalidate=${POLL_INTERVAL_SECONDS * 3}, stale-if-error=86400`;
 
 const nextConfig: NextConfig = {
   reactCompiler: true,

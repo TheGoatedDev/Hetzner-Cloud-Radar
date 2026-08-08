@@ -32,16 +32,18 @@ const PRUNE_POLL_RUN_ROUNDS = 3;
 
 async function pruneOlderThan(db: ReturnType<typeof getDb>, days: number) {
   const cutoff = new Date(Date.now() - days * 86_400_000);
-  const cutoffDay = cutoff.toISOString().slice(0, 10);
+  const cutoffIso = cutoff.toISOString();
+  const cutoffDay = cutoffIso.slice(0, 10);
   const rawSql = getSql();
 
   for (let round = 0; round < PRUNE_POLL_RUN_ROUNDS; round++) {
     // observations FK ON DELETE CASCADE — keep batches small
+    // postgres.js raw templates need ISO strings, not Date instances
     const deleted = await rawSql`
       delete from poll_runs
       where id in (
         select id from poll_runs
-        where started_at < ${cutoff}
+        where started_at < ${cutoffIso}
         order by started_at
         limit ${PRUNE_POLL_RUN_BATCH}
       )

@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { POLL_INTERVAL_MS } from "@/lib/availability/cadence";
 import type { AvailabilityHistory } from "@/lib/availability/history";
 import { DC_META, type DcCode, STOCK, type Stock } from "@/lib/schema";
 
@@ -156,8 +157,8 @@ export function AvailabilityHistoryPopover({
     queryKey: ["availability-history", type, dc],
     queryFn: () => fetchHistory(type, dc),
     enabled: shouldFetch,
-    staleTime: 60_000,
-    gcTime: 10 * 60_000,
+    staleTime: POLL_INTERVAL_MS,
+    gcTime: 10 * POLL_INTERVAL_MS,
     refetchOnWindowFocus: false,
   });
 

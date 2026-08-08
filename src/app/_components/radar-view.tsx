@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { POLL_INTERVAL_MS } from "@/lib/availability/cadence";
 import { AVAILABILITY_QUERY_KEY } from "@/lib/availability/query";
 import type { AvailabilityReadModel } from "@/lib/availability/read-model";
 import { DCS, type Stock } from "@/lib/schema";
@@ -39,7 +40,7 @@ export function RadarView() {
   const { data } = useQuery({
     queryKey: AVAILABILITY_QUERY_KEY,
     queryFn: fetchAvailability,
-    refetchInterval: 60_000,
+    refetchInterval: POLL_INTERVAL_MS,
   });
 
   if (!data) {

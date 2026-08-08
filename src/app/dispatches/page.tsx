@@ -9,8 +9,8 @@ import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
 
 export const runtime = "nodejs";
-// stock_events is cheap; ISR + cron revalidate is enough.
-export const revalidate = 60;
+// Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "All dispatches · Hetzner Cloud Radar",

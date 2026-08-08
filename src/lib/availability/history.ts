@@ -1,9 +1,10 @@
 import { DCS, type DcCode, type Stock } from "@/lib/schema";
 import { visibleServerFamilyIds } from "@/lib/server-families";
 import { getSql } from "../db/client";
+import { HISTORY_GAP_THRESHOLD_SECONDS, POLL_INTERVAL_MS } from "./cadence";
 
 export const HISTORY_WINDOW_DAYS = 14;
-export const HISTORY_GAP_THRESHOLD_SECONDS = 180;
+export { HISTORY_GAP_THRESHOLD_SECONDS };
 
 export type HistoryRun = {
   from: string;
@@ -35,7 +36,7 @@ type CacheEntry = {
   value: AvailabilityHistory;
 };
 
-const SERVER_CACHE_TTL_MS = 60_000;
+const SERVER_CACHE_TTL_MS = POLL_INTERVAL_MS;
 const serverCache = new Map<string, CacheEntry>();
 
 function cacheKey(type: string, dc: DcCode) {

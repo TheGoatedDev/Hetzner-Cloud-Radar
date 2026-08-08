@@ -21,6 +21,9 @@ import {
   serverTypes,
   stockEvents,
 } from "../db/schema";
+import { POLL_CADENCE } from "./cadence";
+
+export { POLL_CADENCE };
 
 export type AvailabilityReadModel = {
   families: Family[];
@@ -32,8 +35,6 @@ export type AvailabilityReadModel = {
   supplyHistory: SupplyDay[];
   usingFallback: boolean;
 };
-
-export const POLL_CADENCE = "60 seconds";
 
 type DispatchTransition = {
   observed_at: Date | string;

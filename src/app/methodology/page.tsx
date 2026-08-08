@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import {
-  getObservedAtLabel,
-  POLL_CADENCE,
-} from "@/lib/availability/read-model";
+import { POLL_CADENCE } from "@/lib/availability/cadence";
+import { getObservedAtLabel } from "@/lib/availability/read-model";
 import { STOCK, type Stock } from "@/lib/schema";
 import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
 import { StockGlyph } from "../_components/stock-glyph";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
+// Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Methodology · Hetzner Cloud Radar",
