@@ -1,4 +1,5 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { unstable_noStore as noStore } from "next/cache";
 import {
   AVAILABILITY_QUERY_KEY,
   createAvailabilityQueryClient,
@@ -11,12 +12,15 @@ export const runtime = "nodejs";
 export const revalidate = 300;
 
 export default async function Home() {
-  const queryClient = createAvailabilityQueryClient();
+  const data = await getAvailabilityReadModel();
 
-  await queryClient.prefetchQuery({
-    queryKey: AVAILABILITY_QUERY_KEY,
-    queryFn: getAvailabilityReadModel,
-  });
+  // Don't ISR-cache the empty fallback from a cold/error read.
+  if (data.usingFallback) {
+    noStore();
+  }
+
+  const queryClient = createAvailabilityQueryClient();
+  queryClient.setQueryData(AVAILABILITY_QUERY_KEY, data);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

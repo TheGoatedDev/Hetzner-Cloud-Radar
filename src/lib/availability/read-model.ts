@@ -46,8 +46,8 @@ type DispatchTransition = {
   previous_sold_out_at: Date | string | null;
 };
 
-export function formatObservedAt(date: Date) {
-  return date
+export function formatObservedAt(date: Date | string) {
+  return toDate(date)
     .toISOString()
     .replace("T", " ")
     .replace(/\.\d{3}Z$/, " UTC");
@@ -405,10 +405,11 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
       };
     });
 
-    const observedAt = formatObservedAt(latestPoll[0].finishedAt);
-    const observedDate = latestPoll[0].finishedAt.toISOString().slice(0, 10);
+    const finishedAt = toDate(latestPoll[0].finishedAt);
+    const observedAt = formatObservedAt(finishedAt);
+    const observedDate = finishedAt.toISOString().slice(0, 10);
     const topLine = makeTopLine(families);
-    const sixtyDaysAgo = new Date(latestPoll[0].finishedAt);
+    const sixtyDaysAgo = new Date(finishedAt);
     sixtyDaysAgo.setUTCDate(sixtyDaysAgo.getUTCDate() - 59);
     const [dailyRows, events] = await Promise.all([
       db
@@ -434,7 +435,7 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
         )
         .groupBy(dailyAvailabilityState.dateUtc)
         .orderBy(dailyAvailabilityState.dateUtc),
-      getDispatchEvents(latestPoll[0].finishedAt),
+      getDispatchEvents(finishedAt),
     ]);
     const dailyByDate = new Map(
       dailyRows.map((day) => [
