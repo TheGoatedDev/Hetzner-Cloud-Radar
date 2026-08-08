@@ -29,9 +29,11 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-# Railway preDeploy migrate (not part of Next trace)
+# preDeploy: migrate.mjs + deps (not in Next standalone trace)
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/src/scripts/migrate.mjs ./src/scripts/migrate.mjs
+COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=builder /app/node_modules/postgres ./node_modules/postgres
 
 EXPOSE 3000
 
