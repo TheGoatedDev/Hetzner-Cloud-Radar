@@ -2,7 +2,6 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 let cachedDatabaseEnv: ReturnType<typeof createDatabaseEnv> | undefined;
-let cachedCronEnv: ReturnType<typeof createCronEnv> | undefined;
 let cachedHetznerEnv: ReturnType<typeof createHetznerEnv> | undefined;
 let cachedResendEnv: ReturnType<typeof createResendEnv> | undefined;
 let cachedDiscordEnv: ReturnType<typeof createDiscordEnv> | undefined;
@@ -20,18 +19,6 @@ function createDatabaseEnv() {
     },
     runtimeEnv: {
       DATABASE_URL: process.env.DATABASE_URL,
-    },
-    ...commonOptions,
-  });
-}
-
-function createCronEnv() {
-  return createEnv({
-    server: {
-      CRON_SECRET: z.string().min(1),
-    },
-    runtimeEnv: {
-      CRON_SECRET: process.env.CRON_SECRET,
     },
     ...commonOptions,
   });
@@ -98,12 +85,6 @@ export function getDatabaseEnv() {
   cachedDatabaseEnv ??= createDatabaseEnv();
 
   return cachedDatabaseEnv;
-}
-
-export function getCronEnv() {
-  cachedCronEnv ??= createCronEnv();
-
-  return cachedCronEnv;
 }
 
 export function getHetznerEnv() {

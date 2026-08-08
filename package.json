@@ -15,8 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "resend:migrate-filter-topics": "node src/scripts/migrate-resend-filter-topics.mjs",
     "families:audit": "node src/scripts/audit-server-families.mjs",
-    "poll:local": "node src/scripts/run-poll.mjs",
-    "email": "email dev --dir ./src/emails --port 3001"
+    "email": "email dev --dir ./src/emails --port 3001",
+    "worker": "tsx worker.ts"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
@@ -30,6 +30,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.12.3",
+    "tsx": "^4.23.11",
     "zod": "^4.4.3"
   },
   "devDependencies": {

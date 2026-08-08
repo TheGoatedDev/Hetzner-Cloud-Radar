@@ -67,7 +67,6 @@ Required variables:
 ```bash
 DATABASE_URL=postgres://postgres:password@localhost:5432/hetzner_cloud_radar
 HETZNER_API_TOKEN=
-CRON_SECRET=dev_cron_secret
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=dispatches@hetzner.thegoated.dev
 RESEND_MARKETING_SEGMENT_ID=
@@ -112,47 +111,13 @@ http://localhost:3000
 
 ## Polling
 
-The cron endpoint is:
-
-```text
-POST /api/cron/poll-availability
-Authorization: Bearer <CRON_SECRET>
-```
-
-Run a local poll against the default dev server:
+One-shot worker (local or Railway cron via `Dockerfile.worker`):
 
 ```bash
-pnpm poll:local
+pnpm worker
 ```
 
-Run against a different URL:
-
-```bash
-POLL_URL=https://example.com/api/cron/poll-availability pnpm poll:local
-```
-
-Equivalent curl:
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer $CRON_SECRET" \
-  -H "Accept: application/json" \
-  http://127.0.0.1:3000/api/cron/poll-availability
-```
-
-Successful poll response includes:
-
-```json
-{
-  "pollRunId": "...",
-  "observedAt": "...",
-  "insertedObservations": 150,
-  "currentUpdated": 150,
-  "status": "success"
-}
-```
-
-After success, the cron route revalidates `/` and `/api/availability`.
+Needs `DATABASE_URL` + `HETZNER_API_TOKEN` (plus Resend vars if you want dispatch emails).
 
 ## CDN Caching
 
@@ -168,8 +133,8 @@ fresh TTL, 5 minute stale-while-revalidate window, and 24 hour stale-if-error
 window. Cloudflare still needs a Cache Rule that caches HTML and JSON for these
 paths; Cloudflare does not cache HTML or JSON by default.
 
-Do not apply the cache rule to `/api/subscribe`, `/api/unsubscribe`,
-`/api/unsubscribe/feedback`, or `/api/cron/poll-availability`.
+Do not apply the cache rule to `/api/subscribe`, `/api/unsubscribe`, or
+`/api/unsubscribe/feedback`.
 
 ## Database
 
@@ -250,12 +215,13 @@ and Topics. The app does not store subscriber email addresses locally.
 ```text
 src/app/                         Next.js routes and UI
 src/app/api/availability/         Public availability JSON
-src/app/api/cron/poll-availability/ Authenticated poll endpoint
 src/app/api/subscribe/            Resend-backed subscriber endpoint
 src/lib/availability/             Hetzner polling and read model
 src/lib/db/                       Drizzle client and schema
 src/lib/marketing/                Resend contact sync
-src/scripts/                      Local DB setup and poll helpers
+src/scripts/                      Local DB setup helpers
+worker.ts                         One-shot poll entrypoint
+Dockerfile.worker                 Worker image
 drizzle/                          Generated migrations
 ```
 
