@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
-import { POLL_INTERVAL_SECONDS } from "./src/lib/availability/cadence";
 
+// Keep in sync with POLL_INTERVAL_SECONDS in src/lib/availability/cadence.ts
+// (web image has no src/; next.config must stay self-contained)
+const POLL_INTERVAL_SECONDS = 300;
 const PUBLIC_READ_CACHE = `public, max-age=${POLL_INTERVAL_SECONDS}, stale-while-revalidate=${POLL_INTERVAL_SECONDS * 3}, stale-if-error=86400`;
 
 const nextConfig: NextConfig = {
