@@ -62,8 +62,9 @@
   --color-down: var(--status-down);
   --color-unknown: var(--status-unknown);
 
-  --font-mono: var(--font-plex-mono);
-  --font-sans: var(--font-plex-sans);
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --radius-sharp: 0;
   --radius-edge: 2px;
@@ -82,9 +83,7 @@ html {
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family:
-    var(--font-plex-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo,
-    Consolas, monospace;
+  font-family: var(--font-mono);
 }
 
 ::selection {

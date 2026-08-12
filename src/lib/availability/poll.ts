@@ -5,10 +5,9 @@ import {
   deriveServerFamilyId,
   isConfiguredServerFamily,
 } from "@/lib/server-families";
-import { getDb, getSql } from "../db/client";
+import { getDb } from "../db/client";
 import {
   availabilityCurrent,
-  availabilityObservations,
   dailyAvailabilityState,
   locations,
   pollRuns,
@@ -27,11 +26,7 @@ import { HISTORY_WINDOW_DAYS } from "./history";
 type BaseStatus = Exclude<Stock, "limited">;
 type TrackedServerType = HetznerServerType & { family: string };
 
-// Raw poll rows only needed for history (14d). Events/dispatches keep longer.
 const EVENT_RETENTION_DAYS = 60;
-// CASCADE obs deletes lock — batch + wall budget; backlog drains across polls.
-const PRUNE_POLL_RUN_BATCH = 50;
-const PRUNE_BUDGET_MS = 45_000;
 
 export type PruneResult = {
   deletedPollRuns: number;
@@ -41,41 +36,26 @@ export type PruneResult = {
 async function pruneRetention(
   db: ReturnType<typeof getDb>,
 ): Promise<PruneResult> {
-  const rawCutoff = new Date(Date.now() - HISTORY_WINDOW_DAYS * 86_400_000);
+  const rawCutoffIso = new Date(
+    Date.now() - HISTORY_WINDOW_DAYS * 86_400_000,
+  ).toISOString();
   const eventCutoff = new Date(Date.now() - EVENT_RETENTION_DAYS * 86_400_000);
-  const rawCutoffIso = rawCutoff.toISOString();
   const eventCutoffDay = eventCutoff.toISOString().slice(0, 10);
-  const rawSql = getSql();
-  const deadline = Date.now() + PRUNE_BUDGET_MS;
-  let deletedPollRuns = 0;
-  let hitBudget = false;
+  const eventCutoffIso = eventCutoff.toISOString();
 
-  // observations FK ON DELETE CASCADE — postgres.js needs ISO strings, not Date
-  for (;;) {
-    if (Date.now() >= deadline) {
-      hitBudget = true;
-      break;
-    }
-    const deleted = await rawSql`
-      delete from poll_runs
-      where id in (
-        select id from poll_runs
-        where started_at < ${rawCutoffIso}
-        order by started_at
-        limit ${PRUNE_POLL_RUN_BATCH}
-      )
-      returning id
-    `;
-    deletedPollRuns += deleted.length;
-    if (deleted.length === 0) break;
-  }
-
+  // ponytail: simple deletes; no obs table
+  const deleted = await db
+    .delete(pollRuns)
+    .where(lt(pollRuns.startedAt, rawCutoffIso))
+    .returning({ id: pollRuns.id });
   await db
     .delete(dailyAvailabilityState)
     .where(lt(dailyAvailabilityState.dateUtc, eventCutoffDay));
-  await db.delete(stockEvents).where(lt(stockEvents.observedAt, eventCutoff));
+  await db
+    .delete(stockEvents)
+    .where(lt(stockEvents.observedAt, eventCutoffIso));
 
-  return { deletedPollRuns, hitBudget };
+  return { deletedPollRuns: deleted.length, hitBudget: false };
 }
 
 const TRACKED_LOCATION_API: Record<
@@ -145,7 +125,7 @@ export async function pollAvailability() {
 
     await db.insert(pollRuns).values({
       id: pollRunId,
-      startedAt: observedAt,
+      startedAt: observedAt.toISOString(),
       status: "failed",
     });
 
@@ -191,49 +171,51 @@ export async function pollAvailability() {
         city: fetched?.city || fallback.city,
         country: fetched?.country || fallback.country,
         networkZone: fetched?.networkZone || fallback.networkZone,
-        raw: fetched?.raw ?? fallback,
+        raw: (fetched?.raw ?? fallback) as Record<string, unknown>,
       };
     });
 
-    await db
-      .insert(locations)
-      .values(locationValues)
-      .onConflictDoUpdate({
-        target: locations.code,
-        set: {
-          apiName: sql`excluded.api_name`,
-          city: sql`excluded.city`,
-          country: sql`excluded.country`,
-          networkZone: sql`excluded.network_zone`,
-          raw: sql`excluded.raw`,
-        },
-      });
+    // ponytail: D1/drizzle ON CONFLICT("table"."col") is invalid — per-row upsert
+    for (const row of locationValues) {
+      await db
+        .insert(locations)
+        .values(row)
+        .onConflictDoUpdate({
+          target: locations.code,
+          set: {
+            apiName: row.apiName,
+            city: row.city,
+            country: row.country,
+            networkZone: row.networkZone,
+            raw: row.raw,
+          },
+        });
+    }
 
-    if (trackedServerTypes.length > 0) {
+    for (const serverType of trackedServerTypes) {
+      const row = {
+        code: serverType.name,
+        hetznerId: serverType.id,
+        family: serverType.family,
+        cores: serverType.cores,
+        memoryGb: serverType.memory,
+        diskGb: serverType.disk,
+        architecture: serverType.architecture,
+        raw: serverType.raw as Record<string, unknown>,
+      };
       await db
         .insert(serverTypes)
-        .values(
-          trackedServerTypes.map((serverType) => ({
-            code: serverType.name,
-            hetznerId: serverType.id,
-            family: serverType.family,
-            cores: serverType.cores,
-            memoryGb: serverType.memory,
-            diskGb: serverType.disk,
-            architecture: serverType.architecture,
-            raw: serverType.raw,
-          })),
-        )
+        .values(row)
         .onConflictDoUpdate({
           target: serverTypes.code,
           set: {
-            hetznerId: sql`excluded.hetzner_id`,
-            family: sql`excluded.family`,
-            cores: sql`excluded.cores`,
-            memoryGb: sql`excluded.memory_gb`,
-            diskGb: sql`excluded.disk_gb`,
-            architecture: sql`excluded.architecture`,
-            raw: sql`excluded.raw`,
+            hetznerId: row.hetznerId,
+            family: row.family,
+            cores: row.cores,
+            memoryGb: row.memoryGb,
+            diskGb: row.diskGb,
+            architecture: row.architecture,
+            raw: row.raw,
           },
         });
     }
@@ -259,10 +241,9 @@ export async function pollAvailability() {
         .where(sql`${serverTypes.code} = ${stored.code}`);
     }
 
-    const observationValues = trackedServerTypes.flatMap((serverType) =>
+    const pollStates = trackedServerTypes.flatMap((serverType) =>
       DCS.map((dc) => {
         const location = findTrackedLocation(serverType, dc);
-        const supported = Boolean(location);
         const baseStatus: BaseStatus = !location
           ? "not-offered"
           : location.available === true
@@ -272,12 +253,9 @@ export async function pollAvailability() {
               : "unknown";
 
         return {
-          id: randomUUID(),
-          pollRunId,
           serverTypeCode: serverType.name,
           locationCode: normalizeLocationCode(dc.toLowerCase()),
           observedAt,
-          supported,
           apiAvailable: location?.available ?? null,
           apiRecommended: location?.recommended ?? null,
           baseStatus,
@@ -285,11 +263,6 @@ export async function pollAvailability() {
       }),
     );
 
-    if (observationValues.length > 0) {
-      await db.insert(availabilityObservations).values(observationValues);
-    }
-
-    // Diff against prior current snapshot → stock_events (not every poll row).
     const previousCurrent = await db.select().from(availabilityCurrent);
     const previousByCell = new Map(
       previousCurrent.map((row) => [
@@ -297,7 +270,7 @@ export async function pollAvailability() {
         row,
       ]),
     );
-    const transitionCandidates = observationValues.flatMap((observation) => {
+    const transitionCandidates = pollStates.flatMap((observation) => {
       const previous = previousByCell.get(
         `${observation.serverTypeCode}:${observation.locationCode}`,
       );
@@ -316,13 +289,12 @@ export async function pollAvailability() {
       return [
         {
           id: randomUUID(),
-          observedAt,
+          observedAt: observedAt.toISOString(),
           serverTypeCode: observation.serverTypeCode,
           locationCode: observation.locationCode,
           baseStatus: nextStatus,
           prevStatus,
-          // Filled below for restocks when we know the sold-out start.
-          previousSoldOutAt: null as Date | null,
+          previousSoldOutAt: null as string | null,
           needsSoldOutLookup: prevStatus === "sold-out",
         },
       ];
@@ -336,7 +308,7 @@ export async function pollAvailability() {
           locationCode: event.locationCode,
         }));
 
-      const soldOutStartedAt = new Map<string, Date>();
+      const soldOutStartedAt = new Map<string, string>();
 
       if (restockCells.length > 0) {
         const cellMatch = or(
@@ -348,7 +320,6 @@ export async function pollAvailability() {
           ),
         );
 
-        // Latest prior sold-out event per restocking cell.
         const priorSoldOut = cellMatch
           ? await db
               .select({
@@ -361,7 +332,7 @@ export async function pollAvailability() {
                 and(
                   cellMatch,
                   eq(stockEvents.baseStatus, "sold-out"),
-                  lt(stockEvents.observedAt, observedAt),
+                  lt(stockEvents.observedAt, observedAt.toISOString()),
                 ),
               )
               .orderBy(sql`${stockEvents.observedAt} desc`)
@@ -375,8 +346,9 @@ export async function pollAvailability() {
         }
       }
 
-      await db.insert(stockEvents).values(
-        transitionCandidates.map((candidate) => ({
+      // ponytail: D1 max ~100 bound params — one row at a time
+      for (const candidate of transitionCandidates) {
+        await db.insert(stockEvents).values({
           id: candidate.id,
           observedAt: candidate.observedAt,
           serverTypeCode: candidate.serverTypeCode,
@@ -388,11 +360,11 @@ export async function pollAvailability() {
                 `${candidate.serverTypeCode}:${candidate.locationCode}`,
               ) ?? null)
             : null,
-        })),
-      );
+        });
+      }
     }
 
-    for (const observation of observationValues) {
+    for (const observation of pollStates) {
       const sawAvailable = observation.baseStatus === "available";
       const sawSoldOut = observation.baseStatus === "sold-out";
 
@@ -431,7 +403,7 @@ export async function pollAvailability() {
       ]),
     );
 
-    const currentRows = observationValues.map((observation) => {
+    const currentRows = pollStates.map((observation) => {
       const daily = dailyByCell.get(
         `${observation.serverTypeCode}:${observation.locationCode}`,
       );
@@ -439,7 +411,7 @@ export async function pollAvailability() {
       return {
         serverTypeCode: observation.serverTypeCode,
         locationCode: observation.locationCode,
-        observedAt,
+        observedAt: observedAt.toISOString(),
         baseStatus: observation.baseStatus,
         displayStatus: displayStatus(
           observation.baseStatus,
@@ -451,26 +423,26 @@ export async function pollAvailability() {
       };
     });
 
-    if (currentRows.length > 0) {
+    for (const row of currentRows) {
       await db
         .insert(availabilityCurrent)
-        .values(currentRows)
+        .values(row)
         .onConflictDoUpdate({
           target: [
             availabilityCurrent.serverTypeCode,
             availabilityCurrent.locationCode,
           ],
           set: {
-            observedAt: sql`excluded.observed_at`,
-            baseStatus: sql`excluded.base_status`,
-            displayStatus: sql`excluded.display_status`,
-            apiAvailable: sql`excluded.api_available`,
-            apiRecommended: sql`excluded.api_recommended`,
+            observedAt: row.observedAt,
+            baseStatus: row.baseStatus,
+            displayStatus: row.displayStatus,
+            apiAvailable: row.apiAvailable,
+            apiRecommended: row.apiRecommended,
           },
         });
     }
 
-    const finishedAt = new Date();
+    const finishedAt = new Date().toISOString();
 
     await db
       .update(pollRuns)
@@ -483,7 +455,7 @@ export async function pollAvailability() {
       .where(sql`${pollRuns.id} = ${pollRunId}`);
 
     const emailDispatches = await sendPendingMarketingDispatches(
-      finishedAt,
+      new Date(),
     ).catch((error) => ({
       attemptedDispatches: 0,
       sentDispatches: 0,
@@ -500,7 +472,7 @@ export async function pollAvailability() {
     return {
       pollRunId,
       observedAt: observedAt.toISOString(),
-      insertedObservations: observationValues.length,
+      insertedObservations: pollStates.length,
       currentUpdated: currentRows.length,
       unknownFamilies,
       skippedMalformedServerTypes,
@@ -515,7 +487,7 @@ export async function pollAvailability() {
       await db
         .update(pollRuns)
         .set({
-          finishedAt: new Date(),
+          finishedAt: new Date().toISOString(),
           status: "failed",
           httpStatus: getHttpStatus(error),
           errorMessage: errorMessage(error),

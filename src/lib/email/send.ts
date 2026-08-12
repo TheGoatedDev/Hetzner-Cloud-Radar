@@ -1,11 +1,9 @@
-import type { ReactElement } from "react";
-import { Resend } from "resend";
 import { getResendEnv } from "@/env";
 
 type SendInput = {
   to: string | string[];
   subject: string;
-  react: ReactElement;
+  html: string;
   replyTo?: string;
   headers?: Record<string, string>;
   tags?: { name: string; value: string }[];
@@ -15,23 +13,47 @@ type SendInput = {
 type BroadcastInput = {
   segmentId: string;
   subject: string;
-  react: ReactElement;
+  html: string;
   name?: string;
   previewText?: string;
   replyTo?: string | string[];
   topicId?: string;
 };
 
-let cachedClient: Resend | null = null;
-
-function client() {
-  if (cachedClient) return cachedClient;
-  const env = getResendEnv();
-  cachedClient = new Resend(env.RESEND_API_KEY);
-  return cachedClient;
-}
-
 const fromName = "Hetzner Cloud Radar";
+
+async function resendJson<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<{
+  data: T | null;
+  error: { message?: string; statusCode?: number } | null;
+}> {
+  const key = getResendEnv().RESEND_API_KEY;
+  const response = await fetch(`https://api.resend.com${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "content-type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+  const body = (await response.json().catch(() => null)) as
+    | (T & { message?: string })
+    | null;
+
+  if (!response.ok) {
+    return {
+      data: null,
+      error: {
+        message: body?.message ?? `Resend ${path} failed`,
+        statusCode: response.status,
+      },
+    };
+  }
+
+  return { data: body as T, error: null };
+}
 
 export function hasResendEmailConfig() {
   return Boolean(process.env.RESEND_API_KEY);
@@ -39,18 +61,21 @@ export function hasResendEmailConfig() {
 
 export async function sendDispatch(input: SendInput) {
   const env = getResendEnv();
-  const result = await client().emails.send({
-    from: `${fromName} <${env.RESEND_FROM_EMAIL}>`,
-    to: input.to,
-    subject: input.subject,
-    react: input.react,
-    replyTo: input.replyTo,
-    headers: input.headers,
-    tags: input.tags,
-    topicId: input.topicId,
+  const result = await resendJson<{ id: string }>("/emails", {
+    method: "POST",
+    body: JSON.stringify({
+      from: `${fromName} <${env.RESEND_FROM_EMAIL}>`,
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+      reply_to: input.replyTo,
+      headers: input.headers,
+      tags: input.tags,
+      topic_id: input.topicId,
+    }),
   });
 
-  if (!result.data) {
+  if (!result.data?.id) {
     throw new Error(result.error?.message ?? "Resend dispatch send failed");
   }
 
@@ -59,24 +84,30 @@ export async function sendDispatch(input: SendInput) {
 
 export async function sendBroadcast(input: BroadcastInput) {
   const env = getResendEnv();
-  const created = await client().broadcasts.create({
-    from: `${fromName} <${env.RESEND_FROM_EMAIL}>`,
-    segmentId: input.segmentId,
-    subject: input.subject,
-    react: input.react,
-    name: input.name,
-    previewText: input.previewText,
-    replyTo: input.replyTo,
-    topicId: input.topicId,
+  const created = await resendJson<{ id: string }>("/broadcasts", {
+    method: "POST",
+    body: JSON.stringify({
+      from: `${fromName} <${env.RESEND_FROM_EMAIL}>`,
+      segment_id: input.segmentId,
+      subject: input.subject,
+      html: input.html,
+      name: input.name,
+      preview_text: input.previewText,
+      reply_to: input.replyTo,
+      topic_id: input.topicId,
+    }),
   });
 
-  if (!created.data) {
+  if (!created.data?.id) {
     throw new Error(created.error?.message ?? "Resend broadcast create failed");
   }
 
-  const sent = await client().broadcasts.send(created.data.id);
+  const sent = await resendJson<{ id: string }>(
+    `/broadcasts/${created.data.id}/send`,
+    { method: "POST", body: "{}" },
+  );
 
-  if (!sent.data) {
+  if (!sent.data?.id) {
     throw new Error(sent.error?.message ?? "Resend broadcast send failed");
   }
 

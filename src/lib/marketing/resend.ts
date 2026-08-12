@@ -1,4 +1,3 @@
-import { Resend } from "resend";
 import { getResendEnv } from "@/env";
 import {
   allTopicParts,
@@ -34,14 +33,19 @@ type ResendListResponse<T> = {
 
 const topicIdsByName = new Map<string, string>();
 
-function resendClient() {
-  return new Resend(getResendEnv().RESEND_API_KEY);
-}
-
-async function resendGet<T>(path: string) {
+async function resendFetch<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<{
+  data: T | null;
+  error: { message?: string; statusCode?: number } | null;
+}> {
   const response = await fetch(`https://api.resend.com${path}`, {
+    ...init,
     headers: {
       Authorization: `Bearer ${getResendEnv().RESEND_API_KEY}`,
+      ...(init?.body ? { "content-type": "application/json" } : {}),
+      ...(init?.headers ?? {}),
     },
   });
   const body = (await response.json().catch(() => null)) as
@@ -49,10 +53,24 @@ async function resendGet<T>(path: string) {
     | null;
 
   if (!response.ok) {
-    throw new Error(body?.message ?? `Resend GET ${path} failed`);
+    return {
+      data: null,
+      error: {
+        message: body?.message ?? `Resend ${path} failed`,
+        statusCode: response.status,
+      },
+    };
   }
 
-  return body as T;
+  return { data: body as T, error: null };
+}
+
+async function resendGet<T>(path: string) {
+  const result = await resendFetch<T>(path);
+  if (!result.data) {
+    throw new Error(result.error?.message ?? `Resend GET ${path} failed`);
+  }
+  return result.data;
 }
 
 async function listAllTopics() {
@@ -74,63 +92,62 @@ async function listAllTopics() {
   return topics;
 }
 
-async function refreshTopicCache(resend: Resend) {
-  void resend;
-
+async function refreshTopicCache() {
   for (const topic of await listAllTopics()) {
     topicIdsByName.set(topic.name, topic.id);
   }
 }
 
-export async function ensureTopicId(
-  parts: TopicParts,
-  resend = resendClient(),
-) {
+export async function ensureTopicId(parts: TopicParts) {
   const name = topicKey(parts);
   const cached = topicIdsByName.get(name);
   if (cached) return cached;
 
-  await refreshTopicCache(resend);
+  await refreshTopicCache();
   const refreshed = topicIdsByName.get(name);
   if (refreshed) return refreshed;
 
   throw new Error(`Resend topic ${name} is missing; run topic migration`);
 }
 
-async function ensureAllCurrentTopicIds(resend: Resend) {
+async function ensureAllCurrentTopicIds() {
   const entries: Array<{ key: string; id: string }> = [];
 
   for (const parts of allTopicParts()) {
     entries.push({
       key: topicKey(parts),
-      id: await ensureTopicId(parts, resend),
+      id: await ensureTopicId(parts),
     });
   }
 
   return entries;
 }
 
-async function ensureContact(resend: Resend, email: string) {
-  const updated = await resend.contacts.update({
-    email,
-    unsubscribed: false,
-  });
+async function ensureContact(email: string) {
+  const updated = await resendFetch<{ id: string }>(
+    `/contacts/${encodeURIComponent(email)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ unsubscribed: false }),
+    },
+  );
 
-  if (updated.data) {
-    return updated.data;
-  }
+  if (updated.data) return updated.data;
 
   if (updated.error?.statusCode !== 404) {
     throw new Error(updated.error?.message ?? "Resend contact update failed");
   }
 
   const env = getResendEnv();
-  const created = await resend.contacts.create({
-    email,
-    unsubscribed: false,
-    ...(env.RESEND_MARKETING_SEGMENT_ID
-      ? { segments: [{ id: env.RESEND_MARKETING_SEGMENT_ID }] }
-      : {}),
+  const created = await resendFetch<{ id: string }>("/contacts", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      unsubscribed: false,
+      ...(env.RESEND_MARKETING_SEGMENT_ID
+        ? { segments: [{ id: env.RESEND_MARKETING_SEGMENT_ID }] }
+        : {}),
+    }),
   });
 
   if (!created.data) {
@@ -149,51 +166,55 @@ export async function syncMarketingContact(input: {
     throw new Error("RESEND_MARKETING_SEGMENT_ID is not configured");
   }
 
-  const resend = resendClient();
   const preferences = normalizeDispatchPreferences(input.preferences);
   const selected = new Set(selectedTopicKeys(preferences));
 
-  await ensureContact(resend, input.email);
+  await ensureContact(input.email);
 
-  const segment = await resend.contacts.segments.add({
-    email: input.email,
-    segmentId: env.RESEND_MARKETING_SEGMENT_ID,
-  });
+  const segment = await resendFetch<{ id: string }>(
+    `/contacts/${encodeURIComponent(input.email)}/segments/${env.RESEND_MARKETING_SEGMENT_ID}`,
+    { method: "POST", body: "{}" },
+  );
 
   if (!segment.data && segment.error?.statusCode !== 409) {
     throw new Error(segment.error?.message ?? "Resend segment sync failed");
   }
 
-  const topics: TopicSubscription[] = (
-    await ensureAllCurrentTopicIds(resend)
-  ).map((topic) => ({
-    id: topic.id,
-    subscription: selected.has(topic.key) ? "opt_in" : "opt_out",
-  }));
+  const topics: TopicSubscription[] = (await ensureAllCurrentTopicIds()).map(
+    (topic) => ({
+      id: topic.id,
+      subscription: selected.has(topic.key) ? "opt_in" : "opt_out",
+    }),
+  );
 
-  const topicUpdate = await resend.contacts.topics.update({
-    email: input.email,
-    topics,
-  });
+  const topicUpdate = await resendFetch<{ id?: string }>(
+    `/contacts/${encodeURIComponent(input.email)}/topics`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ topics }),
+    },
+  );
 
-  if (!topicUpdate.data) {
-    throw new Error(topicUpdate.error?.message ?? "Resend topic sync failed");
+  if (!topicUpdate.data && topicUpdate.error) {
+    throw new Error(topicUpdate.error.message ?? "Resend topic sync failed");
   }
 }
 
 export async function unsubscribeMarketingContact(input: { email: string }) {
-  const resend = resendClient();
-  const topics: TopicSubscription[] = (
-    await ensureAllCurrentTopicIds(resend)
-  ).map((topic) => ({
-    id: topic.id,
-    subscription: "opt_out",
-  }));
+  const topics: TopicSubscription[] = (await ensureAllCurrentTopicIds()).map(
+    (topic) => ({
+      id: topic.id,
+      subscription: "opt_out",
+    }),
+  );
 
-  const topicUpdate = await resend.contacts.topics.update({
-    email: input.email,
-    topics,
-  });
+  const topicUpdate = await resendFetch(
+    `/contacts/${encodeURIComponent(input.email)}/topics`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ topics }),
+    },
+  );
 
   if (!topicUpdate.data && topicUpdate.error?.statusCode !== 404) {
     throw new Error(
@@ -201,10 +222,13 @@ export async function unsubscribeMarketingContact(input: { email: string }) {
     );
   }
 
-  const updated = await resend.contacts.update({
-    email: input.email,
-    unsubscribed: true,
-  });
+  const updated = await resendFetch(
+    `/contacts/${encodeURIComponent(input.email)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ unsubscribed: true }),
+    },
+  );
 
   if (!updated.data && updated.error?.statusCode !== 404) {
     throw new Error(updated.error?.message ?? "Resend unsubscribe failed");
@@ -215,8 +239,9 @@ export async function getMarketingContactPreferences(input: {
   email: string;
 }): Promise<DispatchPreferences> {
   const env = getResendEnv();
-  const resend = resendClient();
-  const listed = await resend.contacts.topics.list({ email: input.email });
+  const listed = await resendFetch<ResendListResponse<ContactTopic>>(
+    `/contacts/${encodeURIComponent(input.email)}/topics`,
+  );
 
   if (!listed.data) {
     throw new Error(
@@ -224,11 +249,10 @@ export async function getMarketingContactPreferences(input: {
     );
   }
 
-  const topics = listed.data.data as ContactTopic[];
+  const topics = listed.data.data;
   const optedIn = topics.filter((topic) => topic.subscription === "opt_in");
   const concrete = optedIn.flatMap((topic) => {
     const parsed = parseTopicKey(topic.name);
-
     return parsed ? [parsed] : [];
   });
 

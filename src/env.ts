@@ -15,7 +15,7 @@ const commonOptions = {
 function createDatabaseEnv() {
   return createEnv({
     server: {
-      DATABASE_URL: z.url(),
+      DATABASE_URL: z.url().optional(),
     },
     runtimeEnv: {
       DATABASE_URL: process.env.DATABASE_URL,

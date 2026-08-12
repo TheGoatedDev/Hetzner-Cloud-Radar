@@ -13,7 +13,7 @@ import {
   visibleServerFamilies,
   visibleServerFamilyIds,
 } from "@/lib/server-families";
-import { getDb } from "../db/client";
+import { getDbAsync } from "../db/client";
 import {
   availabilityCurrent,
   dailyAvailabilityState,
@@ -247,7 +247,7 @@ function makeDispatch(
 export async function getLatestPollAt(): Promise<Date | null> {
   // Build/prerender has no DB; callers treat null as "no poll yet".
   try {
-    const db = getDb();
+    const db = await getDbAsync();
     const [latest] = await db
       .select({ finishedAt: pollRuns.finishedAt })
       .from(pollRuns)
@@ -255,7 +255,7 @@ export async function getLatestPollAt(): Promise<Date | null> {
       .orderBy(desc(pollRuns.finishedAt))
       .limit(1);
 
-    return latest?.finishedAt ?? null;
+    return latest?.finishedAt ? new Date(latest.finishedAt) : null;
   } catch (error) {
     console.error("Latest poll lookup failed", error);
     return null;
@@ -275,7 +275,7 @@ export async function getDispatchEvents(
   cutoff.setUTCDate(cutoff.getUTCDate() - windowDays);
 
   // stock_events is one row per status change — not one per poll.
-  const db = getDb();
+  const db = await getDbAsync();
   const rows = await db
     .select({
       observedAt: stockEvents.observedAt,
@@ -297,7 +297,7 @@ export async function getDispatchEvents(
     )
     .where(
       and(
-        gte(stockEvents.observedAt, cutoff),
+        gte(stockEvents.observedAt, cutoff.toISOString()),
         inArray(serverTypes.family, visibleFamilies),
       ),
     )
@@ -325,7 +325,7 @@ export async function getDispatchEvents(
 
 export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel> {
   try {
-    const db = getDb();
+    const db = await getDbAsync();
     // Parallel first round — current/types don't depend on latest poll row.
     const [latestPoll, currentRows, typeRows] = await Promise.all([
       db

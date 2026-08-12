@@ -1,6 +1,5 @@
 import { inArray } from "drizzle-orm";
-import Restock from "@/emails/restock";
-import StockOut from "@/emails/stock-out";
+import { restockHtml, stockOutHtml } from "@/emails/html";
 import { getResendEnv } from "@/env";
 import { DCS, type DcCode, type FamilyId, type StockEvent } from "@/lib/schema";
 import { isDispatchEnabledServerFamily } from "@/lib/server-families";
@@ -20,25 +19,21 @@ type SendMarketingDispatchesResult = {
 
 function splitScope(scope: string) {
   const [serverType, region] = scope.split("/").map((part) => part.trim());
-
   return { serverType: serverType ?? scope, region: region ?? "unknown" };
 }
 
 function specLabel(type: typeof serverTypes.$inferSelect | undefined) {
   if (!type) return "tracked server type";
-
   return `${type.cores} vCPU - ${type.memoryGb} GB RAM - ${type.diskGb} GB`;
 }
 
 function familyId(type: typeof serverTypes.$inferSelect | undefined) {
   if (!type) return null;
-
   return type.family as FamilyId;
 }
 
 function datacentreCode(region: string) {
   const upper = region.toUpperCase();
-
   return DCS.includes(upper as DcCode) ? (upper as DcCode) : null;
 }
 
@@ -46,11 +41,9 @@ function durationLabel(event: StockEvent) {
   if (event.state === "resolved-restock") {
     return event.durationLabel.replace(/^after\s+/u, "");
   }
-
   if (event.state === "ongoing-rollout") {
     return "newly offered";
   }
-
   return event.durationLabel;
 }
 
@@ -61,7 +54,7 @@ async function recordDispatchSend(
   resendEmailIds: string[],
   errorMessage?: string,
 ) {
-  const now = new Date();
+  const nowIso = new Date().toISOString();
   const db = getDb();
 
   await db
@@ -73,9 +66,10 @@ async function recordDispatchSend(
       status,
       recipientCount,
       resendEmailIds,
-      sentAt: status === "sent" ? now : null,
+      sentAt: status === "sent" ? nowIso : null,
       errorMessage: errorMessage ?? null,
-      updatedAt: now,
+      createdAt: nowIso,
+      updatedAt: nowIso,
     })
     .onConflictDoUpdate({
       target: marketingDispatchSends.dispatchId,
@@ -83,9 +77,9 @@ async function recordDispatchSend(
         status,
         recipientCount,
         resendEmailIds,
-        sentAt: status === "sent" ? now : null,
+        sentAt: status === "sent" ? nowIso : null,
         errorMessage: errorMessage ?? null,
-        updatedAt: now,
+        updatedAt: nowIso,
       },
     });
 }
@@ -214,31 +208,30 @@ export async function sendPendingMarketingDispatches(
         family,
         datacentre,
       });
+      const html =
+        event.state === "ongoing-out"
+          ? stockOutHtml({
+              serverType,
+              serverSpec,
+              region,
+              regionCity,
+              observedAt: event.startedAt,
+              baselineNote: event.body,
+            })
+          : restockHtml({
+              serverType,
+              serverSpec,
+              region,
+              regionCity,
+              observedAt: event.startedAt,
+              durationLabel: durationLabel(event),
+            });
       const result = await sendBroadcast({
         segmentId: env.RESEND_MARKETING_SEGMENT_ID,
         subject: event.title,
         topicId,
         name: `Hetzner Cloud Radar: ${event.title}`,
-        react:
-          event.state === "ongoing-out" ? (
-            <StockOut
-              serverType={serverType}
-              serverSpec={serverSpec}
-              region={region}
-              regionCity={regionCity}
-              observedAt={event.startedAt}
-              baselineNote={event.body}
-            />
-          ) : (
-            <Restock
-              serverType={serverType}
-              serverSpec={serverSpec}
-              region={region}
-              regionCity={regionCity}
-              observedAt={event.startedAt}
-              durationLabel={durationLabel(event)}
-            />
-          ),
+        html,
       });
 
       await recordDispatchSend(event, "sent", 0, [result.id]);
