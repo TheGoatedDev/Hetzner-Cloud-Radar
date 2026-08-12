@@ -1,8 +1,8 @@
 "use client";
 
 import { type PointerEvent as ReactPointerEvent, useState } from "react";
-import { formatChartLabel } from "@/lib/chart";
 import {
+  formatChartLabel,
   STOCK,
   SUPPLY_SERIES,
   type SupplyDay,

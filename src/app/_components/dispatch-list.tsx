@@ -1,10 +1,6 @@
-import type { StockEvent } from "@/lib/schema";
-import { StockTag } from "./stock-tag";
+import { STOCK, type Stock, type StockEvent } from "@/lib/schema";
 
-const TAG_FOR: Record<
-  StockEvent["state"],
-  { stock: Parameters<typeof StockTag>[0]["stock"]; label: string }
-> = {
+const TAG_FOR: Record<StockEvent["state"], { stock: Stock; label: string }> = {
   "ongoing-out": { stock: "sold-out", label: "Ongoing · Sold out" },
   "resolved-restock": { stock: "available", label: "Resolved · Restocked" },
   "ongoing-rollout": { stock: "limited", label: "Ongoing · Rollout" },
@@ -33,8 +29,13 @@ function DispatchRow({
           {event.durationLabel}
         </span>
         <span className="text-ink-soft">{event.scope}</span>
-        <span className="mt-2">
-          <StockTag stock={tag.stock} label={tag.label} />
+        <span
+          className={`mt-2 inline-flex items-baseline gap-2 text-xs font-medium uppercase tracking-[0.1em] ${STOCK[tag.stock].textClass}`}
+        >
+          <span aria-hidden className="inline-block leading-none">
+            {STOCK[tag.stock].glyph}
+          </span>
+          <span>{tag.label}</span>
         </span>
       </div>
       <div className="flex flex-col gap-2">

@@ -1,7 +1,14 @@
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { DCS, type DcCode, type Stock } from "@/lib/schema";
 import { visibleServerFamilyIds } from "@/lib/server-families";
-import { getSql } from "../db/client";
-import { HISTORY_GAP_THRESHOLD_SECONDS, POLL_INTERVAL_MS } from "./cadence";
+import { getDb } from "../db/client";
+import {
+  availabilityCurrent,
+  pollRuns,
+  serverTypes,
+  stockEvents,
+} from "../db/schema";
+import { HISTORY_GAP_THRESHOLD_SECONDS } from "./cadence";
 
 export const HISTORY_WINDOW_DAYS = 14;
 export { HISTORY_GAP_THRESHOLD_SECONDS };
@@ -21,27 +28,6 @@ export type AvailabilityHistory = {
   totals: Record<Stock, number>;
   lastChangeAt: string | null;
 };
-
-type StatusRow = {
-  observed_at: Date | string;
-  base_status: "available" | "sold-out" | "not-offered" | "unknown";
-};
-
-type PollRow = {
-  started_at: Date | string;
-};
-
-type CacheEntry = {
-  expiresAt: number;
-  value: AvailabilityHistory;
-};
-
-const SERVER_CACHE_TTL_MS = POLL_INTERVAL_MS;
-const serverCache = new Map<string, CacheEntry>();
-
-function cacheKey(type: string, dc: DcCode) {
-  return `${type}:${dc}`;
-}
 
 function toDate(value: Date | string) {
   return value instanceof Date ? value : new Date(value);
@@ -65,25 +51,7 @@ export async function getAvailabilityHistory(
   type: string,
   dc: DcCode,
 ): Promise<AvailabilityHistory> {
-  const key = cacheKey(type, dc);
-  const now = Date.now();
-  const cached = serverCache.get(key);
-
-  if (cached && cached.expiresAt > now) {
-    return cached.value;
-  }
-
-  const value = await loadAvailabilityHistory(type, dc);
-  serverCache.set(key, { expiresAt: now + SERVER_CACHE_TTL_MS, value });
-
-  return value;
-}
-
-async function loadAvailabilityHistory(
-  type: string,
-  dc: DcCode,
-): Promise<AvailabilityHistory> {
-  const rawSql = getSql();
+  const db = await getDb();
   const visibleFamilies = visibleServerFamilyIds();
   const windowEnd = new Date();
   const windowStart = new Date(windowEnd);
@@ -94,97 +62,117 @@ async function loadAvailabilityHistory(
     return emptyAvailabilityHistory(type, dc, windowStart, windowEnd);
   }
 
-  // One-row gate — never join server_types onto the observation stream.
-  const typeRows = await rawSql<{ family: string }[]>`
-    select family from server_types
-    where code = ${type}
-    limit 1
-  `;
+  const typeRows = await db
+    .select({ family: serverTypes.family })
+    .from(serverTypes)
+    .where(eq(serverTypes.code, type))
+    .limit(1);
   if (!typeRows[0] || !visibleFamilies.includes(typeRows[0].family)) {
     return emptyAvailabilityHistory(type, dc, windowStart, windowEnd);
   }
 
-  // stock_events is sparse (status changes only). poll_runs drives gap→unknown.
-  // Avoid scanning availability_observations (millions of rows / prune locks).
   const [priorEventRows, eventRows, priorPollRows, pollRows] =
     await Promise.all([
-      rawSql<StatusRow[]>`
-        select observed_at, base_status
-        from stock_events
-        where server_type_code = ${type}
-          and location_code = ${dc}
-          and observed_at < ${startIso}
-        order by observed_at desc
-        limit 1
-      `,
-      rawSql<StatusRow[]>`
-        select observed_at, base_status
-        from stock_events
-        where server_type_code = ${type}
-          and location_code = ${dc}
-          and observed_at >= ${startIso}
-        order by observed_at
-      `,
-      // Need the poll just before the window so a gap straddling windowStart is visible.
-      rawSql<PollRow[]>`
-        select started_at
-        from poll_runs
-        where status = 'success'
-          and started_at < ${startIso}
-        order by started_at desc
-        limit 1
-      `,
-      rawSql<PollRow[]>`
-        select started_at
-        from poll_runs
-        where status = 'success'
-          and started_at >= ${startIso}
-        order by started_at
-      `,
+      db
+        .select({
+          observedAt: stockEvents.observedAt,
+          baseStatus: stockEvents.baseStatus,
+        })
+        .from(stockEvents)
+        .where(
+          and(
+            eq(stockEvents.serverTypeCode, type),
+            eq(stockEvents.locationCode, dc),
+            lt(stockEvents.observedAt, startIso),
+          ),
+        )
+        .orderBy(desc(stockEvents.observedAt))
+        .limit(1),
+      db
+        .select({
+          observedAt: stockEvents.observedAt,
+          baseStatus: stockEvents.baseStatus,
+        })
+        .from(stockEvents)
+        .where(
+          and(
+            eq(stockEvents.serverTypeCode, type),
+            eq(stockEvents.locationCode, dc),
+            gte(stockEvents.observedAt, startIso),
+          ),
+        )
+        .orderBy(stockEvents.observedAt),
+      db
+        .select({ startedAt: pollRuns.startedAt })
+        .from(pollRuns)
+        .where(
+          and(eq(pollRuns.status, "success"), lt(pollRuns.startedAt, startIso)),
+        )
+        .orderBy(desc(pollRuns.startedAt))
+        .limit(1),
+      db
+        .select({ startedAt: pollRuns.startedAt })
+        .from(pollRuns)
+        .where(
+          and(
+            eq(pollRuns.status, "success"),
+            gte(pollRuns.startedAt, startIso),
+          ),
+        )
+        .orderBy(pollRuns.startedAt),
     ]);
 
-  let priorStatus: Stock | null = priorEventRows[0]?.base_status ?? null;
+  let priorStatus: Stock | null = priorEventRows[0]?.baseStatus ?? null;
 
-  // Steady cells may have zero stock_events — one index lookup for seed state.
+  // ponytail: dropped obs; seed prior from current if older than window
   if (priorStatus === null) {
-    const seed = await rawSql<StatusRow[]>`
-      select observed_at, base_status
-      from availability_observations
-      where server_type_code = ${type}
-        and location_code = ${dc}
-        and observed_at < ${startIso}
-      order by observed_at desc
-      limit 1
-    `;
-    priorStatus = seed[0]?.base_status ?? null;
+    const cur = await db
+      .select({
+        baseStatus: availabilityCurrent.baseStatus,
+        observedAt: availabilityCurrent.observedAt,
+      })
+      .from(availabilityCurrent)
+      .where(
+        and(
+          eq(availabilityCurrent.serverTypeCode, type),
+          eq(availabilityCurrent.locationCode, dc),
+        ),
+      )
+      .limit(1);
+    if (cur[0] && cur[0].observedAt < startIso) {
+      priorStatus = cur[0].baseStatus as Stock;
+    }
   }
 
   const events = eventRows.map((row) => ({
-    at: toDate(row.observed_at),
-    status: row.base_status as Stock,
+    at: toDate(row.observedAt),
+    status: row.baseStatus as Stock,
   }));
 
-  // No transitions at all — seed from first in-window observation if present.
   if (priorStatus === null && events.length === 0) {
-    const firstIn = await rawSql<StatusRow[]>`
-      select observed_at, base_status
-      from availability_observations
-      where server_type_code = ${type}
-        and location_code = ${dc}
-        and observed_at >= ${startIso}
-      order by observed_at asc
-      limit 1
-    `;
-    if (firstIn[0]) {
+    const cur = await db
+      .select({
+        baseStatus: availabilityCurrent.baseStatus,
+        observedAt: availabilityCurrent.observedAt,
+      })
+      .from(availabilityCurrent)
+      .where(
+        and(
+          eq(availabilityCurrent.serverTypeCode, type),
+          eq(availabilityCurrent.locationCode, dc),
+        ),
+      )
+      .limit(1);
+    if (cur[0]) {
       events.push({
-        at: toDate(firstIn[0].observed_at),
-        status: firstIn[0].base_status,
+        at: toDate(cur[0].observedAt),
+        status: cur[0].baseStatus as Stock,
       });
     }
   }
 
   const pollTimes = [...priorPollRows, ...pollRows].map((row) =>
-    toDate(row.started_at),
+    toDate(row.startedAt),
   );
 
   const runs = buildRunsFromEvents(

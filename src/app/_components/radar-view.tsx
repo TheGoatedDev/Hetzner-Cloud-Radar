@@ -1,30 +1,14 @@
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
-import { POLL_INTERVAL_MS } from "@/lib/availability/cadence";
-import { AVAILABILITY_QUERY_KEY } from "@/lib/availability/query";
 import type { AvailabilityReadModel } from "@/lib/availability/read-model";
-import { DCS, type Stock } from "@/lib/schema";
-import { Dispatches } from "./sections/dispatches";
-import { FamilySection } from "./sections/family-section";
+import { DCS, type Family, type Stock, type StockEvent } from "@/lib/schema";
+import { DispatchList } from "./dispatch-list";
+import { FamilyTable } from "./family-table";
+import { SectionHeader } from "./section-header";
 import { Legend } from "./sections/legend";
 import { Masthead } from "./sections/masthead";
 import { PageFooter } from "./sections/page-footer";
 import { RightNow } from "./sections/right-now";
-import { Subscribe } from "./sections/subscribe";
 import { SupplyTrend } from "./sections/supply-trend";
-
-async function fetchAvailability() {
-  const response = await fetch("/api/availability", {
-    headers: { Accept: "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Availability request failed: HTTP ${response.status}`);
-  }
-
-  return (await response.json()) as AvailabilityReadModel;
-}
+import { SubscribeForm } from "./subscribe-form";
 
 function tally(allCells: Stock[]) {
   return {
@@ -36,17 +20,49 @@ function tally(allCells: Stock[]) {
   };
 }
 
-export function RadarView() {
-  const { data } = useQuery({
-    queryKey: AVAILABILITY_QUERY_KEY,
-    queryFn: fetchAvailability,
-    refetchInterval: POLL_INTERVAL_MS,
-  });
+function FamilyBlock({ family, first }: { family: Family; first: boolean }) {
+  return (
+    <section className={`flex flex-col gap-4 ${first ? "pt-10" : "pt-12"}`}>
+      <SectionHeader
+        kicker={family.kicker}
+        title={family.label}
+        blurb={family.blurb}
+      />
+      <FamilyTable family={family} />
+    </section>
+  );
+}
 
-  if (!data) {
-    return null;
-  }
+function SubscribeBlock() {
+  return (
+    <section className="flex flex-col gap-6 pt-16">
+      <SectionHeader
+        kicker="Mailing list"
+        title="Subscribe to dispatches"
+        blurb="One short email when a server type goes sold out or returns to stock."
+      />
+      <SubscribeForm />
+    </section>
+  );
+}
 
+function DispatchesBlock({ events }: { events: StockEvent[] }) {
+  return (
+    <section className="flex flex-col gap-4 pt-14">
+      <SectionHeader
+        kicker="Last 30 days"
+        title="Recent dispatches"
+        blurb="Notable stock-out, restock, and rollout events. Each dispatch is signed by the timestamp of its first observation."
+      />
+      <DispatchList
+        events={events}
+        emptyMessage="The wire has been quiet. No dispatches filed in the last thirty days."
+      />
+    </section>
+  );
+}
+
+export function RadarView({ data }: { data: AvailabilityReadModel }) {
   const allCells = data.families.flatMap((f) =>
     f.types.flatMap((t) => DCS.map((dc) => t.stock[dc])),
   );
@@ -64,10 +80,10 @@ export function RadarView() {
         <SupplyTrend days={data.supplyHistory} />
         <Legend />
         {data.families.map((f, i) => (
-          <FamilySection key={f.id} family={f} first={i === 0} />
+          <FamilyBlock key={f.id} family={f} first={i === 0} />
         ))}
-        <Subscribe />
-        <Dispatches events={data.events} />
+        <SubscribeBlock />
+        <DispatchesBlock events={data.events} />
       </main>
       <PageFooter pollCadence={data.pollCadence} />
     </div>

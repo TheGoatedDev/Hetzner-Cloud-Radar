@@ -1,5 +1,4 @@
 import { STOCK, type Stock } from "@/lib/schema";
-import { Counter } from "../counter";
 import { Eyebrow } from "../eyebrow";
 import { StockGlyph } from "../stock-glyph";
 
@@ -11,10 +10,27 @@ type Totals = {
   notOffered: number;
 };
 
-type TopLine = {
-  state: Stock;
-  line: string;
-};
+function Counter({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: number;
+  delta?: string;
+}) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <dt className="text-ink-soft">{label}</dt>
+      <dd className="text-ink tabular-nums">
+        {value}
+        {delta ? (
+          <span className="ml-2 text-ink-faint tabular-nums">{delta}</span>
+        ) : null}
+      </dd>
+    </div>
+  );
+}
 
 export function RightNow({
   totals,
@@ -22,7 +38,7 @@ export function RightNow({
   observedAt,
 }: {
   totals: Totals;
-  topLine: TopLine;
+  topLine: { state: Stock; line: string };
   observedAt: string;
 }) {
   const soldOutDelta = totals.soldOut > 0 ? undefined : "0";

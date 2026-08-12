@@ -1,5 +1,5 @@
-import { formatChartLabel } from "@/lib/chart";
 import {
+  formatChartLabel,
   STOCK,
   SUPPLY_SERIES,
   type SupplyDay,

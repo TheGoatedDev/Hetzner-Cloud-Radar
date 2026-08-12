@@ -95,13 +95,3 @@ export function selectedTopicKeys(preferences: DispatchPreferences) {
 export function dispatchEventFromState(state: string): DispatchEvent {
   return state === "ongoing-out" ? "soldout" : "restock";
 }
-
-export function hasAnyPreference(preferences: DispatchPreferences) {
-  const normalized = normalizeDispatchPreferences(preferences);
-
-  return (
-    normalized.events.length > 0 &&
-    normalized.families.length > 0 &&
-    normalized.datacentres.length > 0
-  );
-}

@@ -1,18 +1,16 @@
-import path from "node:path";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 // Keep in sync with POLL_INTERVAL_SECONDS in src/lib/availability/cadence.ts
-// (web image has no src/; next.config must stay self-contained)
 const POLL_INTERVAL_SECONDS = 300;
 const PUBLIC_READ_CACHE = `public, max-age=${POLL_INTERVAL_SECONDS}, stale-while-revalidate=${POLL_INTERVAL_SECONDS * 3}, stale-if-error=86400`;
-// Parent ~/pnpm-workspace.yaml fools lockfile root detection; pin to this app.
-const projectRoot = path.resolve(process.cwd());
+
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  outputFileTracingRoot: projectRoot,
-  turbopack: { root: projectRoot },
-  reactCompiler: true,
+  turbopack: { root: process.cwd() },
+  // ponytail: reactCompiler bloats Worker past free 3MiB gzip
+  reactCompiler: false,
   async headers() {
     return [
       {
