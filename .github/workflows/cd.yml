@@ -1,0 +1,30 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable && pnpm install --frozen-lockfile
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: pnpm
+          preCommands: pnpm exec opennextjs-cloudflare build
+        env:
+          SKIP_ENV_VALIDATION: "true"
+          NEXT_PUBLIC_SITE_URL: https://hetzner.thegoated.dev
+          NEXT_PUBLIC_POSTHOG_HOST: https://eu.i.posthog.com
+          NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: phc_sfsrD8YaF3XoMc9KjANjtyY3NXCm2BydfZJRELvqyRoH
