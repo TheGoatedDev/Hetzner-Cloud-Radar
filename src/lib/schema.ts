@@ -112,3 +112,13 @@ export const SUPPLY_SERIES = [
 export function sumSupplyDay(day: SupplyDay) {
   return SUPPLY_SERIES.reduce((total, series) => total + day[series.key], 0);
 }
+
+export function formatChartLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const month = d.toLocaleString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+
+  return `${month} ${d.getUTCDate()}`;
+}

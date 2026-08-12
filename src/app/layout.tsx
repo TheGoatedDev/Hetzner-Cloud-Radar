@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
-import { Providers } from "./providers";
 import "./globals.css";
 
 // ponytail: system fonts — next/font pulls capsize metrics into Worker
@@ -45,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="bg-paper text-ink min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        {children}
       </body>
     </html>
   );

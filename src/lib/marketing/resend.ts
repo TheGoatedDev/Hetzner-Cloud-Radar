@@ -1,8 +1,7 @@
 import { getResendEnv } from "@/env";
+import { resendJson } from "../email/send";
 import {
   allTopicParts,
-  DEFAULT_DISPATCH_PREFERENCES,
-  type DispatchEvent,
   type DispatchPreferences,
   normalizeDispatchPreferences,
   parseTopicKey,
@@ -33,40 +32,8 @@ type ResendListResponse<T> = {
 
 const topicIdsByName = new Map<string, string>();
 
-async function resendFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<{
-  data: T | null;
-  error: { message?: string; statusCode?: number } | null;
-}> {
-  const response = await fetch(`https://api.resend.com${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${getResendEnv().RESEND_API_KEY}`,
-      ...(init?.body ? { "content-type": "application/json" } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
-  const body = (await response.json().catch(() => null)) as
-    | (T & { message?: string })
-    | null;
-
-  if (!response.ok) {
-    return {
-      data: null,
-      error: {
-        message: body?.message ?? `Resend ${path} failed`,
-        statusCode: response.status,
-      },
-    };
-  }
-
-  return { data: body as T, error: null };
-}
-
 async function resendGet<T>(path: string) {
-  const result = await resendFetch<T>(path);
+  const result = await resendJson<T>(path);
   if (!result.data) {
     throw new Error(result.error?.message ?? `Resend GET ${path} failed`);
   }
@@ -124,7 +91,7 @@ async function ensureAllCurrentTopicIds() {
 }
 
 async function ensureContact(email: string) {
-  const updated = await resendFetch<{ id: string }>(
+  const updated = await resendJson<{ id: string }>(
     `/contacts/${encodeURIComponent(email)}`,
     {
       method: "PATCH",
@@ -139,7 +106,7 @@ async function ensureContact(email: string) {
   }
 
   const env = getResendEnv();
-  const created = await resendFetch<{ id: string }>("/contacts", {
+  const created = await resendJson<{ id: string }>("/contacts", {
     method: "POST",
     body: JSON.stringify({
       email,
@@ -171,7 +138,7 @@ export async function syncMarketingContact(input: {
 
   await ensureContact(input.email);
 
-  const segment = await resendFetch<{ id: string }>(
+  const segment = await resendJson<{ id: string }>(
     `/contacts/${encodeURIComponent(input.email)}/segments/${env.RESEND_MARKETING_SEGMENT_ID}`,
     { method: "POST", body: "{}" },
   );
@@ -187,7 +154,7 @@ export async function syncMarketingContact(input: {
     }),
   );
 
-  const topicUpdate = await resendFetch<{ id?: string }>(
+  const topicUpdate = await resendJson<{ id?: string }>(
     `/contacts/${encodeURIComponent(input.email)}/topics`,
     {
       method: "PATCH",
@@ -208,7 +175,7 @@ export async function unsubscribeMarketingContact(input: { email: string }) {
     }),
   );
 
-  const topicUpdate = await resendFetch(
+  const topicUpdate = await resendJson(
     `/contacts/${encodeURIComponent(input.email)}/topics`,
     {
       method: "PATCH",
@@ -222,7 +189,7 @@ export async function unsubscribeMarketingContact(input: { email: string }) {
     );
   }
 
-  const updated = await resendFetch(
+  const updated = await resendJson(
     `/contacts/${encodeURIComponent(input.email)}`,
     {
       method: "PATCH",
@@ -238,8 +205,7 @@ export async function unsubscribeMarketingContact(input: { email: string }) {
 export async function getMarketingContactPreferences(input: {
   email: string;
 }): Promise<DispatchPreferences> {
-  const env = getResendEnv();
-  const listed = await resendFetch<ResendListResponse<ContactTopic>>(
+  const listed = await resendJson<ResendListResponse<ContactTopic>>(
     `/contacts/${encodeURIComponent(input.email)}/topics`,
   );
 
@@ -249,48 +215,14 @@ export async function getMarketingContactPreferences(input: {
     );
   }
 
-  const topics = listed.data.data;
-  const optedIn = topics.filter((topic) => topic.subscription === "opt_in");
-  const concrete = optedIn.flatMap((topic) => {
-    const parsed = parseTopicKey(topic.name);
-    return parsed ? [parsed] : [];
-  });
-
-  if (concrete.length === 0) {
-    return legacyPreferencesFromTopics(optedIn, env);
-  }
+  const concrete = listed.data.data
+    .filter((topic) => topic.subscription === "opt_in")
+    .flatMap((topic) => {
+      const parsed = parseTopicKey(topic.name);
+      return parsed ? [parsed] : [];
+    });
 
   return preferencesFromTopicParts(concrete);
-}
-
-function legacyPreferencesFromTopics(
-  topics: ContactTopic[],
-  env: ReturnType<typeof getResendEnv>,
-): DispatchPreferences {
-  const events: DispatchEvent[] = [];
-  const optedInIds = new Set(topics.map((topic) => topic.id));
-
-  if (
-    env.RESEND_SOLD_OUT_TOPIC_ID &&
-    optedInIds.has(env.RESEND_SOLD_OUT_TOPIC_ID)
-  ) {
-    events.push("soldout");
-  }
-  if (
-    env.RESEND_RESTOCK_TOPIC_ID &&
-    optedInIds.has(env.RESEND_RESTOCK_TOPIC_ID)
-  ) {
-    events.push("restock");
-  }
-
-  if (events.length === 0) {
-    return { events: [], families: [], datacentres: [] };
-  }
-
-  return {
-    ...DEFAULT_DISPATCH_PREFERENCES,
-    events,
-  };
 }
 
 function preferencesFromTopicParts(parts: TopicParts[]): DispatchPreferences {

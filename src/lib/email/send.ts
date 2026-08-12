@@ -22,7 +22,7 @@ type BroadcastInput = {
 
 const fromName = "Hetzner Cloud Radar";
 
-async function resendJson<T>(
+export async function resendJson<T>(
   path: string,
   init?: RequestInit,
 ): Promise<{

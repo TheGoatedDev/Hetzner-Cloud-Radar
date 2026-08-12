@@ -1,6 +1,4 @@
-// Brand colours for email rendering. Email clients do not support OKLCH or
-// CSS variables reliably, so the OKLCH tokens used in the app are flattened
-// to sRGB hex here. Keep these in rough sync with `src/app/globals.css`.
+import type { Stock } from "@/lib/schema";
 
 export const theme = {
   paper: "#fbf8f4",
@@ -22,28 +20,10 @@ export const fontStack = {
   sans: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif",
 } as const;
 
-export const STOCK_GLYPH = {
-  available: "●",
-  limited: "◐",
-  "sold-out": "■",
-  "not-offered": "·",
-  unknown: "○",
-} as const;
-
-export const STOCK_COLOR = {
+export const STOCK_COLOR: Record<Stock, string> = {
   available: theme.operational,
   limited: theme.degraded,
   "sold-out": theme.down,
   "not-offered": theme.inkFaint,
   unknown: theme.inkFaint,
-} as const;
-
-export const STOCK_LABEL = {
-  available: "Available",
-  limited: "Limited",
-  "sold-out": "Sold out",
-  "not-offered": "Not offered",
-  unknown: "Unknown",
-} as const;
-
-export type StockState = keyof typeof STOCK_GLYPH;
+};

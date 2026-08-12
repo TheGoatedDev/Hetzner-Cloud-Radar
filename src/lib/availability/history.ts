@@ -1,14 +1,14 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { DCS, type DcCode, type Stock } from "@/lib/schema";
 import { visibleServerFamilyIds } from "@/lib/server-families";
-import { getDbAsync } from "../db/client";
+import { getDb } from "../db/client";
 import {
   availabilityCurrent,
   pollRuns,
   serverTypes,
   stockEvents,
 } from "../db/schema";
-import { HISTORY_GAP_THRESHOLD_SECONDS, POLL_INTERVAL_MS } from "./cadence";
+import { HISTORY_GAP_THRESHOLD_SECONDS } from "./cadence";
 
 export const HISTORY_WINDOW_DAYS = 14;
 export { HISTORY_GAP_THRESHOLD_SECONDS };
@@ -28,18 +28,6 @@ export type AvailabilityHistory = {
   totals: Record<Stock, number>;
   lastChangeAt: string | null;
 };
-
-type CacheEntry = {
-  expiresAt: number;
-  value: AvailabilityHistory;
-};
-
-const SERVER_CACHE_TTL_MS = POLL_INTERVAL_MS;
-const serverCache = new Map<string, CacheEntry>();
-
-function cacheKey(type: string, dc: DcCode) {
-  return `${type}:${dc}`;
-}
 
 function toDate(value: Date | string) {
   return value instanceof Date ? value : new Date(value);
@@ -63,25 +51,7 @@ export async function getAvailabilityHistory(
   type: string,
   dc: DcCode,
 ): Promise<AvailabilityHistory> {
-  const key = cacheKey(type, dc);
-  const now = Date.now();
-  const cached = serverCache.get(key);
-
-  if (cached && cached.expiresAt > now) {
-    return cached.value;
-  }
-
-  const value = await loadAvailabilityHistory(type, dc);
-  serverCache.set(key, { expiresAt: now + SERVER_CACHE_TTL_MS, value });
-
-  return value;
-}
-
-async function loadAvailabilityHistory(
-  type: string,
-  dc: DcCode,
-): Promise<AvailabilityHistory> {
-  const db = await getDbAsync();
+  const db = await getDb();
   const visibleFamilies = visibleServerFamilyIds();
   const windowEnd = new Date();
   const windowStart = new Date(windowEnd);

@@ -96,6 +96,10 @@ body {
   outline-offset: 2px;
 }
 
+[popover] {
+  inset: unset;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

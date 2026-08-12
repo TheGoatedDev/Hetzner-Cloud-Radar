@@ -28,13 +28,12 @@ type TrackedServerType = HetznerServerType & { family: string };
 
 const EVENT_RETENTION_DAYS = 60;
 
-export type PruneResult = {
+type PruneResult = {
   deletedPollRuns: number;
-  hitBudget: boolean;
 };
 
 async function pruneRetention(
-  db: ReturnType<typeof getDb>,
+  db: Awaited<ReturnType<typeof getDb>>,
 ): Promise<PruneResult> {
   const rawCutoffIso = new Date(
     Date.now() - HISTORY_WINDOW_DAYS * 86_400_000,
@@ -55,7 +54,7 @@ async function pruneRetention(
     .delete(stockEvents)
     .where(lt(stockEvents.observedAt, eventCutoffIso));
 
-  return { deletedPollRuns: deleted.length, hitBudget: false };
+  return { deletedPollRuns: deleted.length };
 }
 
 const TRACKED_LOCATION_API: Record<
@@ -121,7 +120,7 @@ export async function pollAvailability() {
   const dateUtc = toDateUtc(observedAt);
 
   try {
-    const db = getDb();
+    const db = await getDb();
 
     await db.insert(pollRuns).values({
       id: pollRunId,
@@ -459,14 +458,13 @@ export async function pollAvailability() {
     ).catch((error) => ({
       attemptedDispatches: 0,
       sentDispatches: 0,
-      sentEmails: 0,
       skippedReason:
         error instanceof Error ? error.message : "Email dispatch failed",
     }));
 
     const prune = await pruneRetention(db).catch((error) => {
       console.error("Retention prune failed", error);
-      return { deletedPollRuns: 0, hitBudget: false } satisfies PruneResult;
+      return { deletedPollRuns: 0 } satisfies PruneResult;
     });
 
     return {
@@ -482,7 +480,7 @@ export async function pollAvailability() {
     };
   } catch (error) {
     try {
-      const db = getDb();
+      const db = await getDb();
 
       await db
         .update(pollRuns)

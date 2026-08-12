@@ -1,8 +1,3 @@
-import { config } from "dotenv";
-
-config({ path: ".env.local", quiet: true });
-config({ quiet: true });
-
 const JSON_OUTPUT = process.argv.includes("--json");
 const VERBOSE = process.argv.includes("--verbose");
 

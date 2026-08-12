@@ -13,7 +13,6 @@ import { ensureTopicId } from "./resend";
 type SendMarketingDispatchesResult = {
   attemptedDispatches: number;
   sentDispatches: number;
-  sentEmails: number;
   skippedReason: string | null;
 };
 
@@ -55,7 +54,7 @@ async function recordDispatchSend(
   errorMessage?: string,
 ) {
   const nowIso = new Date().toISOString();
-  const db = getDb();
+  const db = await getDb();
 
   await db
     .insert(marketingDispatchSends)
@@ -91,19 +90,17 @@ export async function sendPendingMarketingDispatches(
     return {
       attemptedDispatches: 0,
       sentDispatches: 0,
-      sentEmails: 0,
       skippedReason: "RESEND_API_KEY is not configured",
     };
   }
 
-  const db = getDb();
+  const db = await getDb();
   const env = getResendEnv();
 
   if (!env.RESEND_MARKETING_SEGMENT_ID) {
     return {
       attemptedDispatches: 0,
       sentDispatches: 0,
-      sentEmails: 0,
       skippedReason: "RESEND_MARKETING_SEGMENT_ID is not configured",
     };
   }
@@ -114,7 +111,6 @@ export async function sendPendingMarketingDispatches(
     return {
       attemptedDispatches: 0,
       sentDispatches: 0,
-      sentEmails: 0,
       skippedReason: null,
     };
   }
@@ -141,7 +137,6 @@ export async function sendPendingMarketingDispatches(
     return {
       attemptedDispatches: 0,
       sentDispatches: 0,
-      sentEmails: 0,
       skippedReason: null,
     };
   }
@@ -169,7 +164,6 @@ export async function sendPendingMarketingDispatches(
   );
 
   let sentDispatches = 0;
-  const sentEmails = 0;
 
   for (const event of pendingEvents) {
     const { serverType, region } = splitScope(event.scope);
@@ -250,7 +244,6 @@ export async function sendPendingMarketingDispatches(
   return {
     attemptedDispatches: pendingEvents.length,
     sentDispatches,
-    sentEmails,
     skippedReason: null,
   };
 }

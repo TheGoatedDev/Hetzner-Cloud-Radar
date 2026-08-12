@@ -30,7 +30,6 @@
     "open-next.config.ts",
     "next.config.ts",
     "drizzle.config.ts",
-    "worker.ts",
     "instrumentation-client.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"

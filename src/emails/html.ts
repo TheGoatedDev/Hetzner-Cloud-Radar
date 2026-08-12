@@ -1,15 +1,9 @@
 import { signEmail } from "@/lib/marketing/unsubscribe-token";
-import {
-  fontStack,
-  STOCK_COLOR,
-  STOCK_GLYPH,
-  STOCK_LABEL,
-  type StockState,
-  theme,
-} from "./_components/theme";
+import { STOCK, type Stock } from "@/lib/schema";
+import { SITE_URL } from "@/lib/site";
+import { fontStack, STOCK_COLOR, theme } from "./_components/theme";
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://hetzner.thegoated.dev";
+const baseUrl = SITE_URL;
 
 function esc(value: string) {
   return value
@@ -65,7 +59,7 @@ function shell(opts: {
 }
 
 function metaBlock(
-  state: StockState,
+  state: Stock,
   kicker: string,
   title: string,
   rows: { label: string; value: string }[],
@@ -79,7 +73,7 @@ function metaBlock(
 
   return `<div>
   <p style="margin:0;font-size:10px;font-family:${fontStack.mono};font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:${theme.inkFaint}">${esc(kicker)}</p>
-  <p style="margin:8px 0 0;font-size:11px;font-family:${fontStack.mono};font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:${STOCK_COLOR[state]}"><span style="margin-right:8px">${STOCK_GLYPH[state]}</span>${STOCK_LABEL[state]}</p>
+  <p style="margin:8px 0 0;font-size:11px;font-family:${fontStack.mono};font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:${STOCK_COLOR[state]}"><span style="margin-right:8px">${STOCK[state].glyph}</span>${STOCK[state].label}</p>
   <p style="margin:16px 0 8px;font-size:20px;font-family:${fontStack.mono};font-weight:600;letter-spacing:-0.01em;color:${theme.ink};line-height:1.25">${esc(title)}</p>
   ${details}
 </div>`;

@@ -128,10 +128,6 @@ export function deriveServerFamilyId(code: string): FamilyId | null {
   return match?.[1] ?? null;
 }
 
-export function configuredServerFamilyIds() {
-  return Object.keys(SERVER_FAMILY_META);
-}
-
 export function visibleServerFamilyIds() {
   return orderedFamilies((meta) => meta.visible).map(([family]) => family);
 }
@@ -158,10 +154,6 @@ export function dispatchServerFamilies() {
 
 export function isConfiguredServerFamily(family: string) {
   return family in SERVER_FAMILY_META;
-}
-
-export function isVisibleServerFamily(family: string) {
-  return SERVER_FAMILY_META[family]?.visible === true;
 }
 
 export function isDispatchEnabledServerFamily(family: string) {
