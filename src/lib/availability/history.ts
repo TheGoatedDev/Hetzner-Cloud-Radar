@@ -10,7 +10,7 @@ import {
 } from "../db/schema";
 import { HISTORY_GAP_THRESHOLD_SECONDS } from "./cadence";
 
-export const HISTORY_WINDOW_DAYS = 14;
+export const HISTORY_WINDOW_DAYS = 1;
 export { HISTORY_GAP_THRESHOLD_SECONDS };
 
 export type HistoryRun = {

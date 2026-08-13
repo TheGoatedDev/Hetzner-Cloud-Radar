@@ -33,7 +33,7 @@ An optional reason or note a subscriber gives after choosing a full unsubscribe.
 _Avoid_: Feedback, review
 
 **Availability history**:
-The 14-day minute-grain record of stock states for one server type in one datacentre, surfaced as a popover when a reader hovers or taps an availability dot.
+The last 24 hours of stock states for one server type in one datacentre, surfaced as a popover when a reader hovers or taps an availability dot.
 _Avoid_: Cell timeline, stock trail, region history
 
 ## Relationships

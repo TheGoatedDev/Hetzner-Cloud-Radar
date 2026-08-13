@@ -96,7 +96,7 @@ export function StockCell({
         style={{ anchorName: `--s-${type}-${dc}` } as CSSProperties}
       >
         <span className="sr-only">
-          {srLabel}. Activate for 14-day availability history.
+          {srLabel}. Activate for 24-hour availability history.
         </span>
         <span
           aria-hidden
@@ -137,7 +137,7 @@ export function StockCell({
             </span>
           </header>
           {status === "loading" && (
-            <p className="text-2xs text-ink-faint">Loading 14-day history…</p>
+            <p className="text-2xs text-ink-faint">Loading 24-hour history…</p>
           )}
           {status === "error" && (
             <p className="text-2xs text-down">Could not load history.</p>
@@ -173,7 +173,7 @@ export function StockCell({
                 aria-hidden
                 className="flex justify-between text-2xs text-ink-faint tracking-[0.08em]"
               >
-                <span>14d ago</span>
+                <span>24h ago</span>
                 <span>now</span>
               </div>
               <p className="text-2xs text-ink-soft leading-relaxed">
