@@ -1,6 +1,13 @@
 "use client";
 
-import { type CSSProperties, type ToggleEvent, useId, useState } from "react";
+import {
+  type CSSProperties,
+  type ToggleEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import type { AvailabilityHistory } from "@/lib/availability/history";
 import { DC_META, type DcCode, STOCK, type Stock } from "@/lib/schema";
 
@@ -11,6 +18,15 @@ const STATE_ORDER: Stock[] = [
   "unknown",
   "not-offered",
 ];
+
+const HOVER_OPEN_MS = 150;
+const HOVER_CLOSE_MS = 100;
+
+function canHover(): boolean {
+  return (
+    typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches
+  );
+}
 
 function formatDuration(seconds: number): string {
   const sec = Math.max(0, Math.round(seconds));
@@ -54,10 +70,20 @@ export function StockCell({
   type: string;
 }) {
   const popoverId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [history, setHistory] = useState<AvailabilityHistory | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [open, setOpen] = useState(false);
   const srLabel = `${type} in ${dc}, ${DC_META[dc].city}: ${STOCK[stock].label}`;
+
+  useEffect(() => {
+    return () => {
+      if (openTimer.current) clearTimeout(openTimer.current);
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, []);
 
   if (stock === "not-offered") {
     return (
@@ -73,10 +99,47 @@ export function StockCell({
     );
   }
 
+  function clearTimers() {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    openTimer.current = null;
+    closeTimer.current = null;
+  }
+
+  function scheduleOpen() {
+    if (!canHover()) return;
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    if (openTimer.current || panelRef.current?.matches(":popover-open")) return;
+    openTimer.current = setTimeout(() => {
+      openTimer.current = null;
+      panelRef.current?.showPopover();
+    }, HOVER_OPEN_MS);
+  }
+
+  function scheduleClose() {
+    if (!canHover()) return;
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      panelRef.current?.hidePopover();
+    }, HOVER_CLOSE_MS);
+  }
+
   async function onToggle(event: ToggleEvent<HTMLDivElement>) {
     const isOpen = event.newState === "open";
     setOpen(isOpen);
-    if (!isOpen || history || status === "loading") return;
+    if (!isOpen) {
+      clearTimers();
+      return;
+    }
+    if (history || status === "loading") return;
     setStatus("loading");
     try {
       const response = await fetch(
@@ -97,6 +160,8 @@ export function StockCell({
         popoverTarget={popoverId}
         aria-expanded={open}
         aria-controls={popoverId}
+        onMouseEnter={scheduleOpen}
+        onMouseLeave={scheduleClose}
         className="inline-flex size-6 cursor-pointer items-center justify-center bg-transparent p-0 leading-none opacity-90 hover:opacity-100"
         style={{ anchorName: `--s-${type}-${dc}` } as CSSProperties}
       >
@@ -110,10 +175,14 @@ export function StockCell({
           {STOCK[stock].glyph}
         </span>
       </button>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: hover bridge keeps popover open while cursor moves onto panel */}
       <div
+        ref={panelRef}
         id={popoverId}
         popover="auto"
         onToggle={onToggle}
+        onMouseEnter={scheduleOpen}
+        onMouseLeave={scheduleClose}
         className="z-50 m-0 w-[min(360px,calc(100vw-16px))] overflow-y-auto border border-hairline-strong bg-paper-raised p-3 shadow-lg overscroll-contain"
         style={
           {
