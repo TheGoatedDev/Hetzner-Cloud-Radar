@@ -2,26 +2,20 @@
 
 import posthog from "posthog-js";
 import { type FormEvent, useId, useState } from "react";
-import {
-  DEFAULT_DISPATCH_PREFERENCES,
-  type DispatchEvent,
-} from "@/lib/marketing/preferences";
-import type { DcCode, FamilyId } from "@/lib/schema";
+import { useDispatchPrefStore } from "@/lib/marketing/dispatch-pref-store";
 import { PreferenceMatrix } from "./preference-matrix";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
 export function SubscribeForm() {
   const [email, setEmail] = useState("");
-  const [events, setEvents] = useState<DispatchEvent[]>(
-    DEFAULT_DISPATCH_PREFERENCES.events,
-  );
-  const [families, setFamilies] = useState<FamilyId[]>(
-    DEFAULT_DISPATCH_PREFERENCES.families,
-  );
-  const [datacentres, setDatacentres] = useState<DcCode[]>(
-    DEFAULT_DISPATCH_PREFERENCES.datacentres,
-  );
+  const events = useDispatchPrefStore((s) => s.events);
+  const families = useDispatchPrefStore((s) => s.families);
+  const datacentres = useDispatchPrefStore((s) => s.datacentres);
+  const setEvents = useDispatchPrefStore((s) => s.setEvents);
+  const setFamilies = useDispatchPrefStore((s) => s.setFamilies);
+  const setDatacentres = useDispatchPrefStore((s) => s.setDatacentres);
+  const lock = useDispatchPrefStore((s) => s.lock);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const emailId = useId();
@@ -79,6 +73,7 @@ export function SubscribeForm() {
       }
 
       setStatus("ok");
+      lock();
       posthog.capture("dispatch_subscription_created", {
         event_types_selected: events.length,
         server_families_selected: families.length,

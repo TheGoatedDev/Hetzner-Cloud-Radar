@@ -51,7 +51,13 @@ export function FamilyTable({ family }: { family: Family }) {
               {t.cores}&nbsp;vCPU · {t.ram}&nbsp;GB · {t.disk}&nbsp;GB
             </td>
             {DCS.map((dc) => (
-              <StockCell key={dc} stock={t.stock[dc]} dc={dc} type={t.code} />
+              <StockCell
+                key={dc}
+                stock={t.stock[dc]}
+                dc={dc}
+                type={t.code}
+                familyId={family.id}
+              />
             ))}
           </tr>
         ))}

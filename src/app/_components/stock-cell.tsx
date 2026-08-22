@@ -9,7 +9,16 @@ import {
   useState,
 } from "react";
 import type { AvailabilityHistory } from "@/lib/availability/history";
-import { DC_META, type DcCode, STOCK, type Stock } from "@/lib/schema";
+import { useDispatchPrefStore } from "@/lib/marketing/dispatch-pref-store";
+import { DISPATCH_SERVER_FAMILIES } from "@/lib/marketing/preferences";
+import {
+  DC_META,
+  type DcCode,
+  type FamilyId,
+  STOCK,
+  type Stock,
+} from "@/lib/schema";
+import { SERVER_FAMILY_META } from "@/lib/server-families";
 
 const STATE_ORDER: Stock[] = [
   "available",
@@ -60,14 +69,26 @@ function summaryLine(history: AvailabilityHistory): string {
   return parts.join(" · ");
 }
 
+function toggleValue<T extends string>(
+  values: readonly T[],
+  value: T,
+  checked: boolean,
+): T[] {
+  return checked
+    ? [...new Set([...values, value])]
+    : values.filter((item) => item !== value);
+}
+
 export function StockCell({
   stock,
   dc,
   type,
+  familyId,
 }: {
   stock: Stock;
   dc: DcCode;
   type: string;
+  familyId: FamilyId;
 }) {
   const popoverId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -76,6 +97,14 @@ export function StockCell({
   const [history, setHistory] = useState<AvailabilityHistory | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [open, setOpen] = useState(false);
+  const dispatchFamily = DISPATCH_SERVER_FAMILIES.includes(familyId);
+  const familyOn = useDispatchPrefStore((s) => s.families.includes(familyId));
+  const dcOn = useDispatchPrefStore((s) => s.datacentres.includes(dc));
+  const locked = useDispatchPrefStore((s) => s.locked);
+  const setFamilies = useDispatchPrefStore((s) => s.setFamilies);
+  const setDatacentres = useDispatchPrefStore((s) => s.setDatacentres);
+  const familyLabel =
+    SERVER_FAMILY_META[familyId]?.label ?? familyId.toUpperCase();
   const srLabel = `${type} in ${dc}, ${DC_META[dc].city}: ${STOCK[stock].label}`;
 
   useEffect(() => {
@@ -260,6 +289,49 @@ export function StockCell({
               </p>
             </>
           )}
+          {dispatchFamily ? (
+            <fieldset
+              disabled={locked}
+              className="flex flex-col gap-1.5 border-t border-hairline pt-2"
+            >
+              <legend className="float-left mb-1 w-full p-0 text-2xs uppercase tracking-[0.1em] text-ink-faint">
+                Mail alerts (subscribe form)
+              </legend>
+              <p className="text-2xs text-ink-faint leading-relaxed">
+                Whole {familyLabel} line @ selected DCs — not {type} alone.
+              </p>
+              <label className="flex cursor-pointer items-baseline gap-2 text-2xs text-ink hover:text-ink">
+                <input
+                  type="checkbox"
+                  checked={familyOn}
+                  disabled={locked}
+                  onChange={(e) => {
+                    const { families } = useDispatchPrefStore.getState();
+                    setFamilies(
+                      toggleValue(families, familyId, e.target.checked),
+                    );
+                  }}
+                  className="size-3.5 shrink-0 accent-accent"
+                />
+                <span className="font-mono">{familyLabel} family</span>
+              </label>
+              <label className="flex cursor-pointer items-baseline gap-2 text-2xs text-ink hover:text-ink">
+                <input
+                  type="checkbox"
+                  checked={dcOn}
+                  disabled={locked}
+                  onChange={(e) => {
+                    const { datacentres } = useDispatchPrefStore.getState();
+                    setDatacentres(
+                      toggleValue(datacentres, dc, e.target.checked),
+                    );
+                  }}
+                  className="size-3.5 shrink-0 accent-accent"
+                />
+                <span className="font-mono">{dc}</span>
+              </label>
+            </fieldset>
+          ) : null}
         </div>
       </div>
     </td>
