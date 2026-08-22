@@ -58,7 +58,9 @@ function CopyBlock({
 }) {
   return (
     <div className={`flex flex-col gap-3 ${first ? "pt-2" : "pt-6"}`}>
-      <h2 className="text-lg font-medium tracking-tight text-ink">{title}</h2>
+      <h2 className="text-lg font-medium tracking-tight text-pretty text-ink">
+        {title}
+      </h2>
       {children}
     </div>
   );

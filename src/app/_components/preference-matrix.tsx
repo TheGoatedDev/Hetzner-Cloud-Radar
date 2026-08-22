@@ -87,12 +87,15 @@ function CheckRow({
     <label className="flex cursor-pointer items-baseline gap-3 py-1 text-sm hover:text-ink">
       <input
         type="checkbox"
+        name={code}
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="size-3.5 accent-accent"
+        className="size-3.5 shrink-0 accent-accent"
       />
-      <span className="min-w-[3.5rem] font-mono text-ink">{code}</span>
+      <span className="min-w-[3.5rem] break-words font-mono text-ink">
+        {code}
+      </span>
       {subtitle ? (
         <span className="font-sans text-xs text-ink-faint">{subtitle}</span>
       ) : null}

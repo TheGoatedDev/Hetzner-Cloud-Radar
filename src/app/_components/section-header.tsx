@@ -15,7 +15,7 @@ export function SectionHeader({
   return (
     <div className="flex flex-col gap-2 border-b border-hairline pb-3">
       <div className="flex items-baseline justify-between gap-6">
-        <TitleTag className="text-lg font-medium tracking-tight text-ink">
+        <TitleTag className="text-lg font-medium tracking-tight text-pretty text-ink">
           {title}
         </TitleTag>
         <Eyebrow as="span">{kicker}</Eyebrow>

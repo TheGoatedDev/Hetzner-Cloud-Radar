@@ -71,11 +71,24 @@ export function UnsubscribeForm({
   const fullUnsubscribe =
     events.length === 0 || families.length === 0 || datacentres.length === 0;
 
+  function focusEmail() {
+    queueMicrotask(() => {
+      document.getElementById(emailId)?.focus();
+    });
+  }
+
+  function focusFeedbackReason() {
+    queueMicrotask(() => {
+      document.getElementById(feedbackReasonId)?.focus();
+    });
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (preferenceLoadError && emailLocked) {
       setStatus("error");
       setErrorMsg("Current preferences could not load. Try again in a minute.");
+      focusEmail();
       return;
     }
     setStatus("submitting");
@@ -102,7 +115,7 @@ export function UnsubscribeForm({
       } | null;
 
       if (!response.ok) {
-        throw new Error(body?.error ?? "Unsubscribe failed.");
+        throw new Error(body?.error ?? "Unsubscribe failed. Try again.");
       }
 
       const didFullyUnsubscribe = body?.fullUnsubscribe ?? fullUnsubscribe;
@@ -122,9 +135,12 @@ export function UnsubscribeForm({
       );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unsubscribe failed.";
+        error instanceof Error
+          ? error.message
+          : "Unsubscribe failed. Try again.";
       setStatus("error");
       setErrorMsg(message);
+      focusEmail();
       posthog.capture("unsubscribe_failed", { error: message });
     }
   }
@@ -135,6 +151,7 @@ export function UnsubscribeForm({
     if (!feedbackReason) {
       setFeedbackStatus("error");
       setFeedbackErrorMsg("Pick a reason.");
+      focusFeedbackReason();
       return;
     }
 
@@ -160,7 +177,7 @@ export function UnsubscribeForm({
       } | null;
 
       if (!response.ok) {
-        throw new Error(body?.error ?? "Feedback failed.");
+        throw new Error(body?.error ?? "Feedback failed. Try again.");
       }
 
       setFeedbackStatus("ok");
@@ -170,26 +187,36 @@ export function UnsubscribeForm({
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Feedback failed.";
+        error instanceof Error ? error.message : "Feedback failed. Try again.";
       setFeedbackStatus("error");
       setFeedbackErrorMsg(message);
+      focusFeedbackReason();
       posthog.capture("unsubscribe_feedback_failed", { error: message });
     }
   }
 
   if (status === "ok") {
     return (
-      <output className="flex flex-col gap-6 font-sans text-sm leading-[1.6]">
+      <output
+        className="flex flex-col gap-6 font-sans text-sm leading-[1.6]"
+        aria-live="polite"
+      >
         <p className="text-ink">
           {resultFullUnsubscribe ? (
             <>
-              Done. <span className="font-mono text-ink">{email}</span> has been
-              removed from the list. No more dispatches will arrive.
+              Done.{" "}
+              <span className="font-mono text-ink" translate="no">
+                {email}
+              </span>{" "}
+              has been removed from the list. No more dispatches will arrive.
             </>
           ) : (
             <>
               Preferences updated for{" "}
-              <span className="font-mono text-ink">{email}</span>.
+              <span className="font-mono text-ink" translate="no">
+                {email}
+              </span>
+              .
             </>
           )}
         </p>
@@ -199,19 +226,25 @@ export function UnsubscribeForm({
 
         {resultFullUnsubscribe ? (
           feedbackStatus === "ok" ? (
-            <p className="text-ink-soft">Thanks. That note was sent.</p>
+            <p className="text-ink-soft" aria-live="polite">
+              Thanks. That note was sent.
+            </p>
           ) : (
             <form
               onSubmit={onFeedbackSubmit}
               className="flex max-w-[42rem] flex-col gap-5 border-t border-hairline pt-5"
               noValidate
             >
-              <fieldset className="flex flex-col gap-3">
-                <legend className="mb-1 text-xs uppercase tracking-[0.1em] text-ink-faint">
+              <div className="flex flex-col gap-3">
+                <label
+                  htmlFor={feedbackReasonId}
+                  className="text-xs uppercase tracking-[0.1em] text-ink-faint"
+                >
                   Why are you leaving?
-                </legend>
+                </label>
                 <select
                   id={feedbackReasonId}
+                  name="feedback_reason"
                   required
                   value={feedbackReason}
                   onChange={(e) =>
@@ -222,16 +255,16 @@ export function UnsubscribeForm({
                   aria-describedby={
                     feedbackStatus === "error" ? feedbackErrorId : undefined
                   }
-                  className="max-w-[18rem] border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink focus:border-accent focus-visible:outline-none disabled:opacity-50"
+                  className="max-w-[18rem] border-0 border-b-2 border-control-border bg-paper pb-2 font-mono text-sm text-ink focus:border-accent disabled:opacity-50"
                 >
-                  <option value="">Pick a reason</option>
+                  <option value="">Pick a reason…</option>
                   {feedbackReasons.map((reason) => (
                     <option key={reason.value} value={reason.value}>
                       {reason.label}
                     </option>
                   ))}
                 </select>
-              </fieldset>
+              </div>
 
               <label htmlFor={feedbackNoteId} className="flex flex-col gap-1.5">
                 <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
@@ -239,13 +272,14 @@ export function UnsubscribeForm({
                 </span>
                 <textarea
                   id={feedbackNoteId}
+                  name="feedback_note"
                   value={feedbackNote}
                   onChange={(e) => setFeedbackNote(e.target.value)}
                   disabled={feedbackStatus === "submitting"}
                   maxLength={500}
                   rows={3}
-                  placeholder="Optional"
-                  className="resize-y border-0 border-b-2 border-control-border bg-transparent pb-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+                  placeholder="Optional…"
+                  className="resize-y border-0 border-b-2 border-control-border bg-transparent pb-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent disabled:opacity-50"
                 />
               </label>
 
@@ -281,22 +315,27 @@ export function UnsubscribeForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label htmlFor={emailId} className="flex flex-1 flex-col gap-1.5">
+        <label
+          htmlFor={emailId}
+          className="flex min-w-0 flex-1 flex-col gap-1.5"
+        >
           <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
             Email address
           </span>
           <input
             id={emailId}
+            name="email"
             type="email"
             required
             disabled={disabled || emailLocked}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder="you@example.com…"
             autoComplete="email"
+            spellCheck={false}
             aria-invalid={status === "error" || undefined}
             aria-describedby={status === "error" ? errorId : undefined}
-            className="border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+            className="border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent disabled:opacity-50"
           />
         </label>
         <button

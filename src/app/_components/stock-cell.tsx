@@ -97,7 +97,7 @@ export function StockCell({
         popoverTarget={popoverId}
         aria-expanded={open}
         aria-controls={popoverId}
-        className="inline-flex size-6 cursor-pointer items-center justify-center bg-transparent p-0 leading-none"
+        className="inline-flex size-6 cursor-pointer items-center justify-center bg-transparent p-0 leading-none opacity-90 hover:opacity-100"
         style={{ anchorName: `--s-${type}-${dc}` } as CSSProperties}
       >
         <span className="sr-only">
@@ -114,7 +114,7 @@ export function StockCell({
         id={popoverId}
         popover="auto"
         onToggle={onToggle}
-        className="z-50 m-0 w-[min(360px,calc(100vw-16px))] border border-hairline-strong bg-paper-raised p-3 shadow-lg"
+        className="z-50 m-0 w-[min(360px,calc(100vw-16px))] overflow-y-auto border border-hairline-strong bg-paper-raised p-3 shadow-lg overscroll-contain"
         style={
           {
             positionAnchor: `--s-${type}-${dc}`,
@@ -124,10 +124,13 @@ export function StockCell({
           } as CSSProperties
         }
       >
-        <div className="flex flex-col gap-2">
-          <header className="flex items-baseline justify-between gap-2">
-            <div className="flex items-baseline gap-2">
-              <span className="font-medium text-ink text-sm tracking-[0.04em]">
+        <div className="flex flex-col gap-2" aria-live="polite">
+          <header className="flex min-w-0 items-baseline justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-2">
+              <span
+                className="font-medium text-ink text-sm tracking-[0.04em]"
+                translate="no"
+              >
                 {type}
               </span>
               <span className="text-2xs text-ink-faint uppercase tracking-[0.1em]">
@@ -136,7 +139,7 @@ export function StockCell({
             </div>
             <span
               aria-hidden
-              className={`text-sm leading-none ${STOCK[stock].textClass}`}
+              className={`shrink-0 text-sm leading-none ${STOCK[stock].textClass}`}
             >
               {STOCK[stock].glyph}
             </span>
@@ -145,7 +148,9 @@ export function StockCell({
             <p className="text-2xs text-ink-faint">Loading 24-hour history…</p>
           )}
           {status === "error" && (
-            <p className="text-2xs text-down">Could not load history.</p>
+            <p className="text-2xs text-down">
+              Could not load history. Close and try again.
+            </p>
           )}
           {history && (
             <>
@@ -181,7 +186,7 @@ export function StockCell({
                 <span>24h ago</span>
                 <span>now</span>
               </div>
-              <p className="text-2xs text-ink-soft leading-relaxed">
+              <p className="break-words text-2xs text-ink-soft leading-relaxed">
                 {summaryLine(history)}
               </p>
             </>

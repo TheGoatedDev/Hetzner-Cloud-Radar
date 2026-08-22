@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     template: "%s · Hetzner Cloud Radar",
   },
   description,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "oklch(0.985 0.005 70)" },
+    { media: "(prefers-color-scheme: dark)", color: "oklch(0.17 0.012 50)" },
+  ],
   alternates: {
     canonical: "/",
     types: {

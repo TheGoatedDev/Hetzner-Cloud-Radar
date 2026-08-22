@@ -18,6 +18,17 @@ function DispatchRow({
   titleAs?: "h3" | "h4";
 }) {
   const tag = TAG_FOR[event.state];
+  const started = asAnchor ? (
+    <a
+      href={`#${event.id}`}
+      className="tabular-nums text-ink underline-offset-4 hover:text-accent hover:underline"
+    >
+      {event.startedAt}
+    </a>
+  ) : (
+    <span className="tabular-nums text-ink">{event.startedAt}</span>
+  );
+
   return (
     <li
       id={asAnchor ? event.id : undefined}
@@ -25,12 +36,12 @@ function DispatchRow({
         topBorder ? "border-t border-hairline" : ""
       }`}
     >
-      <div className="flex flex-col gap-1 text-xs">
-        <span className="tabular-nums text-ink">{event.startedAt}</span>
+      <div className="flex min-w-0 flex-col gap-1 text-xs">
+        {started}
         <span className="tabular-nums text-ink-faint">
           {event.durationLabel}
         </span>
-        <span className="text-ink-soft">{event.scope}</span>
+        <span className="break-words text-ink-soft">{event.scope}</span>
         <span
           className={`mt-2 inline-flex items-baseline gap-2 text-xs font-medium uppercase tracking-[0.1em] ${STOCK[tag.stock].textClass}`}
         >
@@ -40,11 +51,11 @@ function DispatchRow({
           <span>{tag.label}</span>
         </span>
       </div>
-      <div className="flex flex-col gap-2">
-        <TitleTag className="text-lg font-medium tracking-tight text-ink">
+      <div className="flex min-w-0 flex-col gap-2">
+        <TitleTag className="break-words text-lg font-medium tracking-tight text-pretty text-ink">
           {event.title}
         </TitleTag>
-        <p className="max-w-[68ch] font-sans text-sm leading-[1.6] text-ink-soft">
+        <p className="max-w-[68ch] break-words font-sans text-sm leading-[1.6] text-ink-soft">
           {event.body}
         </p>
       </div>

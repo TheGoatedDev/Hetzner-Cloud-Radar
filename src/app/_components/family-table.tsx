@@ -43,12 +43,12 @@ export function FamilyTable({ family }: { family: Family }) {
               <div className="flex flex-col gap-0.5">
                 <span>{t.code}</span>
                 <span className="text-2xs font-normal tracking-normal text-ink-faint sm:hidden">
-                  {t.cores}c · {t.ram}G
+                  {t.cores}c&nbsp;·&nbsp;{t.ram}G
                 </span>
               </div>
             </th>
             <td className="hidden px-2 py-3 text-left align-top text-xs text-ink-soft sm:table-cell">
-              {t.cores} vCPU · {t.ram} GB · {t.disk} GB
+              {t.cores}&nbsp;vCPU · {t.ram}&nbsp;GB · {t.disk}&nbsp;GB
             </td>
             {DCS.map((dc) => (
               <StockCell key={dc} stock={t.stock[dc]} dc={dc} type={t.code} />

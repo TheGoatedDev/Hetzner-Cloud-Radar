@@ -69,7 +69,7 @@ export function RadarView({ data }: { data: AvailabilityReadModel }) {
   const totals = tally(allCells);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-6 sm:px-10">
+    <div className="page-shell mx-auto flex w-full max-w-5xl flex-1 flex-col">
       <Masthead observedAt={data.observedAt} />
       <main id="main-content">
         <RightNow

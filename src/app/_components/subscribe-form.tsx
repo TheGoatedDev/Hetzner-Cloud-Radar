@@ -27,21 +27,30 @@ export function SubscribeForm() {
   const emailId = useId();
   const errorId = useId();
 
+  function focusEmail() {
+    queueMicrotask(() => {
+      document.getElementById(emailId)?.focus();
+    });
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (events.length === 0) {
       setStatus("error");
       setErrorMsg("Pick at least one type of event.");
+      focusEmail();
       return;
     }
     if (families.length === 0) {
       setStatus("error");
       setErrorMsg("Pick at least one server family.");
+      focusEmail();
       return;
     }
     if (datacentres.length === 0) {
       setStatus("error");
       setErrorMsg("Pick at least one datacentre.");
+      focusEmail();
       return;
     }
     setStatus("submitting");
@@ -66,7 +75,7 @@ export function SubscribeForm() {
       } | null;
 
       if (!response.ok) {
-        throw new Error(body?.error ?? "Subscription failed.");
+        throw new Error(body?.error ?? "Subscription failed. Try again.");
       }
 
       setStatus("ok");
@@ -78,9 +87,12 @@ export function SubscribeForm() {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Subscription failed.";
+        error instanceof Error
+          ? error.message
+          : "Subscription failed. Try again.";
       setStatus("error");
       setErrorMsg(message);
+      focusEmail();
       posthog.capture("subscribe_failed", { error: message });
     }
   }
@@ -96,10 +108,16 @@ export function SubscribeForm() {
           : "a server type returns to stock";
 
     return (
-      <output className="flex flex-col gap-3 font-sans text-sm leading-[1.6]">
+      <output
+        className="flex flex-col gap-3 font-sans text-sm leading-[1.6]"
+        aria-live="polite"
+      >
         <p className="text-ink">
-          Thanks. <span className="font-mono text-ink">{email}</span> is on the
-          list. A short note will land when {eventCopy}.
+          Thanks.{" "}
+          <span className="font-mono text-ink" translate="no">
+            {email}
+          </span>{" "}
+          is on the list. A short note will land when {eventCopy}.
         </p>
         <p className="text-ink-soft">
           Resend manages the address and preferences. Unsubscribe with the link
@@ -119,22 +137,27 @@ export function SubscribeForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label htmlFor={emailId} className="flex flex-1 flex-col gap-1.5">
+        <label
+          htmlFor={emailId}
+          className="flex min-w-0 flex-1 flex-col gap-1.5"
+        >
           <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
             Email address
           </span>
           <input
             id={emailId}
+            name="email"
             type="email"
             required
             disabled={disabled}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder="you@example.com…"
             autoComplete="email"
+            spellCheck={false}
             aria-invalid={status === "error" || undefined}
             aria-describedby={status === "error" ? errorId : undefined}
-            className="border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+            className="border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent disabled:opacity-50"
           />
         </label>
         <button
@@ -156,7 +179,7 @@ export function SubscribeForm() {
         disabled={disabled}
       />
 
-      <div className="flex items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink-faint">
+      <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink-faint">
         <span>
           → {wired} alert{wired === 1 ? "" : "s"} wired
         </span>

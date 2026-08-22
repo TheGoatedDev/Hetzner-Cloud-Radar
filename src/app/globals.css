@@ -99,6 +99,34 @@ body {
   outline-offset: 2px;
 }
 
+button,
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[id] {
+  scroll-margin-top: 1.25rem;
+}
+
+.page-shell {
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    padding-left: max(2.5rem, env(safe-area-inset-left));
+    padding-right: max(2.5rem, env(safe-area-inset-right));
+  }
+}
+
 .skip-link {
   position: absolute;
   left: -9999px;
