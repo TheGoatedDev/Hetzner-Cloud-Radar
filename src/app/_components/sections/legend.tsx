@@ -21,6 +21,9 @@ export function Legend() {
           </li>
         ))}
       </ul>
+      <p className="text-2xs text-ink-faint">
+        Select a cell for 24-hour history.
+      </p>
     </section>
   );
 }
