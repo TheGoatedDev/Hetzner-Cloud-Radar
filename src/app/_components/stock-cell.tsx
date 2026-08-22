@@ -300,52 +300,57 @@ export function StockCell({
               <p className="text-2xs text-ink-faint leading-relaxed">
                 Whole {familyLabel} line @ selected DCs — not {type} alone.
               </p>
-              <div className="flex items-center justify-center gap-4">
-                <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
-                  <input
-                    type="checkbox"
-                    checked={familyOn}
-                    disabled={locked}
-                    onChange={(e) => {
-                      const { families } = useDispatchPrefStore.getState();
-                      setFamilies(
-                        toggleValue(families, familyId, e.target.checked),
-                      );
+              <div className="flex items-center gap-4">
+                <div className="flex min-w-0 flex-1 items-center justify-center gap-4">
+                  <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                    <input
+                      type="checkbox"
+                      checked={familyOn}
+                      disabled={locked}
+                      onChange={(e) => {
+                        const { families } = useDispatchPrefStore.getState();
+                        setFamilies(
+                          toggleValue(families, familyId, e.target.checked),
+                        );
+                      }}
+                      className="size-3.5 shrink-0 accent-accent"
+                    />
+                    <span className="font-mono">{familyLabel} family</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                    <input
+                      type="checkbox"
+                      checked={dcOn}
+                      disabled={locked}
+                      onChange={(e) => {
+                        const { datacentres } = useDispatchPrefStore.getState();
+                        setDatacentres(
+                          toggleValue(datacentres, dc, e.target.checked),
+                        );
+                      }}
+                      className="size-3.5 shrink-0 accent-accent"
+                    />
+                    <span className="font-mono">{dc}</span>
+                  </label>
+                </div>
+                {locked ? null : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      panelRef.current?.hidePopover();
+                      document
+                        .getElementById("subscribe")
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
                     }}
-                    className="size-3.5 shrink-0 accent-accent"
-                  />
-                  <span className="font-mono">{familyLabel} family</span>
-                </label>
-                <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
-                  <input
-                    type="checkbox"
-                    checked={dcOn}
-                    disabled={locked}
-                    onChange={(e) => {
-                      const { datacentres } = useDispatchPrefStore.getState();
-                      setDatacentres(
-                        toggleValue(datacentres, dc, e.target.checked),
-                      );
-                    }}
-                    className="size-3.5 shrink-0 accent-accent"
-                  />
-                  <span className="font-mono">{dc}</span>
-                </label>
+                    className="min-h-7 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink hover:border-accent hover:text-accent"
+                  >
+                    Subscribe
+                  </button>
+                )}
               </div>
-              {locked ? null : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    panelRef.current?.hidePopover();
-                    document
-                      .getElementById("subscribe")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  className="mx-auto mt-1 min-h-7 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink hover:border-accent hover:text-accent"
-                >
-                  Subscribe
-                </button>
-              )}
             </fieldset>
           ) : null}
         </div>
