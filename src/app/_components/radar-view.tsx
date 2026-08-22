@@ -35,7 +35,7 @@ function FamilyBlock({ family, first }: { family: Family; first: boolean }) {
 
 function SubscribeBlock() {
   return (
-    <section className="flex flex-col gap-6 pt-16">
+    <section id="subscribe" className="flex flex-col gap-6 pt-16">
       <SectionHeader
         kicker="Mailing list"
         title="Subscribe to dispatches"

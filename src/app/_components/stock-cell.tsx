@@ -332,6 +332,20 @@ export function StockCell({
                   <span className="font-mono">{dc}</span>
                 </label>
               </div>
+              {locked ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    panelRef.current?.hidePopover();
+                    document
+                      .getElementById("subscribe")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="mx-auto mt-1 min-h-7 rounded-edge border border-hairline-strong px-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink hover:border-accent hover:text-accent"
+                >
+                  Subscribe
+                </button>
+              )}
             </fieldset>
           ) : null}
         </div>

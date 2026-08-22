@@ -18,8 +18,8 @@ type DispatchPrefStore = {
 
 export const useDispatchPrefStore = create<DispatchPrefStore>((set) => ({
   events: [...DEFAULT_DISPATCH_PREFERENCES.events],
-  families: [...DEFAULT_DISPATCH_PREFERENCES.families],
-  datacentres: [...DEFAULT_DISPATCH_PREFERENCES.datacentres],
+  families: [],
+  datacentres: [],
   locked: false,
   setEvents: (events) => set((s) => (s.locked ? s : { events })),
   setFamilies: (families) => set((s) => (s.locked ? s : { families })),
