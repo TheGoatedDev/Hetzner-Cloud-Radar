@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import { type FormEvent, useId, useState } from "react";
 import { PreferenceMatrix } from "@/app/_components/preference-matrix";
 import type {
@@ -7,7 +8,6 @@ import type {
   DispatchPreferences,
 } from "@/lib/marketing/preferences";
 import type { DcCode, FamilyId } from "@/lib/schema";
-import { posthog } from "../../../../instrumentation-client";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 type FeedbackStatus = "idle" | "submitting" | "ok" | "error";
@@ -106,6 +106,8 @@ export function UnsubscribeForm({
       }
 
       const didFullyUnsubscribe = body?.fullUnsubscribe ?? fullUnsubscribe;
+      setResultFullUnsubscribe(didFullyUnsubscribe);
+      setStatus("ok");
       posthog.capture(
         didFullyUnsubscribe
           ? "dispatch_subscription_cancelled"
@@ -118,13 +120,12 @@ export function UnsubscribeForm({
           source: emailLocked ? "email_link" : "manual_email",
         },
       );
-      setResultFullUnsubscribe(didFullyUnsubscribe);
-      setStatus("ok");
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unsubscribe failed.";
       setStatus("error");
-      setErrorMsg(
-        error instanceof Error ? error.message : "Unsubscribe failed.",
-      );
+      setErrorMsg(message);
+      posthog.capture("unsubscribe_failed", { error: message });
     }
   }
 
@@ -162,16 +163,17 @@ export function UnsubscribeForm({
         throw new Error(body?.error ?? "Feedback failed.");
       }
 
+      setFeedbackStatus("ok");
       posthog.capture("unsubscribe_feedback_submitted", {
         reason: feedbackReason,
         source: emailLocked ? "email_link" : "manual_email",
       });
-      setFeedbackStatus("ok");
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Feedback failed.";
       setFeedbackStatus("error");
-      setFeedbackErrorMsg(
-        error instanceof Error ? error.message : "Feedback failed.",
-      );
+      setFeedbackErrorMsg(message);
+      posthog.capture("unsubscribe_feedback_failed", { error: message });
     }
   }
 

@@ -1,12 +1,12 @@
 "use client";
 
+import posthog from "posthog-js";
 import { type FormEvent, useId, useState } from "react";
 import {
   DEFAULT_DISPATCH_PREFERENCES,
   type DispatchEvent,
 } from "@/lib/marketing/preferences";
 import type { DcCode, FamilyId } from "@/lib/schema";
-import { posthog } from "../../../instrumentation-client";
 import { PreferenceMatrix } from "./preference-matrix";
 
 type Status = "idle" | "submitting" | "ok" | "error";
@@ -69,18 +69,19 @@ export function SubscribeForm() {
         throw new Error(body?.error ?? "Subscription failed.");
       }
 
+      setStatus("ok");
       posthog.capture("dispatch_subscription_created", {
         event_types_selected: events.length,
         server_families_selected: families.length,
         datacentres_selected: datacentres.length,
         alerts_wired: events.length * families.length * datacentres.length,
       });
-      setStatus("ok");
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Subscription failed.";
       setStatus("error");
-      setErrorMsg(
-        error instanceof Error ? error.message : "Subscription failed.",
-      );
+      setErrorMsg(message);
+      posthog.capture("subscribe_failed", { error: message });
     }
   }
 
