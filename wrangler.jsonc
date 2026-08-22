@@ -28,7 +28,7 @@
   },
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://hetzner.thegoated.dev",
-    "NEXT_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com",
+    "NEXT_PUBLIC_POSTHOG_HOST": "/hcr-relay",
     "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN": "phc_sfsrD8YaF3XoMc9KjANjtyY3NXCm2BydfZJRELvqyRoH"
   }
 }

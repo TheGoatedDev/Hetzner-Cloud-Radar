@@ -10,6 +10,11 @@ const MD_PATHS = {
   "/dispatches": "/md/dispatches",
 };
 
+// PostHog reverse proxy (same-origin path; avoid blocker-y names)
+const PH_PREFIX = "/hcr-relay";
+const PH_API = "eu.i.posthog.com";
+const PH_ASSETS = "eu-assets.i.posthog.com";
+
 function maybeMarkdownRequest(request) {
   const accept = request.headers.get("accept") ?? "";
   if (!accept.includes("text/markdown")) return request;
@@ -20,8 +25,47 @@ function maybeMarkdownRequest(request) {
   return new Request(url, request);
 }
 
+async function proxyPostHog(request, ctx) {
+  const url = new URL(request.url);
+  const pathname = url.pathname.slice(PH_PREFIX.length) || "/";
+  const pathWithParams = pathname + url.search;
+
+  if (pathname.startsWith("/static/") || pathname.startsWith("/array/")) {
+    let response = await caches.default.match(request);
+    if (!response) {
+      response = await fetch(`https://${PH_ASSETS}${pathWithParams}`);
+      ctx.waitUntil(caches.default.put(request, response.clone()));
+    }
+    return response;
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const headers = new Headers(request.headers);
+  headers.delete("cookie");
+  headers.set("X-Forwarded-For", ip);
+
+  return fetch(
+    new Request(`https://${PH_API}${pathWithParams}`, {
+      method: request.method,
+      headers,
+      body:
+        request.method !== "GET" && request.method !== "HEAD"
+          ? await request.arrayBuffer()
+          : null,
+      redirect: request.redirect,
+    }),
+  );
+}
+
 export default {
   fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (
+      url.pathname === PH_PREFIX ||
+      url.pathname.startsWith(`${PH_PREFIX}/`)
+    ) {
+      return proxyPostHog(request, ctx);
+    }
     return handler.fetch(maybeMarkdownRequest(request), env, ctx);
   },
 

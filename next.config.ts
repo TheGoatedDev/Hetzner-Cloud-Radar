@@ -11,6 +11,24 @@ const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   // ponytail: reactCompiler bloats Worker past free 3MiB gzip
   reactCompiler: false,
+  // PostHog API uses trailing slashes (/e/); local rewrites need this
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      {
+        source: "/hcr-relay/static/:path*",
+        destination: "https://eu-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/hcr-relay/array/:path*",
+        destination: "https://eu-assets.i.posthog.com/array/:path*",
+      },
+      {
+        source: "/hcr-relay/:path*",
+        destination: "https://eu.i.posthog.com/:path*",
+      },
+    ];
+  },
   async headers() {
     const cdn = {
       key: "Cloudflare-CDN-Cache-Control",

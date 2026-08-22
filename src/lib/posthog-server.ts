@@ -5,11 +5,11 @@ export async function captureServer(
   properties?: Record<string, unknown>,
 ) {
   const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
-  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
-  if (!token || !host) return;
+  if (!token) return;
 
+  // Direct EU API — server skip reverse proxy (no adblock)
   const ph = new PostHog(token, {
-    host,
+    host: "https://eu.i.posthog.com",
     flushAt: 1,
     flushInterval: 0,
   });
