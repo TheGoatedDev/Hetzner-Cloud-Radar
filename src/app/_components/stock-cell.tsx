@@ -300,7 +300,7 @@ export function StockCell({
               <p className="text-2xs text-ink-faint leading-relaxed">
                 Whole {familyLabel} line @ selected DCs — not {type} alone.
               </p>
-              <div className="flex items-center justify-between gap-4 px-1">
+              <div className="flex items-center justify-between gap-4 px-3">
                 <div className="flex min-w-0 items-center gap-4">
                   <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
                     <input
