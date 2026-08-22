@@ -11,80 +11,21 @@ const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   // ponytail: reactCompiler bloats Worker past free 3MiB gzip
   reactCompiler: false,
-  async rewrites() {
-    const md = (source: string, destination: string) => ({
-      source,
-      destination,
-      has: [
-        {
-          type: "header" as const,
-          key: "accept",
-          value: "(.*)text/markdown(.*)",
-        },
-      ],
-    });
-    return [
-      md("/", "/md"),
-      md("/methodology", "/md/methodology"),
-      md("/dispatches", "/md/dispatches"),
-    ];
-  },
   async headers() {
+    const cdn = {
+      key: "Cloudflare-CDN-Cache-Control",
+      value: PUBLIC_READ_CACHE,
+    };
+    // Vary Accept so CF edge doesn't mix HTML/MD for same URL
+    const varyAccept = { key: "Vary", value: "Accept" };
     return [
-      {
-        source: "/",
-        headers: [
-          {
-            key: "Cloudflare-CDN-Cache-Control",
-            value: PUBLIC_READ_CACHE,
-          },
-        ],
-      },
-      {
-        source: "/api/availability",
-        headers: [
-          {
-            key: "Cloudflare-CDN-Cache-Control",
-            value: PUBLIC_READ_CACHE,
-          },
-        ],
-      },
-      {
-        source: "/dispatches",
-        headers: [
-          {
-            key: "Cloudflare-CDN-Cache-Control",
-            value: PUBLIC_READ_CACHE,
-          },
-        ],
-      },
-      {
-        source: "/feed.atom",
-        headers: [
-          {
-            key: "Cloudflare-CDN-Cache-Control",
-            value: PUBLIC_READ_CACHE,
-          },
-        ],
-      },
-      {
-        source: "/md",
-        headers: [
-          {
-            key: "Cloudflare-CDN-Cache-Control",
-            value: PUBLIC_READ_CACHE,
-          },
-        ],
-      },
-      {
-        source: "/md/:path*",
-        headers: [
-          {
-            key: "Cloudflare-CDN-Cache-Control",
-            value: PUBLIC_READ_CACHE,
-          },
-        ],
-      },
+      { source: "/", headers: [cdn, varyAccept] },
+      { source: "/methodology", headers: [cdn, varyAccept] },
+      { source: "/dispatches", headers: [cdn, varyAccept] },
+      { source: "/api/availability", headers: [cdn] },
+      { source: "/feed.atom", headers: [cdn] },
+      { source: "/md", headers: [cdn] },
+      { source: "/md/:path*", headers: [cdn] },
     ];
   },
 };
