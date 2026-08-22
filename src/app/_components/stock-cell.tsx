@@ -300,36 +300,38 @@ export function StockCell({
               <p className="text-2xs text-ink-faint leading-relaxed">
                 Whole {familyLabel} line @ selected DCs — not {type} alone.
               </p>
-              <label className="flex cursor-pointer items-baseline gap-2 text-2xs text-ink hover:text-ink">
-                <input
-                  type="checkbox"
-                  checked={familyOn}
-                  disabled={locked}
-                  onChange={(e) => {
-                    const { families } = useDispatchPrefStore.getState();
-                    setFamilies(
-                      toggleValue(families, familyId, e.target.checked),
-                    );
-                  }}
-                  className="size-3.5 shrink-0 accent-accent"
-                />
-                <span className="font-mono">{familyLabel} family</span>
-              </label>
-              <label className="flex cursor-pointer items-baseline gap-2 text-2xs text-ink hover:text-ink">
-                <input
-                  type="checkbox"
-                  checked={dcOn}
-                  disabled={locked}
-                  onChange={(e) => {
-                    const { datacentres } = useDispatchPrefStore.getState();
-                    setDatacentres(
-                      toggleValue(datacentres, dc, e.target.checked),
-                    );
-                  }}
-                  className="size-3.5 shrink-0 accent-accent"
-                />
-                <span className="font-mono">{dc}</span>
-              </label>
+              <div className="flex items-center justify-center gap-4">
+                <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                  <input
+                    type="checkbox"
+                    checked={familyOn}
+                    disabled={locked}
+                    onChange={(e) => {
+                      const { families } = useDispatchPrefStore.getState();
+                      setFamilies(
+                        toggleValue(families, familyId, e.target.checked),
+                      );
+                    }}
+                    className="size-3.5 shrink-0 accent-accent"
+                  />
+                  <span className="font-mono">{familyLabel} family</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                  <input
+                    type="checkbox"
+                    checked={dcOn}
+                    disabled={locked}
+                    onChange={(e) => {
+                      const { datacentres } = useDispatchPrefStore.getState();
+                      setDatacentres(
+                        toggleValue(datacentres, dc, e.target.checked),
+                      );
+                    }}
+                    className="size-3.5 shrink-0 accent-accent"
+                  />
+                  <span className="font-mono">{dc}</span>
+                </label>
+              </div>
             </fieldset>
           ) : null}
         </div>
