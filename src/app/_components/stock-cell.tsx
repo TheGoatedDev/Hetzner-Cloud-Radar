@@ -300,7 +300,7 @@ export function StockCell({
               <p className="text-2xs text-ink-faint leading-relaxed">
                 Whole {familyLabel} line @ selected DCs — not {type} alone.
               </p>
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4 px-1">
                 <div className="flex min-w-0 items-center gap-4">
                   <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
                     <input
@@ -338,12 +338,10 @@ export function StockCell({
                     type="button"
                     onClick={() => {
                       panelRef.current?.hidePopover();
-                      document
-                        .getElementById("subscribe")
-                        ?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
+                      document.getElementById("subscribe")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                     }}
                     className="min-h-7 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink hover:border-accent hover:text-accent"
                   >
