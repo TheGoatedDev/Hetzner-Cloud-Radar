@@ -11,6 +11,24 @@ const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   // ponytail: reactCompiler bloats Worker past free 3MiB gzip
   reactCompiler: false,
+  async rewrites() {
+    const md = (source: string, destination: string) => ({
+      source,
+      destination,
+      has: [
+        {
+          type: "header" as const,
+          key: "accept",
+          value: "(.*)text/markdown(.*)",
+        },
+      ],
+    });
+    return [
+      md("/", "/md"),
+      md("/methodology", "/md/methodology"),
+      md("/dispatches", "/md/dispatches"),
+    ];
+  },
   async headers() {
     return [
       {
@@ -42,6 +60,24 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/feed.atom",
+        headers: [
+          {
+            key: "Cloudflare-CDN-Cache-Control",
+            value: PUBLIC_READ_CACHE,
+          },
+        ],
+      },
+      {
+        source: "/md",
+        headers: [
+          {
+            key: "Cloudflare-CDN-Cache-Control",
+            value: PUBLIC_READ_CACHE,
+          },
+        ],
+      },
+      {
+        source: "/md/:path*",
         headers: [
           {
             key: "Cloudflare-CDN-Cache-Control",
