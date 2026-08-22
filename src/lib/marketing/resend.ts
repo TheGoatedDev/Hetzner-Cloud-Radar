@@ -140,7 +140,7 @@ export async function syncMarketingContact(input: {
 
   const segment = await resendJson<{ id: string }>(
     `/contacts/${encodeURIComponent(input.email)}/segments/${env.RESEND_MARKETING_SEGMENT_ID}`,
-    { method: "POST", body: "{}" },
+    { method: "POST" },
   );
 
   if (!segment.data && segment.error?.statusCode !== 409) {
@@ -158,7 +158,7 @@ export async function syncMarketingContact(input: {
     `/contacts/${encodeURIComponent(input.email)}/topics`,
     {
       method: "PATCH",
-      body: JSON.stringify({ topics }),
+      body: JSON.stringify(topics),
     },
   );
 
@@ -179,7 +179,7 @@ export async function unsubscribeMarketingContact(input: { email: string }) {
     `/contacts/${encodeURIComponent(input.email)}/topics`,
     {
       method: "PATCH",
-      body: JSON.stringify({ topics }),
+      body: JSON.stringify(topics),
     },
   );
 
