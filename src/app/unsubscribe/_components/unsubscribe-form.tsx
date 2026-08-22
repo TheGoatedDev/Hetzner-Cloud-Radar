@@ -179,7 +179,7 @@ export function UnsubscribeForm({
 
   if (status === "ok") {
     return (
-      <div className="flex flex-col gap-6 font-sans text-sm leading-[1.6]">
+      <output className="flex flex-col gap-6 font-sans text-sm leading-[1.6]">
         <p className="text-ink">
           {resultFullUnsubscribe ? (
             <>
@@ -222,7 +222,7 @@ export function UnsubscribeForm({
                   aria-describedby={
                     feedbackStatus === "error" ? feedbackErrorId : undefined
                   }
-                  className="max-w-[18rem] border-0 border-b-2 border-hairline-strong bg-transparent pb-2 font-mono text-sm text-ink focus:border-accent focus-visible:outline-none disabled:opacity-50"
+                  className="max-w-[18rem] border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink focus:border-accent focus-visible:outline-none disabled:opacity-50"
                 >
                   <option value="">Pick a reason</option>
                   {feedbackReasons.map((reason) => (
@@ -245,7 +245,7 @@ export function UnsubscribeForm({
                   maxLength={500}
                   rows={3}
                   placeholder="Optional"
-                  className="resize-y border-0 border-b-2 border-hairline-strong bg-transparent pb-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+                  className="resize-y border-0 border-b-2 border-control-border bg-transparent pb-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
                 />
               </label>
 
@@ -270,7 +270,7 @@ export function UnsubscribeForm({
             </form>
           )
         ) : null}
-      </div>
+      </output>
     );
   }
 
@@ -296,7 +296,7 @@ export function UnsubscribeForm({
             autoComplete="email"
             aria-invalid={status === "error" || undefined}
             aria-describedby={status === "error" ? errorId : undefined}
-            className="border-0 border-b-2 border-hairline-strong bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+            className="border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
           />
         </label>
         <button

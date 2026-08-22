@@ -96,7 +96,7 @@ export function SubscribeForm() {
           : "a server type returns to stock";
 
     return (
-      <div className="flex flex-col gap-3 font-sans text-sm leading-[1.6]">
+      <output className="flex flex-col gap-3 font-sans text-sm leading-[1.6]">
         <p className="text-ink">
           Thanks. <span className="font-mono text-ink">{email}</span> is on the
           list. A short note will land when {eventCopy}.
@@ -109,7 +109,7 @@ export function SubscribeForm() {
           Watching {families.map((family) => family.toUpperCase()).join(", ")}{" "}
           in {datacentres.join(", ")}.
         </p>
-      </div>
+      </output>
     );
   }
 
@@ -134,7 +134,7 @@ export function SubscribeForm() {
             autoComplete="email"
             aria-invalid={status === "error" || undefined}
             aria-describedby={status === "error" ? errorId : undefined}
-            className="border-0 border-b-2 border-hairline-strong bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
+            className="border-0 border-b-2 border-control-border bg-transparent pb-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus-visible:outline-none disabled:opacity-50"
           />
         </label>
         <button

@@ -111,13 +111,39 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
 
   return (
     <figure className="flex flex-col gap-2">
-      <div className="relative">
+      <table className="sr-only">
+        <caption>
+          Available, limited, and sold-out cells per day, last {days.length}{" "}
+          days. Maximum {maxStack} cells. Available average{" "}
+          {formatSupplyStat(stats.average)}, min {stats.min}, max {stats.max}.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Available</th>
+            <th scope="col">Limited</th>
+            <th scope="col">Sold out</th>
+          </tr>
+        </thead>
+        <tbody>
+          {days.map((d) => (
+            <tr key={d.date}>
+              <th scope="row">{formatChartLabel(d.date)}</th>
+              <td>{d.available}</td>
+              <td>{d.limited}</td>
+              <td>{d.soldOut}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="relative" aria-hidden>
+        {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative; data in sr-only table */}
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="block w-full touch-none"
           preserveAspectRatio="none"
-          role="img"
-          aria-label={`Available, limited, and sold-out cells per day, last ${days.length} days. Maximum ${maxStack} cells.`}
+          aria-hidden
+          focusable="false"
           onPointerMove={(e) => setHoverIndex(indexFromEvent(e))}
           onPointerDown={(e) => setHoverIndex(indexFromEvent(e))}
           onPointerLeave={() => setHoverIndex(null)}
@@ -148,7 +174,6 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
 
             return (
               <g key={d.date}>
-                <title>{`${formatChartLabel(d.date)}: ${d.available} available, ${d.limited} limited, ${d.soldOut} sold out`}</title>
                 {segments.map((segment) => {
                   if (segment.value === 0) return null;
 
@@ -181,9 +206,7 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
               vectorEffect="non-scaling-stroke"
               opacity={line.opacity}
               pointerEvents="none"
-            >
-              <title>{line.label}</title>
-            </line>
+            />
           ))}
           {hoverIndex !== null ? (
             <line
@@ -202,7 +225,6 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
 
         {hovered ? (
           <div
-            role="tooltip"
             className="pointer-events-none absolute top-0 z-10 flex flex-col gap-1 whitespace-nowrap border border-hairline-strong bg-paper-raised px-3 py-2 font-mono text-xs text-ink shadow-sm"
             style={{
               left: `calc(${hoveredCenterPct}% + ${anchor.offsetX}px)`,

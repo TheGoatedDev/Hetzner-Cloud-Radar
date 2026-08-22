@@ -44,6 +44,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="bg-paper text-ink min-h-full flex flex-col">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         {children}
       </body>
     </html>

@@ -42,27 +42,29 @@ function GroupHeader({
 }: GroupHeaderProps) {
   const allSelected = selected === total;
   return (
-    <div className="flex items-baseline justify-between gap-4">
-      <legend className="flex items-baseline gap-3 text-xs uppercase tracking-[0.1em] text-ink-faint">
-        <span>{label}</span>
-        <span className="font-mono text-2xs text-ink-faint">
-          <span className="sr-only">
-            {selected} of {total} selected
-          </span>
-          <span aria-hidden="true">
-            {selected} / {total}
+    <legend className="float-left mb-2 w-full p-0">
+      <span className="flex w-full items-baseline justify-between gap-4">
+        <span className="flex items-baseline gap-3 text-xs uppercase tracking-[0.1em] text-ink-faint">
+          <span>{label}</span>
+          <span className="font-mono text-2xs text-ink-faint">
+            <span className="sr-only">
+              {selected} of {total} selected
+            </span>
+            <span aria-hidden="true">
+              {selected} / {total}
+            </span>
           </span>
         </span>
-      </legend>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={onToggleAll}
-        className="font-mono text-2xs uppercase tracking-[0.1em] text-accent underline-offset-4 hover:underline disabled:opacity-50"
-      >
-        {allSelected ? "Clear all" : "Select all"}
-      </button>
-    </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onToggleAll}
+          className="min-h-6 font-mono text-2xs uppercase tracking-[0.1em] text-accent underline-offset-4 hover:underline disabled:opacity-50"
+        >
+          {allSelected ? "Clear all" : "Select all"}
+        </button>
+      </span>
+    </legend>
   );
 }
 

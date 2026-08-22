@@ -10,10 +10,12 @@ function DispatchRow({
   event,
   topBorder,
   asAnchor = false,
+  titleAs: TitleTag = "h3",
 }: {
   event: StockEvent;
   topBorder: boolean;
   asAnchor?: boolean;
+  titleAs?: "h3" | "h4";
 }) {
   const tag = TAG_FOR[event.state];
   return (
@@ -39,9 +41,9 @@ function DispatchRow({
         </span>
       </div>
       <div className="flex flex-col gap-2">
-        <h3 className="text-lg font-medium tracking-tight text-ink">
+        <TitleTag className="text-lg font-medium tracking-tight text-ink">
           {event.title}
-        </h3>
+        </TitleTag>
         <p className="max-w-[68ch] font-sans text-sm leading-[1.6] text-ink-soft">
           {event.body}
         </p>
@@ -141,6 +143,7 @@ export function DispatchList({
                   event={event}
                   topBorder={i > 0}
                   asAnchor={asAnchors}
+                  titleAs="h4"
                 />
               ))}
             </ol>

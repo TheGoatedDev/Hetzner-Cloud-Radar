@@ -46,6 +46,7 @@ export default async function UnsubscribePage({
     <PageFrame observedAt={await getObservedAtLabel()}>
       <section className="flex flex-col gap-6 pt-10">
         <SectionHeader
+          as="h1"
           kicker="Mailing list"
           title="Unsubscribe"
           blurb="Remove your address from Hetzner Cloud Radar dispatches, or keep just one type of alert. The change applies immediately."

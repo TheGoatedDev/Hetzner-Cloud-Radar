@@ -71,7 +71,7 @@ export function RadarView({ data }: { data: AvailabilityReadModel }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-6 sm:px-10">
       <Masthead observedAt={data.observedAt} />
-      <main>
+      <main id="main-content">
         <RightNow
           totals={totals}
           topLine={data.topLine}

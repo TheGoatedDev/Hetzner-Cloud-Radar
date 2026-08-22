@@ -56,6 +56,7 @@ export function StockCell({
   const popoverId = useId();
   const [history, setHistory] = useState<AvailabilityHistory | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [open, setOpen] = useState(false);
   const srLabel = `${type} in ${dc}, ${DC_META[dc].city}: ${STOCK[stock].label}`;
 
   if (stock === "not-offered") {
@@ -73,7 +74,9 @@ export function StockCell({
   }
 
   async function onToggle(event: ToggleEvent<HTMLDivElement>) {
-    if (event.newState !== "open" || history || status === "loading") return;
+    const isOpen = event.newState === "open";
+    setOpen(isOpen);
+    if (!isOpen || history || status === "loading") return;
     setStatus("loading");
     try {
       const response = await fetch(
@@ -92,7 +95,9 @@ export function StockCell({
       <button
         type="button"
         popoverTarget={popoverId}
-        className="inline-flex cursor-pointer items-center justify-center bg-transparent p-0 leading-none"
+        aria-expanded={open}
+        aria-controls={popoverId}
+        className="inline-flex size-6 cursor-pointer items-center justify-center bg-transparent p-0 leading-none"
         style={{ anchorName: `--s-${type}-${dc}` } as CSSProperties}
       >
         <span className="sr-only">
