@@ -116,7 +116,7 @@ export function StockCell({
 
   if (stock === "not-offered") {
     return (
-      <td className="px-0 py-3 text-center align-top sm:px-2">
+      <td className="px-0 py-3 text-center align-middle sm:px-2">
         <span className="sr-only">{srLabel}</span>
         <span
           aria-hidden
@@ -183,7 +183,7 @@ export function StockCell({
   }
 
   return (
-    <td className="px-0 py-3 text-center align-top sm:px-2">
+    <td className="px-0 py-3 text-center align-middle sm:px-2">
       <button
         type="button"
         popoverTarget={popoverId}

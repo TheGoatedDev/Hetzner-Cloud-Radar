@@ -38,7 +38,7 @@ export function FamilyTable({ family }: { family: Family }) {
           <tr key={t.code} className={i > 0 ? "border-t border-hairline" : ""}>
             <th
               scope="row"
-              className="px-1 py-3 text-left align-top font-medium tracking-[0.04em] text-ink sm:px-2"
+              className="px-1 py-3 text-left align-middle font-medium tracking-[0.04em] text-ink sm:px-2"
             >
               <div className="flex flex-col gap-0.5">
                 <span>{t.code}</span>
@@ -47,7 +47,7 @@ export function FamilyTable({ family }: { family: Family }) {
                 </span>
               </div>
             </th>
-            <td className="hidden px-2 py-3 text-left align-top text-xs text-ink-soft sm:table-cell">
+            <td className="hidden px-2 py-3 text-left align-middle text-xs text-ink-soft sm:table-cell">
               {t.cores}&nbsp;vCPU · {t.ram}&nbsp;GB · {t.disk}&nbsp;GB
             </td>
             {DCS.map((dc) => (
