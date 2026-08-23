@@ -55,7 +55,7 @@ function DispatchRow({
         <TitleTag className="break-words text-lg font-medium tracking-tight text-pretty text-ink">
           {event.title}
         </TitleTag>
-        <p className="max-w-[68ch] break-words font-sans text-sm leading-[1.6] text-ink-soft">
+        <p className="max-w-[68ch] break-words font-sans text-base leading-[1.6] text-ink-soft">
           {event.body}
         </p>
       </div>
@@ -98,7 +98,7 @@ export function DispatchList({
 }) {
   if (events.length === 0) {
     return (
-      <p className="font-sans text-sm leading-[1.6] text-ink-soft">
+      <p className="font-sans text-base leading-[1.6] text-ink-soft">
         {emptyMessage}
       </p>
     );

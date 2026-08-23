@@ -198,7 +198,7 @@ export function UnsubscribeForm({
   if (status === "ok") {
     return (
       <output
-        className="flex flex-col gap-6 font-sans text-sm leading-[1.6]"
+        className="flex flex-col gap-6 font-sans text-base leading-[1.6]"
         aria-live="polite"
       >
         <p className="text-ink">
@@ -297,7 +297,7 @@ export function UnsubscribeForm({
               <button
                 type="submit"
                 disabled={feedbackStatus === "submitting"}
-                className="w-fit rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 w-fit rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {feedbackStatus === "submitting" ? "Sending…" : "Send feedback"}
               </button>
@@ -341,7 +341,7 @@ export function UnsubscribeForm({
         <button
           type="submit"
           disabled={disabled}
-          className="rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
         >
           {disabled
             ? "Working…"
@@ -358,7 +358,7 @@ export function UnsubscribeForm({
         </p>
       ) : null}
 
-      <p className="max-w-[60ch] font-sans text-xs leading-[1.55] text-ink-faint">
+      <p className="max-w-[60ch] font-sans text-base leading-[1.55] text-ink-soft">
         Tick choices to keep that stream of alerts. Clearing any group entirely
         unsubscribes you from every dispatch.
       </p>
@@ -392,7 +392,7 @@ export function UnsubscribeForm({
       ) : null}
 
       {emailLocked ? null : (
-        <p className="max-w-[60ch] font-sans text-xs leading-[1.55] text-ink-faint">
+        <p className="max-w-[60ch] font-sans text-base leading-[1.55] text-ink-soft">
           Enter the email address you subscribed with. You only need this manual
           step if you arrived here without clicking the unsubscribe link in a
           recent dispatch.

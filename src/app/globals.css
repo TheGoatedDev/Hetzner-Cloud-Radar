@@ -6,7 +6,7 @@
   --paper-raised: oklch(0.995 0.004 70);
   --ink: oklch(0.18 0.008 60);
   --ink-soft: oklch(0.45 0.005 60);
-  --ink-faint: oklch(0.559 0.005 60);
+  --ink-faint: oklch(0.53 0.005 60);
   --hairline: oklch(0.88 0.005 70);
   --hairline-strong: oklch(0.78 0.005 70);
   --control-border: oklch(0.659 0.005 70);
@@ -152,6 +152,10 @@ label {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
@@ -161,7 +165,5 @@ label {
     animation-iteration-count: 1 !important;
     /* biome-ignore lint/complexity/noImportantStyles: reduced-motion overrides must win component transition styles. */
     transition-duration: 0.01ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: reduced-motion override must win component scroll styles. */
-    scroll-behavior: auto !important;
   }
 }

@@ -144,7 +144,7 @@ export function subscriptionConfirmationHtml(input: {
 }) {
   const body = `<div>
   <p style="margin:0 0 14px;font-family:${fontStack.sans};font-size:15px;line-height:1.55;color:${theme.ink}">Thanks. <span style="font-family:${fontStack.mono}">${esc(input.email)}</span> is on the list. A short note will land when ${esc(input.eventCopy)}.</p>
-  <p style="margin:0 0 14px;font-family:${fontStack.sans};font-size:15px;line-height:1.55;color:${theme.inkSoft}">Resend manages the address and preferences. No third-party analytics. Unsubscribe with the link in any dispatch.</p>
+  <p style="margin:0 0 14px;font-family:${fontStack.sans};font-size:15px;line-height:1.55;color:${theme.inkSoft}">Resend manages the address and preferences. Product analytics via PostHog. Unsubscribe with the link in any dispatch.</p>
   <p style="margin:16px 0 0;font-family:${fontStack.mono};font-size:12px;color:${theme.inkFaint}">Subscribed to: ${esc(input.subscribedTo)}</p>
 </div>`;
 

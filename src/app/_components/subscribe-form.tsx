@@ -104,7 +104,7 @@ export function SubscribeForm() {
 
     return (
       <output
-        className="flex flex-col gap-3 font-sans text-sm leading-[1.6]"
+        className="flex flex-col gap-3 font-sans text-base leading-[1.6]"
         aria-live="polite"
       >
         <p className="text-ink">
@@ -158,7 +158,7 @@ export function SubscribeForm() {
         <button
           type="submit"
           disabled={disabled}
-          className="rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
         >
           {disabled ? "Subscribing…" : "Subscribe"}
         </button>
@@ -190,9 +190,9 @@ export function SubscribeForm() {
         </p>
       ) : null}
 
-      <p className="max-w-[60ch] font-sans text-xs leading-[1.55] text-ink-faint">
-        Resend manages the address and preferences. No third-party analytics.
-        Unsubscribe with the link in any dispatch.
+      <p className="max-w-[60ch] font-sans text-base leading-[1.55] text-ink-soft">
+        Resend manages the address and preferences. Product analytics via
+        PostHog. Unsubscribe with the link in any dispatch.
       </p>
     </form>
   );

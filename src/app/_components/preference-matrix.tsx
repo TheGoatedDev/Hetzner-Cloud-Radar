@@ -59,7 +59,7 @@ function GroupHeader({
           type="button"
           disabled={disabled}
           onClick={onToggleAll}
-          className="min-h-6 font-mono text-2xs tracking-wide text-accent underline-offset-4 hover:underline disabled:opacity-50"
+          className="min-h-11 font-mono text-xs tracking-wide text-accent underline-offset-4 hover:underline disabled:opacity-50"
         >
           {allSelected ? "Clear all" : "Select all"}
         </button>
@@ -84,14 +84,14 @@ function CheckRow({
   subtitle,
 }: CheckRowProps) {
   return (
-    <label className="flex cursor-pointer items-baseline gap-3 py-1 text-sm hover:text-ink">
+    <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2 text-sm hover:text-ink">
       <input
         type="checkbox"
         name={code}
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="size-3.5 shrink-0 accent-accent"
+        className="size-4 shrink-0 accent-accent"
       />
       <span className="min-w-[3.5rem] break-words font-mono text-ink">
         {code}

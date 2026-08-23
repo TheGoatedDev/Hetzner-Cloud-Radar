@@ -21,7 +21,7 @@ export function SectionHeader({
         <Eyebrow as="span">{kicker}</Eyebrow>
       </div>
       {blurb ? (
-        <p className="max-w-[68ch] font-sans text-sm leading-[1.55] text-ink-soft">
+        <p className="max-w-[68ch] font-sans text-base leading-[1.55] text-ink-soft">
           {blurb}
         </p>
       ) : null}

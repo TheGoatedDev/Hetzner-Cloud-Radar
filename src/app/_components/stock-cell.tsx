@@ -212,7 +212,7 @@ export function StockCell({
         onToggle={onToggle}
         onMouseEnter={scheduleOpen}
         onMouseLeave={scheduleClose}
-        className="z-50 m-0 w-[min(360px,calc(100vw-16px))] overflow-y-auto border border-hairline-strong bg-paper-raised p-3 shadow-lg overscroll-contain"
+        className="z-50 m-0 w-[min(360px,calc(100vw-16px))] overflow-y-auto border border-hairline-strong bg-paper-raised p-3 shadow-sm overscroll-contain"
         style={
           {
             positionAnchor: `--s-${type}-${dc}`,
@@ -304,7 +304,7 @@ export function StockCell({
               </p>
               <div className="flex items-center justify-between gap-4 px-6">
                 <div className="flex min-w-0 items-center gap-4">
-                  <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
                     <input
                       type="checkbox"
                       checked={familyOn}
@@ -315,11 +315,11 @@ export function StockCell({
                           toggleValue(families, familyId, e.target.checked),
                         );
                       }}
-                      className="size-3.5 shrink-0 accent-accent"
+                      className="size-4 shrink-0 accent-accent"
                     />
                     <span className="font-mono">{familyLabel} family</span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
                     <input
                       type="checkbox"
                       checked={dcOn}
@@ -330,7 +330,7 @@ export function StockCell({
                           toggleValue(datacentres, dc, e.target.checked),
                         );
                       }}
-                      className="size-3.5 shrink-0 accent-accent"
+                      className="size-4 shrink-0 accent-accent"
                     />
                     <span className="font-mono">{dc}</span>
                   </label>
@@ -340,12 +340,15 @@ export function StockCell({
                     type="button"
                     onClick={() => {
                       panelRef.current?.hidePopover();
+                      const reduce = window.matchMedia(
+                        "(prefers-reduced-motion: reduce)",
+                      ).matches;
                       document.getElementById("subscribe")?.scrollIntoView({
-                        behavior: "smooth",
+                        behavior: reduce ? "auto" : "smooth",
                         block: "start",
                       });
                     }}
-                    className="min-h-7 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs tracking-wide text-ink hover:border-accent hover:text-accent"
+                    className="min-h-11 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs tracking-wide text-ink hover:border-accent hover:text-accent"
                   >
                     Subscribe
                   </button>

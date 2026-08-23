@@ -14,8 +14,8 @@ export default function Image() {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        background: "#faf8f5",
-        color: "#2c2824",
+        background: "#fcfaf7",
+        color: "#14110e",
         padding: "72px 80px",
         fontFamily: "ui-sans-serif, system-ui, sans-serif",
       }}
@@ -25,7 +25,7 @@ export default function Image() {
           display: "flex",
           fontSize: 28,
           letterSpacing: "0.04em",
-          color: "#8a837a",
+          color: "#6e6b69",
         }}
       >
         Independent observation
@@ -48,7 +48,7 @@ export default function Image() {
             maxWidth: 820,
             fontSize: 36,
             lineHeight: 1.35,
-            color: "#5c564e",
+            color: "#575552",
           }}
         >
           Live server-type availability by datacentre. Stock-outs, restocks, and
@@ -59,7 +59,7 @@ export default function Image() {
         style={{
           display: "flex",
           fontSize: 28,
-          color: "#b85c3a",
+          color: "#b75037",
           fontWeight: 500,
         }}
       >

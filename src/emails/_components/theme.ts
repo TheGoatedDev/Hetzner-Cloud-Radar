@@ -5,7 +5,7 @@ export const theme = {
   paperRecessed: "#f4f1ec",
   ink: "#221f1c",
   inkSoft: "#6a6764",
-  inkFaint: "#9a9794",
+  inkFaint: "#6e6b69",
   hairline: "#d9d6d1",
   hairlineStrong: "#bcb9b4",
   accent: "#b95535",

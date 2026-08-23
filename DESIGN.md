@@ -7,7 +7,7 @@ colors:
   paper-raised: "oklch(0.995 0.004 70)"
   ink: "oklch(0.18 0.008 60)"
   ink-soft: "oklch(0.45 0.005 60)"
-  ink-faint: "oklch(0.559 0.005 60)"
+  ink-faint: "oklch(0.53 0.005 60)"
   hairline: "oklch(0.88 0.005 70)"
   hairline-strong: "oklch(0.78 0.005 70)"
   control-border: "oklch(0.659 0.005 70)"
@@ -102,7 +102,7 @@ Labels render uppercase only in status chrome (glyph + label pairs). Sentence-ca
 | `--paper-raised` | `0.995 0.004 70` | Popover / tooltip surface |
 | `--ink` | `0.18 0.008 60` | Body text |
 | `--ink-soft` | `0.45 0.005 60` | Secondary text |
-| `--ink-faint` | `0.559 0.005 60` | Meta, eyebrows, axis labels |
+| `--ink-faint` | `0.53 0.005 60` | Meta, eyebrows, axis labels (≥4.5:1 on paper) |
 | `--hairline` | `0.88 0.005 70` | Default 1px rules |
 | `--hairline-strong` | `0.78 0.005 70` | Section / masthead rules |
 | `--control-border` | `0.659 0.005 70` | Input underline at rest |
@@ -122,10 +122,14 @@ Dark values swap under `@media (prefers-color-scheme: dark)` in `globals.css`.
 
 Emails may use IBM Plex Mono/Sans in the HTML stack for client reliability; the site itself stays system fonts (Worker size).
 
+**Email type ramp (intentional parallel):** 10px kicker, 11px status, 12px meta, 13px detail rows, 15px prose, 20px title. Not the web rem scale; document here so detectors treat it as designed, not drift. Hex colors live in `src/emails/_components/theme.ts` as sRGB peers of the OKLCH tokens.
+
+**OG image:** sRGB hex peers of light tokens in `opengraph-image.tsx` (`#fcfaf7` paper, `#14110e` ink, `#6e6b69` faint, `#575552` soft, `#b75037` accent).
+
 ### Hierarchy (implemented)
 - **Masthead / section title** (mono, medium/semibold, `text-lg`–`text-xl`)
 - **Body data** (mono, `text-sm` / `text-xs`, tabular nums for timestamps)
-- **Body prose** (sans, `text-sm`–`text-base`, max ~68ch)
+- **Body prose** (sans, `text-base`, max ~68ch; 16px floor)
 - **Eyebrow / form label** (mono or plain, `text-xs`, sentence case, tracking-wide; not uppercase)
 - **Status label / region code** (mono, `text-xs`, uppercase, tracking ~0.1–0.12em): only place uppercase is allowed
 
@@ -147,8 +151,8 @@ Flat by default. Tonal steps (`paper` / `paper-recessed` / `paper-raised`) and 1
 
 ## 5. Components
 
-- **Primary button:** `rounded-edge` (2px), mono label, sentence case, `bg-accent` / `text-paper`, hover `bg-accent-deep`.
-- **Ghost / secondary control:** hairline border, ink text, accent on hover.
+- **Primary button:** `rounded-edge` (2px), mono label, sentence case, `min-h-11`, `bg-accent` / `text-paper`, hover `bg-accent-deep`.
+- **Ghost / secondary control:** hairline border, ink text, accent on hover; interactive rows/labels ≥44px tall.
 - **Input:** bottom border only (`border-b-2 border-control-border`), focus `border-accent`, no glow.
 - **Stock cell:** glyph button, ≥44×44px hit target; popover with 24h history strip + optional mail prefs.
 - **Stock glyph + label:** always paired; never color alone.

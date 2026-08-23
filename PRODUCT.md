@@ -47,7 +47,7 @@ Independent observation of the public Hetzner Cloud API, not Hetzner status or m
 - Glyph + label + color for every stock state (never color alone).
 - Supply history chart; recent and archived dispatches with timestamps and durations.
 - Email subscribe with event / family / datacentre prefs; unsubscribe and preference update.
-- Atom feed; markdown page mirrors; PostHog product analytics (no third-party claim of "no analytics" on the marketing surface without checking current copy).
+- Atom feed; markdown page mirrors; PostHog product analytics (disclosed on subscribe surfaces).
 
 **Constraints**
 - Unauthenticated public product; no user accounts.
