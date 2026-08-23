@@ -84,7 +84,7 @@ function CheckRow({
   subtitle,
 }: CheckRowProps) {
   return (
-    <label className="flex cursor-pointer items-baseline gap-2.5 py-0.5 text-sm hover:text-ink">
+    <label className="flex cursor-pointer items-baseline gap-2.5 py-1 text-sm hover:text-ink">
       <input
         type="checkbox"
         name={code}
