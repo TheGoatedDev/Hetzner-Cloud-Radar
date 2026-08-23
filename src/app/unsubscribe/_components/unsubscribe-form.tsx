@@ -238,7 +238,7 @@ export function UnsubscribeForm({
               <div className="flex flex-col gap-3">
                 <label
                   htmlFor={feedbackReasonId}
-                  className="text-xs uppercase tracking-[0.1em] text-ink-faint"
+                  className="text-xs tracking-wide text-ink-faint"
                 >
                   Why are you leaving?
                 </label>
@@ -267,7 +267,7 @@ export function UnsubscribeForm({
               </div>
 
               <label htmlFor={feedbackNoteId} className="flex flex-col gap-1.5">
-                <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
+                <span className="text-xs tracking-wide text-ink-faint">
                   Note
                 </span>
                 <textarea
@@ -319,7 +319,7 @@ export function UnsubscribeForm({
           htmlFor={emailId}
           className="flex min-w-0 flex-1 flex-col gap-1.5"
         >
-          <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
+          <span className="text-xs tracking-wide text-ink-faint">
             Email address
           </span>
           <input
@@ -373,7 +373,7 @@ export function UnsubscribeForm({
         disabled={preferenceControlsDisabled}
       />
 
-      <div className="flex items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink-faint">
+      <div className="flex items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs tracking-wide text-ink-faint">
         <span>
           {fullUnsubscribe
             ? "→ Submit empties = full unsubscribe"

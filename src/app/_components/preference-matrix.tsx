@@ -44,7 +44,7 @@ function GroupHeader({
   return (
     <legend className="float-left mb-2 w-full p-0">
       <span className="flex w-full items-baseline justify-between gap-4">
-        <span className="flex items-baseline gap-3 text-xs uppercase tracking-[0.1em] text-ink-faint">
+        <span className="flex items-baseline gap-3 text-xs tracking-wide text-ink-faint">
           <span>{label}</span>
           <span className="font-mono text-2xs text-ink-faint">
             <span className="sr-only">
@@ -59,7 +59,7 @@ function GroupHeader({
           type="button"
           disabled={disabled}
           onClick={onToggleAll}
-          className="min-h-6 font-mono text-2xs uppercase tracking-[0.1em] text-accent underline-offset-4 hover:underline disabled:opacity-50"
+          className="min-h-6 font-mono text-2xs tracking-wide text-accent underline-offset-4 hover:underline disabled:opacity-50"
         >
           {allSelected ? "Clear all" : "Select all"}
         </button>

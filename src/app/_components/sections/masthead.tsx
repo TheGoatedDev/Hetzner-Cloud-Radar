@@ -20,7 +20,7 @@ export function Masthead({ observedAt }: { observedAt: string }) {
         </a>
         <a
           href="https://github.com/TheGoatedDev/Hetzner-Cloud-Radar"
-          className="text-ink-soft hover:text-accent"
+          className="inline-flex size-11 shrink-0 items-center justify-center text-ink-soft hover:text-accent"
           rel="noopener noreferrer"
           target="_blank"
           aria-label="GitHub repository"

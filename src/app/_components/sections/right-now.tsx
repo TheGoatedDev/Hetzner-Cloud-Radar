@@ -51,7 +51,7 @@ export function RightNow({
         <span
           className={`text-xs font-medium uppercase tracking-[0.12em] ${STOCK[topLine.state].textClass}`}
         >
-          Tight supply
+          {STOCK[topLine.state].label}
         </span>
         <span className="text-xs text-ink-faint tabular-nums">
           as of {observedAt}

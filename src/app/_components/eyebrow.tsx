@@ -11,7 +11,7 @@ export function Eyebrow({
 }) {
   return (
     <Tag
-      className={`text-xs font-medium uppercase tracking-[0.12em] text-ink-faint ${className}`}
+      className={`text-xs font-medium tracking-wide text-ink-faint ${className}`}
     >
       {children}
     </Tag>

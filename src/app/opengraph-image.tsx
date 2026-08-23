@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Hetzner Cloud Radar — live server-type availability by datacentre";
+  "Hetzner Cloud Radar: live server-type availability by datacentre";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -24,8 +24,7 @@ export default function Image() {
         style={{
           display: "flex",
           fontSize: 28,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
+          letterSpacing: "0.04em",
           color: "#8a837a",
         }}
       >
@@ -53,7 +52,7 @@ export default function Image() {
           }}
         >
           Live server-type availability by datacentre. Stock-outs, restocks, and
-          history — reported honestly.
+          history, reported honestly.
         </div>
       </div>
       <div

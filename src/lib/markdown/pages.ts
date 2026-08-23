@@ -10,7 +10,7 @@ import {
 
 const HOME_TITLE = "Hetzner Cloud availability · live stock by datacentre";
 const HOME_DESCRIPTION =
-  "Independent Hetzner Cloud server availability tracker. Live stock by datacentre for CX, CAX, CPX, and CCX — with stock-out history and email dispatches.";
+  "Independent Hetzner Cloud server availability tracker. Live stock by datacentre for CX, CAX, CPX, and CCX, with stock-out history and email dispatches.";
 
 const TAG_LABEL: Record<StockEvent["state"], string> = {
   "ongoing-out": "Sold out",
@@ -61,7 +61,7 @@ function eventsList(events: StockEvent[], empty: string) {
   return events
     .map(
       (e) =>
-        `- **${TAG_LABEL[e.state]}** · ${e.title} — ${e.body} (${e.scope}; ${e.durationLabel})`,
+        `- **${TAG_LABEL[e.state]}** · ${e.title}: ${e.body} (${e.scope}; ${e.durationLabel})`,
     )
     .join("\n");
 }

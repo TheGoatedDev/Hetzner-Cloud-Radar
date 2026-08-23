@@ -136,7 +136,7 @@ export function SubscribeForm() {
           htmlFor={emailId}
           className="flex min-w-0 flex-1 flex-col gap-1.5"
         >
-          <span className="text-xs uppercase tracking-[0.1em] text-ink-faint">
+          <span className="text-xs tracking-wide text-ink-faint">
             Email address
           </span>
           <input
@@ -174,7 +174,7 @@ export function SubscribeForm() {
         disabled={disabled}
       />
 
-      <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink-faint">
+      <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs tracking-wide text-ink-faint">
         <span>
           → {wired} alert{wired === 1 ? "" : "s"} wired
         </span>

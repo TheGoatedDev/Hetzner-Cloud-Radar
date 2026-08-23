@@ -6,7 +6,7 @@ import "./globals.css";
 
 const title = "Hetzner Cloud availability · live stock by datacentre";
 const description =
-  "Independent Hetzner Cloud server availability tracker. Live stock by datacentre for CX, CAX, CPX, and CCX — with stock-out history and email dispatches.";
+  "Independent Hetzner Cloud server availability tracker. Live stock by datacentre for CX, CAX, CPX, and CCX, with stock-out history and email dispatches.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

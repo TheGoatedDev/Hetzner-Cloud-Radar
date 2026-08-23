@@ -8,7 +8,7 @@ export function FamilyTable({ family }: { family: Family }) {
         {family.label} {family.kicker} availability per datacentre
       </caption>
       <thead>
-        <tr className="text-2xs uppercase tracking-[0.08em] text-ink-faint sm:text-xs sm:tracking-[0.1em]">
+        <tr className="text-2xs text-ink-faint sm:text-xs">
           <th
             scope="col"
             className="w-[64px] px-1 py-2 text-left font-medium sm:w-[88px] sm:px-2"
@@ -25,7 +25,7 @@ export function FamilyTable({ family }: { family: Family }) {
             <th
               key={dc}
               scope="col"
-              className="w-[36px] px-0 py-2 text-center font-medium sm:w-[60px] sm:px-2"
+              className="w-[36px] px-0 py-2 text-center font-medium uppercase tracking-[0.08em] sm:w-[60px] sm:px-2 sm:tracking-[0.1em]"
               title={`${DC_META[dc].city}, ${DC_META[dc].country}`}
             >
               {dc}

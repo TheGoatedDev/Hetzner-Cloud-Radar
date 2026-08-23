@@ -140,9 +140,9 @@ export function DispatchList({
             key={key}
             className={`flex flex-col gap-2 ${groupIndex > 0 ? "pt-8" : ""}`}
           >
-            <h3 className="text-xs font-medium uppercase tracking-[0.12em] text-ink-faint">
+            <h3 className="text-xs font-medium tracking-wide text-ink-faint">
               {monthLabel(key)}
-              <span className="ml-3 normal-case tracking-normal">
+              <span className="ml-3 font-normal">
                 {monthEvents.length} dispatch
                 {monthEvents.length === 1 ? "" : "es"}
               </span>

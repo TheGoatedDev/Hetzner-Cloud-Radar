@@ -72,7 +72,7 @@ function metaBlock(
     .join("");
 
   return `<div>
-  <p style="margin:0;font-size:10px;font-family:${fontStack.mono};font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:${theme.inkFaint}">${esc(kicker)}</p>
+  <p style="margin:0;font-size:10px;font-family:${fontStack.mono};font-weight:500;letter-spacing:0.04em;color:${theme.inkFaint}">${esc(kicker)}</p>
   <p style="margin:8px 0 0;font-size:11px;font-family:${fontStack.mono};font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:${STOCK_COLOR[state]}"><span style="margin-right:8px">${STOCK[state].glyph}</span>${STOCK[state].label}</p>
   <p style="margin:16px 0 8px;font-size:20px;font-family:${fontStack.mono};font-weight:600;letter-spacing:-0.01em;color:${theme.ink};line-height:1.25">${esc(title)}</p>
   ${details}

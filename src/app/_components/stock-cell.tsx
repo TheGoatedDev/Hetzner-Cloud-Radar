@@ -191,7 +191,7 @@ export function StockCell({
         aria-controls={popoverId}
         onMouseEnter={scheduleOpen}
         onMouseLeave={scheduleClose}
-        className="inline-flex size-6 cursor-pointer items-center justify-center bg-transparent p-0 leading-none opacity-90 hover:opacity-100"
+        className="inline-flex size-11 cursor-pointer items-center justify-center bg-transparent p-0 leading-none opacity-90 hover:opacity-100"
         style={{ anchorName: `--s-${type}-${dc}` } as CSSProperties}
       >
         <span className="sr-only">
@@ -231,8 +231,10 @@ export function StockCell({
               >
                 {type}
               </span>
-              <span className="text-2xs text-ink-faint uppercase tracking-[0.1em]">
-                {dc} · {DC_META[dc].city}
+              <span className="text-2xs text-ink-faint tracking-wide">
+                <span className="uppercase tracking-[0.1em]">{dc}</span>
+                {" · "}
+                {DC_META[dc].city}
               </span>
             </div>
             <span
@@ -294,11 +296,11 @@ export function StockCell({
               disabled={locked}
               className="flex flex-col gap-1.5 border-t border-hairline pt-2"
             >
-              <legend className="float-left mb-1 w-full p-0 text-2xs uppercase tracking-[0.1em] text-ink-faint">
+              <legend className="float-left mb-1 w-full p-0 text-2xs tracking-wide text-ink-faint">
                 Mail alerts (subscribe form)
               </legend>
               <p className="text-2xs text-ink-faint leading-relaxed">
-                Whole {familyLabel} line @ selected DCs — not {type} alone.
+                Whole {familyLabel} line @ selected DCs, not {type} alone.
               </p>
               <div className="flex items-center justify-between gap-4 px-6">
                 <div className="flex min-w-0 items-center gap-4">
@@ -343,7 +345,7 @@ export function StockCell({
                         block: "start",
                       });
                     }}
-                    className="min-h-7 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs uppercase tracking-[0.1em] text-ink hover:border-accent hover:text-accent"
+                    className="min-h-7 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs tracking-wide text-ink hover:border-accent hover:text-accent"
                   >
                     Subscribe
                   </button>
