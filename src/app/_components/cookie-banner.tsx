@@ -31,6 +31,7 @@ export function CookieBanner() {
             className="min-h-11 rounded-edge border border-control-border bg-transparent px-4 py-2 font-mono text-sm text-ink hover:bg-paper-recessed"
             onClick={() => {
               posthog.opt_out_capturing();
+              posthog.capture("cookie_consent", { choice: "declined" });
               setConsent("denied");
             }}
           >
@@ -41,6 +42,7 @@ export function CookieBanner() {
             className="min-h-11 rounded-edge bg-accent px-4 py-2 font-mono text-sm font-medium text-paper hover:bg-accent-deep"
             onClick={() => {
               posthog.opt_in_capturing();
+              posthog.capture("cookie_consent", { choice: "accepted" });
               setConsent("granted");
             }}
           >
