@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import posthog from "posthog-js";
+import { useEffect, useState } from "react";
 
 type ConsentStatus = "granted" | "denied" | "pending" | "";
 
