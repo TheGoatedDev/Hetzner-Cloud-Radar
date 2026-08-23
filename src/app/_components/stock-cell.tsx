@@ -304,7 +304,7 @@ export function StockCell({
               </p>
               <div className="flex items-center justify-between gap-4 px-6">
                 <div className="flex min-w-0 items-center gap-4">
-                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                  <label className="flex cursor-pointer items-baseline gap-2 text-2xs text-ink hover:text-ink">
                     <input
                       type="checkbox"
                       checked={familyOn}
@@ -315,11 +315,11 @@ export function StockCell({
                           toggleValue(families, familyId, e.target.checked),
                         );
                       }}
-                      className="size-4 shrink-0 accent-accent"
+                      className="size-3.5 shrink-0 translate-y-0.5 accent-accent"
                     />
                     <span className="font-mono">{familyLabel} family</span>
                   </label>
-                  <label className="flex min-h-11 cursor-pointer items-center gap-2 text-2xs text-ink hover:text-ink">
+                  <label className="flex cursor-pointer items-baseline gap-2 text-2xs text-ink hover:text-ink">
                     <input
                       type="checkbox"
                       checked={dcOn}
@@ -330,7 +330,7 @@ export function StockCell({
                           toggleValue(datacentres, dc, e.target.checked),
                         );
                       }}
-                      className="size-4 shrink-0 accent-accent"
+                      className="size-3.5 shrink-0 translate-y-0.5 accent-accent"
                     />
                     <span className="font-mono">{dc}</span>
                   </label>
@@ -348,7 +348,7 @@ export function StockCell({
                         block: "start",
                       });
                     }}
-                    className="min-h-11 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs tracking-wide text-ink hover:border-accent hover:text-accent"
+                    className="min-h-7 shrink-0 cursor-pointer rounded-edge border border-hairline-strong px-3 font-mono text-2xs tracking-wide text-ink hover:border-accent hover:text-accent"
                   >
                     Subscribe
                   </button>

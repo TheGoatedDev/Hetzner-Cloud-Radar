@@ -42,7 +42,7 @@ function GroupHeader({
 }: GroupHeaderProps) {
   const allSelected = selected === total;
   return (
-    <legend className="float-left mb-2 w-full p-0">
+    <legend className="float-left mb-1 w-full p-0">
       <span className="flex w-full items-baseline justify-between gap-4">
         <span className="flex items-baseline gap-3 text-xs tracking-wide text-ink-faint">
           <span>{label}</span>
@@ -59,7 +59,7 @@ function GroupHeader({
           type="button"
           disabled={disabled}
           onClick={onToggleAll}
-          className="min-h-11 font-mono text-xs tracking-wide text-accent underline-offset-4 hover:underline disabled:opacity-50"
+          className="font-mono text-xs tracking-wide text-accent underline-offset-4 hover:underline disabled:opacity-50"
         >
           {allSelected ? "Clear all" : "Select all"}
         </button>
@@ -84,14 +84,14 @@ function CheckRow({
   subtitle,
 }: CheckRowProps) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2 text-sm hover:text-ink">
+    <label className="flex cursor-pointer items-baseline gap-2.5 py-0.5 text-sm hover:text-ink">
       <input
         type="checkbox"
         name={code}
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="size-4 shrink-0 accent-accent"
+        className="size-3.5 shrink-0 translate-y-0.5 accent-accent"
       />
       <span className="min-w-[3.5rem] break-words font-mono text-ink">
         {code}
@@ -123,8 +123,8 @@ export function PreferenceMatrix({
   disabled,
 }: PreferenceMatrixProps) {
   return (
-    <div className="flex flex-col gap-6">
-      <fieldset className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      <fieldset className="flex flex-col gap-0.5">
         <GroupHeader
           label="Events"
           selected={events.length}
@@ -153,7 +153,7 @@ export function PreferenceMatrix({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-0.5">
         <GroupHeader
           label="Server families"
           selected={families.length}
@@ -183,7 +183,7 @@ export function PreferenceMatrix({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-0.5">
         <GroupHeader
           label="Datacentres"
           selected={datacentres.length}
