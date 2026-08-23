@@ -116,7 +116,7 @@ export function StockCell({
 
   if (stock === "not-offered") {
     return (
-      <td className="px-0 py-3 text-center align-middle sm:px-2">
+      <td className="px-0 py-1.5 text-center align-middle sm:px-2">
         <span className="sr-only">{srLabel}</span>
         <span
           aria-hidden
@@ -183,7 +183,7 @@ export function StockCell({
   }
 
   return (
-    <td className="px-0 py-3 text-center align-middle sm:px-2">
+    <td className="px-0 py-1.5 text-center align-middle sm:px-2">
       <button
         type="button"
         popoverTarget={popoverId}
@@ -191,7 +191,7 @@ export function StockCell({
         aria-controls={popoverId}
         onMouseEnter={scheduleOpen}
         onMouseLeave={scheduleClose}
-        className="inline-flex size-11 cursor-pointer items-center justify-center bg-transparent p-0 leading-none opacity-90 hover:opacity-100"
+        className="inline-flex size-8 cursor-pointer items-center justify-center bg-transparent p-0 leading-none opacity-90 hover:opacity-100"
         style={{ anchorName: `--s-${type}-${dc}` } as CSSProperties}
       >
         <span className="sr-only">
