@@ -16,7 +16,8 @@
     "db:migrate": "wrangler d1 migrations apply hetzner-cloud-radar --remote",
     "db:migrate:local": "wrangler d1 migrations apply hetzner-cloud-radar --local",
     "db:studio": "drizzle-kit studio",
-    "families:audit": "node --env-file=.env.local src/scripts/audit-server-families.mjs"
+    "families:audit": "node --env-file=.env.local src/scripts/audit-server-families.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.2",
@@ -36,8 +37,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.122.0"
+  },
+  "lint-staged": {
+    "*": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
   }
 }
