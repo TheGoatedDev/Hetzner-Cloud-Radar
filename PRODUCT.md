@@ -1,53 +1,104 @@
 # Product
 
-## Register
+<!-- impeccable:product-schema 1 -->
 
-product
+## Platform
+
+web
 
 ## Users
 
-Public, unauthenticated visitors. Three overlapping audiences:
+Public, unauthenticated visitors. Three overlapping audiences; **primary job** is the deploy-now availability check.
 
-- **Current Hetzner customers** planning a new deployment, deciding which datacentre can actually take a CCX or CAX right now.
-- **Customers waiting for restock**, watching for a sold-out type to come back so they can scale or migrate.
-- **Prospective customers and curious onlookers** sizing up Hetzner's regional capacity before committing, or just tracking the supply story over time.
+- **Primary: current Hetzner customers planning a deploy**, deciding which datacentre can take a given server type right now (especially CCX / CAX in FSN1 and NBG1).
+- **Customers waiting for restock**, watching sold-out types and optional email dispatches so they can scale or migrate.
+- **Prospective customers and curious onlookers**, sizing regional capacity or following the supply story over time.
 
-Context of use: a tab opened while sizing up a deploy, or left open in the background as a stock-watch during a known shortage. Sessions are quick scans for "available now in region X" plus the occasional deeper read of the history when capacity has been tight for a while.
+Context of use: a tab opened while sizing a deploy, or left open as a stock-watch during a known shortage. Sessions are quick scans for "available now in region X", plus occasional deeper history when capacity has been tight.
 
 ## Product Purpose
 
-A third-party tracker for Hetzner Cloud server-type availability per region. Independent of Hetzner. Polls each datacentre for which server types are currently in stock, records history of stock-outs and restocks, and presents it honestly.
+A third-party tracker for Hetzner Cloud server-type availability per region. Independent of Hetzner. Polls each datacentre for which server types are in stock, records stock-outs and restocks, and presents the result honestly.
 
-The pain it solves: Hetzner inventory routinely runs dry on popular types in popular datacentres (CCX dedicated lines in FSN1 and NBG1 especially). Customers find out only when the console refuses to provision. This site is the standing answer to "can I create a CCX33 in Falkenstein right now, or do I need to pick a different region."
+Pain: Hetzner inventory routinely runs dry on popular types in popular datacentres. Customers often learn only when the console refuses to provision. This site answers: "can I create a CCX33 in Falkenstein right now, or do I need another region?"
 
-Success looks like: when someone is choosing where to deploy a new server, or waiting for a sold-out type to come back, this is the page they leave open. Not because it's loud, but because it's the clearest read of what's actually in stock and what just changed.
+Success: when someone chooses where to deploy, or waits for a restock, this is the page they leave open, because it is the clearest read of current stock and recent change, not because it is loud.
 
-## Brand Personality
+## Positioning
 
-Calm, editorial, informative. Three words: **measured, lucid, independent.**
+Independent observation of the public Hetzner Cloud API, not Hetzner status or marketing. The product is the stock matrix plus the signed history of change (dispatches, supply trend, methodology). A neighbor could clone a green/red grid; they could not truthfully claim the same third-party stance, poll-backed cells, and editorial dispatch record without doing the same observation work.
 
-Voice is that of a careful observer, not a hype account or a corporate status page. Plain prose where prose helps. Numbers where numbers help. No exclamation marks. No "we're on it" boilerplate, since there is no "we" running the infrastructure. The site reports; it does not apologise on Hetzner's behalf.
+## Operating Context
 
-Emotional goal: when things are fine, the page feels quiet and trustworthy. When things are broken, the page feels honest and steady, not alarmist.
+- Home: live availability matrix by server family and datacentre, supply trend, legend, subscribe, recent dispatches.
+- Drill-in: per-cell 24-hour history popover; optional mail-alert prefs wired into subscribe.
+- `/dispatches`: full dispatch archive (grouped by month).
+- `/methodology`: how states are derived, cadence, independence stance.
+- `/feed.atom` and `/md` variants for machine-readable / plain consumption.
+- `/unsubscribe`: preference edit or full leave, plus optional feedback.
+- Email: Resend-backed dispatches on sold-out / restock for selected families and DCs.
+- Deploy: Cloudflare (OpenNext), D1, GitHub Actions CD on `main`. Public site: `https://hetzner.thegoated.dev`.
 
-## Anti-references
+## Capabilities and Constraints
 
-- **Generic SaaS status pages** (Atlassian Statuspage clones, Instatus defaults). Big green check, identical service-row cards, "All Systems Operational" banner, gradient hero. The category cliché this project must not become.
-- **Downdetector-style outage panic.** No big red spikes designed for engagement. No comment threads. No "report an outage" gamification.
-- **Corporate status-page mimicry.** Don't impersonate Hetzner's own brand voice or visual identity. This is independent observation, and that distinction matters.
+**Shipped**
+- Poll public Hetzner Cloud API on a fixed cadence; store current stock and change events.
+- Matrix cells: available, limited (history-derived flicker), sold-out, not-offered, unknown.
+- Glyph + label + color for every stock state (never color alone).
+- Supply history chart; recent and archived dispatches with timestamps and durations.
+- Email subscribe with event / family / datacentre prefs; unsubscribe and preference update.
+- Atom feed; markdown page mirrors; PostHog product analytics (no third-party claim of "no analytics" on the marketing surface without checking current copy).
 
-## Design Principles
+**Constraints**
+- Unauthenticated public product; no user accounts.
+- Read-only observation of the public API; no Hetzner affiliation or official incident voice.
+- "Limited" is derived from poll history; the API purchase signal is effectively binary.
+- Failed polls must not rewrite cell state as a false stock-out.
+- No comment threads, outage gamification, or fabricated social proof.
 
-1. **Truth over reassurance.** Never default to "in stock". Sold out is sold out, not "low stock", not "limited". Every cell maps to an actual recent poll, with the poll timestamp visible nearby.
-2. **Editorial clarity.** Treat the history of stock-outs and restocks as a record worth reading, not a wall of bars. Prose summaries, named events, real timestamps and durations. The supply story over a year is itself the product.
-3. **Glanceable, then deep.** The matrix answers "available right now in region X?" in under two seconds on any device. Per-type history, regional breakdowns, and raw poll logs are one interaction away, never on the same surface.
-4. **Independent voice.** Third-party stance is a feature, not a disclaimer. Tone, layout, and copy should make clear this is observation, not Hetzner communication.
-5. **Calm under load.** The design must hold up when half the popular types go sold out at once. No animations that distract, no colors that scream, no layout that breaks when an entire column goes red.
+**Terminology**
+- Datacentre codes: NBG1, FSN1, HEL1, ASH, HIL, SIN.
+- Server families: CX, CAX, CPX, CCX (and any families the catalog exposes).
+- Dispatch: a named stock-out, restock, or rollout event with observation timestamp.
+- Stock states: Available, Limited, Sold out, Not offered, Unknown.
+
+## Brand Commitments
+
+- Name: **Hetzner Cloud Radar**.
+- Voice: careful observer. Three words: **measured, lucid, independent.**
+- Plain prose and numbers; no exclamation marks; no "we're on it" infrastructure apology.
+- Site reports; does not speak for Hetzner.
+- Emotional goal: quiet and trustworthy when fine; honest and steady when stock is bad, never alarmist.
+
+**Anti-references (binding)**
+- Generic SaaS status pages (Statuspage / Instatus clichés).
+- Downdetector-style outage panic and engagement bait.
+- Mimicry of Hetzner's corporate brand or official status voice.
+
+## Evidence on Hand
+
+- Live and historical stock derived from polls and `stock_events` (product data, not marketing claims).
+- Real dispatch copy generated from observed changes.
+- Methodology page stating independence and method.
+- Public GitHub repo linked from the masthead.
+
+**Must not fabricate**
+- Testimonials, named customers, fake user quotes.
+- Press, rankings, partner badges, or Hetzner endorsement.
+- Benchmarks or uptime SLAs the product does not measure.
+
+## Product Principles
+
+1. **Truth over reassurance.** Never default to "in stock". Sold out is sold out. Every cell maps to a recent poll; observation time stays visible nearby.
+2. **Glanceable, then deep.** Matrix answers "available right now in region X?" in under two seconds. History and prefs are one interaction away, not dumped on the same surface.
+3. **Editorial record.** Stock-outs and restocks are a signed dispatch history worth reading, not only a wall of bars.
+4. **Independent voice.** Third-party stance is a feature. Layout and copy must read as observation, not Hetzner communication.
+5. **Calm under load.** Hold when half the popular types go sold out: no panic chrome, no layout collapse, no screaming color field.
 
 ## Accessibility & Inclusion
 
-- **WCAG 2.2 AA** as the floor for all public surfaces.
-- **Color-blind safe.** Status is never carried by color alone. Pair every status color with a glyph, label, or pattern (operational / degraded / down / unknown all distinguishable in monochrome).
-- **Reduced motion respected.** `prefers-reduced-motion` removes all decorative animation; functional state changes use opacity or instant swap.
-- **Keyboard reachable.** All interactive history controls (date range, region filter, service drill-in) operable without a pointer.
-- **Readable defaults.** Body text 16px floor, line length capped 65–75ch, sufficient contrast on every status color against its background.
+- **WCAG 2.2 AA** floor on all public surfaces.
+- **Color-blind safe:** status never by color alone; glyph + label required.
+- **`prefers-reduced-motion`:** decorative motion off; functional changes stay clear.
+- **Keyboard:** interactive history and form controls operable without a pointer.
+- **Readable defaults:** body text 16px floor where prose runs; line length ~65–75ch; contrast on status colors against paper.
