@@ -20,6 +20,7 @@ if (!token) {
     api_host: host,
     ui_host: "https://eu.posthog.com",
     defaults: "2026-01-30",
+    cookieless_mode: "on_reject",
     capture_exceptions: true,
     debug: process.env.NODE_ENV === "development",
   });

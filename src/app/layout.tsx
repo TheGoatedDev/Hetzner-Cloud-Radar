@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CookieBanner } from "@/app/_components/cookie-banner";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -52,6 +53,7 @@ export default function RootLayout({
           Skip to content
         </a>
         {children}
+        <CookieBanner />
       </body>
     </html>
   );
