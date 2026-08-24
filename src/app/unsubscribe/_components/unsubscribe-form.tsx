@@ -121,6 +121,7 @@ export function UnsubscribeForm({
       const didFullyUnsubscribe = body?.fullUnsubscribe ?? fullUnsubscribe;
       setResultFullUnsubscribe(didFullyUnsubscribe);
       setStatus("ok");
+      posthog.identify(email, { email });
       posthog.capture(
         didFullyUnsubscribe
           ? "dispatch_subscription_cancelled"
@@ -181,6 +182,7 @@ export function UnsubscribeForm({
       }
 
       setFeedbackStatus("ok");
+      posthog.identify(email, { email });
       posthog.capture("unsubscribe_feedback_submitted", {
         reason: feedbackReason,
         source: emailLocked ? "email_link" : "manual_email",
