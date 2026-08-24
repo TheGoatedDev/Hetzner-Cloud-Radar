@@ -74,6 +74,7 @@ export function SubscribeForm() {
 
       setStatus("ok");
       lock();
+      posthog.identify(email, { email });
       posthog.capture("dispatch_subscription_created", {
         event_types_selected: events.length,
         server_families_selected: families.length,
