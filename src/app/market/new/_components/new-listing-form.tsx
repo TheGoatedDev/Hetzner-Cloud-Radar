@@ -47,10 +47,10 @@ export function NewListingForm() {
   }
 
   const field =
-    "border border-control-border bg-paper-raised px-3 py-2 text-sm text-ink";
+    "w-full border border-control-border bg-paper-raised px-3 py-2 text-sm text-ink";
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-lg flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex w-full max-w-lg flex-col gap-4">
       <label className="flex flex-col gap-1 text-xs text-ink-soft">
         Server type
         <input

@@ -42,7 +42,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex w-full max-w-md flex-col gap-4">
       <div className="flex flex-col gap-2">
         <label htmlFor={emailId} className="text-xs text-ink-soft">
           Email
@@ -56,7 +56,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           onChange={(e) => setEmail(e.target.value)}
           aria-invalid={status === "error"}
           aria-describedby={status === "error" ? errorId : undefined}
-          className="border border-control-border bg-paper-raised px-3 py-2 text-sm text-ink"
+          className="w-full border border-control-border bg-paper-raised px-3 py-2 text-sm text-ink"
         />
       </div>
       {status === "error" ? (
