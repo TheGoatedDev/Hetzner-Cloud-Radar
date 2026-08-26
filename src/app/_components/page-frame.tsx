@@ -6,19 +6,20 @@ import { PageFooter } from "./sections/page-footer";
 export function PageFrame({
   children,
   observedAt,
-  wide = false,
 }: PropsWithChildren<{
   observedAt: string;
+  /** @deprecated same width as home; kept so callers don't break */
   wide?: boolean;
 }>) {
   // outer w-full: body is flex-col; mx-auto alone shrinks shell to content width
+  // max-w-5xl matches RadarView / home
   return (
     <div className="flex w-full flex-1 flex-col">
-      <div
-        className={`page-shell mx-auto flex w-full ${wide ? "max-w-5xl" : "max-w-3xl"} flex-1 flex-col`}
-      >
+      <div className="page-shell mx-auto flex w-full max-w-5xl flex-1 flex-col">
         <Masthead observedAt={observedAt} />
-        <main id="main-content">{children}</main>
+        <main id="main-content" className="w-full">
+          {children}
+        </main>
         <PageFooter pollCadence={POLL_CADENCE} />
       </div>
     </div>

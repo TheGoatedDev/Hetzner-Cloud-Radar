@@ -42,7 +42,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex w-full max-w-md flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex w-full max-w-lg flex-col gap-4">
       <div className="flex flex-col gap-2">
         <label htmlFor={emailId} className="text-xs text-ink-soft">
           Email

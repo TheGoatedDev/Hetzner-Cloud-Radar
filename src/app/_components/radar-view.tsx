@@ -69,23 +69,25 @@ export function RadarView({ data }: { data: AvailabilityReadModel }) {
   const totals = tally(allCells);
 
   return (
-    <div className="page-shell mx-auto flex w-full max-w-5xl flex-1 flex-col">
-      <Masthead observedAt={data.observedAt} />
-      <main id="main-content">
-        <RightNow
-          totals={totals}
-          topLine={data.topLine}
-          observedAt={data.observedAt}
-        />
-        <SupplyTrend days={data.supplyHistory} />
-        <Legend />
-        {data.families.map((f, i) => (
-          <FamilyBlock key={f.id} family={f} first={i === 0} />
-        ))}
-        <SubscribeBlock />
-        <DispatchesBlock events={data.events} />
-      </main>
-      <PageFooter pollCadence={data.pollCadence} />
+    <div className="flex w-full flex-1 flex-col">
+      <div className="page-shell mx-auto flex w-full max-w-5xl flex-1 flex-col">
+        <Masthead observedAt={data.observedAt} />
+        <main id="main-content" className="w-full">
+          <RightNow
+            totals={totals}
+            topLine={data.topLine}
+            observedAt={data.observedAt}
+          />
+          <SupplyTrend days={data.supplyHistory} />
+          <Legend />
+          {data.families.map((f, i) => (
+            <FamilyBlock key={f.id} family={f} first={i === 0} />
+          ))}
+          <SubscribeBlock />
+          <DispatchesBlock events={data.events} />
+        </main>
+        <PageFooter pollCadence={data.pollCadence} />
+      </div>
     </div>
   );
 }
