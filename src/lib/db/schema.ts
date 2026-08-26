@@ -5,6 +5,9 @@ import {
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
+import { user } from "./auth-schema";
+
+export * from "./auth-schema";
 
 export const pollRuns = sqliteTable("poll_runs", {
   id: text("id").primaryKey(),
@@ -130,3 +133,37 @@ export const marketingDispatchSends = sqliteTable("marketing_dispatch_sends", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
+
+export const marketListings = sqliteTable(
+  "market_listings",
+  {
+    id: text("id").primaryKey(),
+    sellerId: text("seller_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    serverType: text("server_type").notNull(),
+    locationCode: text("location_code").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    includes: text("includes").notNull().default(""),
+    status: text("status", {
+      enum: ["active", "sold", "expired", "removed"],
+    })
+      .notNull()
+      .default("active"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    expiresAt: text("expires_at").notNull(),
+    soldAt: text("sold_at"),
+  },
+  (table) => ({
+    statusLocTypeIdx: index("market_listings_status_loc_type_idx").on(
+      table.status,
+      table.locationCode,
+      table.serverType,
+    ),
+    sellerIdx: index("market_listings_seller_idx").on(table.sellerId),
+  }),
+);

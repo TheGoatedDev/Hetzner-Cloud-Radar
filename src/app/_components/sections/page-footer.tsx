@@ -1,4 +1,5 @@
 const LINKS = [
+  { href: "/market", label: "Market" },
   { href: "/dispatches", label: "All dispatches" },
   { href: "/methodology", label: "Methodology" },
   { href: "/feed.atom", label: "Atom feed" },
