@@ -4,10 +4,8 @@ import {
   primaryKey,
   sqliteTable,
   text,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { user } from "./auth-schema";
-
-export * from "./auth-schema";
 
 export const pollRuns = sqliteTable("poll_runs", {
   id: text("id").primaryKey(),
@@ -138,32 +136,41 @@ export const marketListings = sqliteTable(
   "market_listings",
   {
     id: text("id").primaryKey(),
-    sellerId: text("seller_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    serverType: text("server_type").notNull(),
-    locationCode: text("location_code").notNull(),
-    priceCents: integer("price_cents").notNull(),
-    currency: text("currency").notNull().default("EUR"),
+    source: text("source", {
+      enum: ["reddit", "hetzner_forum"],
+    }).notNull(),
+    externalId: text("external_id").notNull(),
+    externalUrl: text("external_url").notNull(),
     title: text("title").notNull(),
     body: text("body").notNull().default(""),
-    includes: text("includes").notNull().default(""),
+    author: text("author"),
+    serverType: text("server_type"),
+    locationCode: text("location_code"),
+    priceCents: integer("price_cents"),
+    currency: text("currency").notNull().default("EUR"),
     status: text("status", {
-      enum: ["active", "sold", "expired", "removed"],
+      enum: ["active", "closed", "stale"],
     })
       .notNull()
       .default("active"),
+    sourceCreatedAt: text("source_created_at"),
+    lastSeenAt: text("last_seen_at").notNull(),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
-    expiresAt: text("expires_at").notNull(),
-    soldAt: text("sold_at"),
   },
   (table) => ({
+    sourceExtUidx: uniqueIndex("market_listings_source_ext_uidx").on(
+      table.source,
+      table.externalId,
+    ),
     statusLocTypeIdx: index("market_listings_status_loc_type_idx").on(
       table.status,
       table.locationCode,
       table.serverType,
     ),
-    sellerIdx: index("market_listings_seller_idx").on(table.sellerId),
+    sourceSeenIdx: index("market_listings_source_seen_idx").on(
+      table.source,
+      table.lastSeenAt,
+    ),
   }),
 );

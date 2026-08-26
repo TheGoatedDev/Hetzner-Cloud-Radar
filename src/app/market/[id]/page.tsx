@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
 import { getObservedAtLabel } from "@/lib/availability/read-model";
-import {
-  expireStaleListings,
-  formatPrice,
-  getListing,
-} from "@/lib/market/listings";
+import { formatPrice, getListing, sourceLabel } from "@/lib/market/listings";
 import { DC_META, type DcCode } from "@/lib/schema";
 import { PageFrame } from "../../_components/page-frame";
 import { SectionHeader } from "../../_components/section-header";
-import { ListingActions } from "./_components/listing-actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +17,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await getListing(id);
   if (!listing) return { title: "Listing" };
   return {
-    title: `${listing.serverType} · ${listing.locationCode}`,
+    title: listing.serverType
+      ? `${listing.serverType} · ${listing.title}`
+      : listing.title,
     description: listing.title,
     robots: { index: listing.status === "active", follow: true },
   };
@@ -31,14 +27,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ListingPage({ params }: Props) {
   const { id } = await params;
-  await expireStaleListings();
-  const session = await getSession();
-  const listing = await getListing(id, session?.user.id);
+  const listing = await getListing(id);
   if (!listing) notFound();
 
-  const city =
-    DC_META[listing.locationCode as DcCode]?.city ?? listing.locationCode;
-  const loginHref = `/login?next=${encodeURIComponent(`/market/${id}`)}`;
+  const loc = listing.locationCode as DcCode | null;
+  const city = loc ? (DC_META[loc]?.city ?? loc) : null;
+  const kicker = [
+    listing.serverType,
+    city && loc ? `${city} (${loc})` : loc,
+    sourceLabel(listing.source),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const priceBlurb =
+    listing.priceCents != null
+      ? formatPrice(listing.priceCents, listing.currency)
+      : "Price on source";
 
   return (
     <PageFrame observedAt={await getObservedAtLabel()}>
@@ -48,60 +53,39 @@ export default async function ListingPage({ params }: Props) {
             Market
           </Link>
           <span className="text-ink-faint"> / </span>
-          <span className="font-mono text-ink">{listing.serverType}</span>
+          <span className="text-ink">{sourceLabel(listing.source)}</span>
         </p>
 
         <SectionHeader
           as="h1"
-          kicker={`${listing.serverType} · ${city} (${listing.locationCode})`}
+          kicker={kicker || sourceLabel(listing.source)}
           title={listing.title}
-          blurb={`${formatPrice(listing.priceCents, listing.currency)} · ${listing.status}`}
+          blurb={`${priceBlurb} · ${listing.status}`}
         />
 
-        {listing.body ? (
-          <p className="max-w-[68ch] whitespace-pre-wrap font-sans text-base leading-[1.7] text-ink-soft">
-            {listing.body}
+        {listing.author ? (
+          <p className="font-sans text-sm text-ink-soft">
+            Author on source:{" "}
+            <span className="font-mono text-ink">{listing.author}</span>
           </p>
         ) : null}
 
-        {listing.includes ? (
-          <div className="flex flex-col gap-1">
-            <h2 className="text-sm font-medium text-ink">Includes</h2>
-            <p className="whitespace-pre-wrap font-sans text-sm text-ink-soft">
-              {listing.includes}
-            </p>
-          </div>
+        {listing.body ? (
+          <p className="max-w-[68ch] whitespace-pre-wrap font-sans text-base leading-[1.7] text-ink-soft">
+            {listing.body.length > 1200
+              ? `${listing.body.slice(0, 1200)}…`
+              : listing.body}
+          </p>
         ) : null}
 
-        <div className="flex flex-col gap-2 border border-hairline bg-paper-recessed p-4">
-          <h2 className="text-sm font-medium text-ink">Seller contact</h2>
-          {listing.sellerEmail ? (
-            <a
-              href={`mailto:${listing.sellerEmail}`}
-              className="font-mono text-sm text-accent underline-offset-4 hover:underline"
-            >
-              {listing.sellerEmail}
-            </a>
-          ) : session ? (
-            <p className="font-sans text-sm text-ink-soft">
-              Contact hidden (listing not active).
-            </p>
-          ) : (
-            <p className="font-sans text-sm text-ink-soft">
-              <Link
-                href={loginHref}
-                className="text-accent underline-offset-4 hover:underline"
-              >
-                Sign in
-              </Link>{" "}
-              to see seller email.
-            </p>
-          )}
-        </div>
-
-        {listing.isOwner ? (
-          <ListingActions id={listing.id} status={listing.status} />
-        ) : null}
+        <a
+          href={listing.externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-fit border border-ink bg-ink px-4 py-2 text-sm text-paper hover:bg-accent hover:border-accent"
+        >
+          Open original on {sourceLabel(listing.source)}
+        </a>
 
         <div className="flex flex-col gap-3 pt-2">
           <h2 className="text-lg font-medium tracking-tight text-ink">
@@ -109,8 +93,8 @@ export default async function ListingPage({ params }: Props) {
           </h2>
           <ol className="max-w-[68ch] list-decimal space-y-2 pl-5 font-sans text-sm leading-relaxed text-ink-soft">
             <li>
-              Agree price off-platform. This site does not hold money or verify
-              ownership.
+              Agree price on the source thread. This site does not hold money or
+              verify ownership.
             </li>
             <li>
               Buyer creates a Hetzner Cloud project and invites the seller as a

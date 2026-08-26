@@ -69,21 +69,30 @@ export default {
     return handler.fetch(maybeMarkdownRequest(request), env, ctx);
   },
 
-  async scheduled(_controller, env, ctx) {
+  async scheduled(controller, env, ctx) {
     const secret = env.CRON_SECRET;
     const headers = new Headers({ "content-type": "application/json" });
     if (secret) headers.set("authorization", `Bearer ${secret}`);
 
-    ctx.waitUntil(
-      handler.fetch(
-        new Request("http://localhost/api/internal/poll", {
-          method: "POST",
-          headers,
-        }),
-        env,
-        ctx,
-      ),
-    );
+    // Availability poll every trigger (*/5). Market sync once per hour.
+    const minute = new Date(controller.scheduledTime).getUTCMinutes();
+    const paths =
+      minute === 0
+        ? ["/api/internal/poll", "/api/internal/market-sync"]
+        : ["/api/internal/poll"];
+
+    for (const path of paths) {
+      ctx.waitUntil(
+        handler.fetch(
+          new Request(`http://localhost${path}`, {
+            method: "POST",
+            headers,
+          }),
+          env,
+          ctx,
+        ),
+      );
+    }
   },
 };
 

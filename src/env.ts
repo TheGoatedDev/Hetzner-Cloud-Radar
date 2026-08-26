@@ -35,12 +35,12 @@ export function getTurnstileEnv() {
   };
 }
 
-export function getAuthEnv() {
+export function getRedditEnv() {
   return {
-    BETTER_AUTH_SECRET: must("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL:
-      process.env.BETTER_AUTH_URL ??
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      "https://hetzner.thegoated.dev",
+    REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
+    REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
+    REDDIT_USER_AGENT:
+      process.env.REDDIT_USER_AGENT ??
+      "hetzner-cloud-radar/0.1 (transfer index)",
   };
 }

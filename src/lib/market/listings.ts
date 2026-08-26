@@ -1,41 +1,45 @@
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { marketListings, user } from "@/lib/db/schema";
+import { marketListings } from "@/lib/db/schema";
 import { DCS, type DcCode } from "@/lib/schema";
 
-const LISTING_TTL_DAYS = 21;
-
-export type ListingStatus = "active" | "sold" | "expired" | "removed";
+export type ListingSource = "reddit" | "hetzner_forum";
+export type ListingStatus = "active" | "closed" | "stale";
 
 export type PublicListing = {
   id: string;
-  serverType: string;
-  locationCode: string;
-  priceCents: number;
-  currency: string;
+  source: ListingSource;
+  externalUrl: string;
   title: string;
   body: string;
-  includes: string;
+  author: string | null;
+  serverType: string | null;
+  locationCode: string | null;
+  priceCents: number | null;
+  currency: string;
   status: ListingStatus;
+  sourceCreatedAt: string | null;
+  lastSeenAt: string;
   createdAt: string;
-  expiresAt: string;
-  soldAt: string | null;
 };
 
-export type ListingDetail = PublicListing & {
-  sellerEmail: string | null;
-  sellerId: string;
-  isOwner: boolean;
+export type UpsertExternalInput = {
+  source: ListingSource;
+  externalId: string;
+  externalUrl: string;
+  title: string;
+  body?: string;
+  author?: string | null;
+  serverType?: string | null;
+  locationCode?: string | null;
+  priceCents?: number | null;
+  sourceCreatedAt?: string | null;
 };
+
+const STALE_DAYS = 14;
 
 function nowIso() {
   return new Date().toISOString();
-}
-
-function expiresIso(from = new Date()) {
-  const d = new Date(from);
-  d.setUTCDate(d.getUTCDate() + LISTING_TTL_DAYS);
-  return d.toISOString();
 }
 
 export function formatPrice(cents: number, currency = "EUR") {
@@ -44,6 +48,10 @@ export function formatPrice(cents: number, currency = "EUR") {
     currency,
     maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+export function sourceLabel(source: ListingSource) {
+  return source === "reddit" ? "Reddit" : "Hetzner Forum";
 }
 
 export function isValidDc(code: string): code is DcCode {
@@ -55,11 +63,7 @@ export async function listActiveListings(filters?: {
   locationCode?: string;
 }) {
   const db = await getDb();
-  const now = nowIso();
-  const conditions = [
-    eq(marketListings.status, "active"),
-    gt(marketListings.expiresAt, now),
-  ];
+  const conditions = [eq(marketListings.status, "active")];
   if (filters?.serverType) {
     conditions.push(eq(marketListings.serverType, filters.serverType));
   }
@@ -70,170 +74,128 @@ export async function listActiveListings(filters?: {
   const rows = await db
     .select({
       id: marketListings.id,
+      source: marketListings.source,
+      externalUrl: marketListings.externalUrl,
+      title: marketListings.title,
+      body: marketListings.body,
+      author: marketListings.author,
       serverType: marketListings.serverType,
       locationCode: marketListings.locationCode,
       priceCents: marketListings.priceCents,
       currency: marketListings.currency,
-      title: marketListings.title,
-      body: marketListings.body,
-      includes: marketListings.includes,
       status: marketListings.status,
+      sourceCreatedAt: marketListings.sourceCreatedAt,
+      lastSeenAt: marketListings.lastSeenAt,
       createdAt: marketListings.createdAt,
-      expiresAt: marketListings.expiresAt,
-      soldAt: marketListings.soldAt,
     })
     .from(marketListings)
     .where(and(...conditions))
-    .orderBy(desc(marketListings.createdAt))
+    .orderBy(
+      desc(marketListings.sourceCreatedAt),
+      desc(marketListings.createdAt),
+    )
     .limit(100);
 
   return rows as PublicListing[];
 }
 
-export async function listMyListings(sellerId: string) {
+export async function getListing(id: string): Promise<PublicListing | null> {
   const db = await getDb();
   const rows = await db
     .select({
       id: marketListings.id,
+      source: marketListings.source,
+      externalUrl: marketListings.externalUrl,
+      title: marketListings.title,
+      body: marketListings.body,
+      author: marketListings.author,
       serverType: marketListings.serverType,
       locationCode: marketListings.locationCode,
       priceCents: marketListings.priceCents,
       currency: marketListings.currency,
-      title: marketListings.title,
-      body: marketListings.body,
-      includes: marketListings.includes,
       status: marketListings.status,
+      sourceCreatedAt: marketListings.sourceCreatedAt,
+      lastSeenAt: marketListings.lastSeenAt,
       createdAt: marketListings.createdAt,
-      expiresAt: marketListings.expiresAt,
-      soldAt: marketListings.soldAt,
     })
     .from(marketListings)
-    .where(eq(marketListings.sellerId, sellerId))
-    .orderBy(desc(marketListings.createdAt))
-    .limit(100);
-
-  return rows as PublicListing[];
-}
-
-export async function getListing(
-  id: string,
-  viewerId?: string | null,
-): Promise<ListingDetail | null> {
-  const db = await getDb();
-  const rows = await db
-    .select({
-      id: marketListings.id,
-      sellerId: marketListings.sellerId,
-      serverType: marketListings.serverType,
-      locationCode: marketListings.locationCode,
-      priceCents: marketListings.priceCents,
-      currency: marketListings.currency,
-      title: marketListings.title,
-      body: marketListings.body,
-      includes: marketListings.includes,
-      status: marketListings.status,
-      createdAt: marketListings.createdAt,
-      expiresAt: marketListings.expiresAt,
-      soldAt: marketListings.soldAt,
-      sellerEmail: user.email,
-    })
-    .from(marketListings)
-    .innerJoin(user, eq(marketListings.sellerId, user.id))
     .where(eq(marketListings.id, id))
     .limit(1);
 
-  const row = rows[0];
-  if (!row) return null;
-
-  const isOwner = Boolean(viewerId && viewerId === row.sellerId);
-  const showEmail =
-    isOwner ||
-    (Boolean(viewerId) && row.status === "active" && row.expiresAt > nowIso());
-
-  return {
-    id: row.id,
-    sellerId: row.sellerId,
-    serverType: row.serverType,
-    locationCode: row.locationCode,
-    priceCents: row.priceCents,
-    currency: row.currency,
-    title: row.title,
-    body: row.body,
-    includes: row.includes,
-    status: row.status as ListingStatus,
-    createdAt: row.createdAt,
-    expiresAt: row.expiresAt,
-    soldAt: row.soldAt,
-    sellerEmail: showEmail ? row.sellerEmail : null,
-    isOwner,
-  };
+  return (rows[0] as PublicListing | undefined) ?? null;
 }
 
-export type CreateListingInput = {
-  sellerId: string;
-  serverType: string;
-  locationCode: string;
-  priceCents: number;
-  title: string;
-  body?: string;
-  includes?: string;
-};
-
-export async function createListing(input: CreateListingInput) {
+export async function upsertExternalListing(input: UpsertExternalInput) {
   const db = await getDb();
-  const id = crypto.randomUUID();
   const ts = nowIso();
+  const existing = await db
+    .select({ id: marketListings.id })
+    .from(marketListings)
+    .where(
+      and(
+        eq(marketListings.source, input.source),
+        eq(marketListings.externalId, input.externalId),
+      ),
+    )
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(marketListings)
+      .set({
+        externalUrl: input.externalUrl,
+        title: input.title.slice(0, 300),
+        body: (input.body ?? "").slice(0, 4000),
+        author: input.author ?? null,
+        serverType: input.serverType ?? null,
+        locationCode: input.locationCode ?? null,
+        priceCents: input.priceCents ?? null,
+        status: "active",
+        sourceCreatedAt: input.sourceCreatedAt ?? null,
+        lastSeenAt: ts,
+        updatedAt: ts,
+      })
+      .where(eq(marketListings.id, existing[0].id));
+    return existing[0].id;
+  }
+
+  const id = crypto.randomUUID();
   await db.insert(marketListings).values({
     id,
-    sellerId: input.sellerId,
-    serverType: input.serverType.trim().toUpperCase(),
-    locationCode: input.locationCode.trim().toUpperCase(),
-    priceCents: input.priceCents,
+    source: input.source,
+    externalId: input.externalId,
+    externalUrl: input.externalUrl,
+    title: input.title.slice(0, 300),
+    body: (input.body ?? "").slice(0, 4000),
+    author: input.author ?? null,
+    serverType: input.serverType ?? null,
+    locationCode: input.locationCode ?? null,
+    priceCents: input.priceCents ?? null,
     currency: "EUR",
-    title: input.title.trim().slice(0, 120),
-    body: (input.body ?? "").trim().slice(0, 4000),
-    includes: (input.includes ?? "").trim().slice(0, 500),
     status: "active",
+    sourceCreatedAt: input.sourceCreatedAt ?? null,
+    lastSeenAt: ts,
     createdAt: ts,
     updatedAt: ts,
-    expiresAt: expiresIso(),
   });
   return id;
 }
 
-export async function updateListingStatus(
-  id: string,
-  sellerId: string,
-  status: "sold" | "removed" | "active",
-) {
-  const db = await getDb();
-  const ts = nowIso();
-  const result = await db
-    .update(marketListings)
-    .set({
-      status,
-      updatedAt: ts,
-      soldAt: status === "sold" ? ts : null,
-      ...(status === "active" ? { expiresAt: expiresIso() } : {}),
-    })
-    .where(
-      and(eq(marketListings.id, id), eq(marketListings.sellerId, sellerId)),
-    )
-    .returning({ id: marketListings.id });
-
-  return result[0]?.id ?? null;
-}
-
-// expire on read path for listings past TTL still marked active
-export async function expireStaleListings() {
+export async function markStaleListings(beforeIso: string) {
   const db = await getDb();
   await db
     .update(marketListings)
-    .set({ status: "expired", updatedAt: nowIso() })
+    .set({ status: "stale", updatedAt: nowIso() })
     .where(
       and(
         eq(marketListings.status, "active"),
-        sql`${marketListings.expiresAt} <= ${nowIso()}`,
+        sql`${marketListings.lastSeenAt} < ${beforeIso}`,
       ),
     );
+}
+
+export function staleCutoffIso(from = new Date()) {
+  const d = new Date(from);
+  d.setUTCDate(d.getUTCDate() - STALE_DAYS);
+  return d.toISOString();
 }
