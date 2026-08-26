@@ -4,6 +4,7 @@ import posthog from "posthog-js";
 import { type FormEvent, useId, useState } from "react";
 import { useDispatchPrefStore } from "@/lib/marketing/dispatch-pref-store";
 import { PreferenceMatrix } from "./preference-matrix";
+import { TurnstileWidget } from "./turnstile-widget";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -18,6 +19,8 @@ export function SubscribeForm() {
   const lock = useDispatchPrefStore((s) => s.lock);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
   const emailId = useId();
   const errorId = useId();
 
@@ -47,6 +50,11 @@ export function SubscribeForm() {
       focusEmail();
       return;
     }
+    if (!turnstileToken) {
+      setStatus("error");
+      setErrorMsg("Complete the bot check first.");
+      return;
+    }
     setStatus("submitting");
     setErrorMsg("");
 
@@ -62,6 +70,7 @@ export function SubscribeForm() {
           events,
           families,
           datacentres,
+          turnstileToken,
         }),
       });
       const body = (await response.json().catch(() => null)) as {
@@ -88,6 +97,8 @@ export function SubscribeForm() {
           : "Subscription failed. Try again.";
       setStatus("error");
       setErrorMsg(message);
+      setTurnstileToken(null);
+      setTurnstileReset((n) => n + 1);
       focusEmail();
       posthog.capture("subscribe_failed", { error: message });
     }
@@ -173,6 +184,11 @@ export function SubscribeForm() {
         onFamiliesChange={setFamilies}
         onDatacentresChange={setDatacentres}
         disabled={disabled}
+      />
+
+      <TurnstileWidget
+        onToken={setTurnstileToken}
+        resetSignal={turnstileReset}
       />
 
       <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs tracking-wide text-ink-faint">

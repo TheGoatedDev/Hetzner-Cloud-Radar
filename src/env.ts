@@ -27,3 +27,10 @@ export function getDiscordEnv() {
       process.env.DISCORD_UNSUBSCRIBE_FEEDBACK_WEBHOOK_URL,
   };
 }
+
+export function getTurnstileEnv() {
+  return {
+    TURNSTILE_SECRET_KEY: must("TURNSTILE_SECRET_KEY"),
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: must("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+  };
+}

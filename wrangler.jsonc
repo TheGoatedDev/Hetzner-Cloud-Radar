@@ -29,6 +29,7 @@
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://hetzner.thegoated.dev",
     "NEXT_PUBLIC_POSTHOG_HOST": "/hcr-relay",
-    "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN": "phc_sfsrD8YaF3XoMc9KjANjtyY3NXCm2BydfZJRELvqyRoH"
+    "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN": "phc_sfsrD8YaF3XoMc9KjANjtyY3NXCm2BydfZJRELvqyRoH",
+    "NEXT_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAEc2-Ej1LpIwYxsK"
   }
 }

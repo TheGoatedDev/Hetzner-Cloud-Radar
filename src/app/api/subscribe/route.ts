@@ -6,6 +6,7 @@ import {
 import { syncMarketingContact } from "@/lib/marketing/resend";
 import { sendSubscriptionConfirmationEmail } from "@/lib/marketing/subscription-email";
 import { DCS } from "@/lib/schema";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ const subscribeSchema = z
         .refine((family) => DISPATCH_SERVER_FAMILIES.includes(family)),
     ),
     datacentres: z.array(z.enum(DCS)),
+    turnstileToken: z.string().min(1),
   })
   .refine((value) => value.events.length > 0, {
     message: "Pick at least one type of event.",
@@ -44,6 +46,18 @@ export async function POST(request: Request) {
     return Response.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid subscribe request" },
       { status: 400 },
+    );
+  }
+
+  const ip =
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+
+  const human = await verifyTurnstileToken(parsed.data.turnstileToken, ip);
+  if (!human) {
+    return Response.json(
+      { error: "Bot check failed. Refresh and try again." },
+      { status: 403 },
     );
   }
 
