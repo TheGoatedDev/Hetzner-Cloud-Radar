@@ -254,16 +254,6 @@ export function StockCell({
           )}
           {history && (
             <>
-              {stock === "sold-out" ? (
-                <p className="text-2xs text-ink-soft">
-                  <a
-                    href={`/market?type=${encodeURIComponent(type)}&dc=${encodeURIComponent(dc)}`}
-                    className="text-accent underline-offset-2 hover:underline"
-                  >
-                    Transfer listings for {type} · {dc}
-                  </a>
-                </p>
-              ) : null}
               <div
                 aria-hidden
                 className="flex h-6 w-full overflow-hidden border border-hairline"

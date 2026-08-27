@@ -34,13 +34,3 @@ export function getTurnstileEnv() {
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: must("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
   };
 }
-
-export function getAuthEnv() {
-  return {
-    BETTER_AUTH_SECRET: must("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL:
-      process.env.BETTER_AUTH_URL ??
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      "https://hetzner.thegoated.dev",
-  };
-}
