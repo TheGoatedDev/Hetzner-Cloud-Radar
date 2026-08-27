@@ -36,7 +36,6 @@ Independent observation of the public Hetzner Cloud API, not Hetzner status or m
 - `/methodology`: how states are derived, cadence, independence stance.
 - `/feed.atom` and `/md` variants for machine-readable / plain consumption.
 - `/unsubscribe`: preference edit or full leave, plus optional feedback.
-- `/market`: index of public Cloud server transfer posts (Reddit + Hetzner Forum); link out to source.
 - Email: Resend-backed dispatches on sold-out / restock for selected families and DCs.
 - Deploy: Cloudflare (OpenNext), D1, GitHub Actions CD on `main`. Public site: `https://hetzner.thegoated.dev`.
 
@@ -49,12 +48,10 @@ Independent observation of the public Hetzner Cloud API, not Hetzner status or m
 - Supply history chart; recent and archived dispatches with timestamps and durations.
 - Email subscribe with event / family / datacentre prefs; unsubscribe and preference update.
 - Atom feed; markdown page mirrors; PostHog product analytics (consent banner; also disclosed on subscribe surfaces).
-- Market transfer index: hourly ingest of Cloud handoff posts from Reddit (OAuth) and optional Forum scrape; no hosted deals.
 
 **Constraints**
 - Unauthenticated public product; no user accounts.
 - Read-only observation of the public API; no Hetzner affiliation or official incident voice.
-- Market is an index only — no escrow, messaging, or native listings; contact stays on the source thread.
 - "Limited" is derived from poll history; the API purchase signal is effectively binary.
 - Failed polls must not rewrite cell state as a false stock-out.
 - No comment threads, outage gamification, or fabricated social proof.

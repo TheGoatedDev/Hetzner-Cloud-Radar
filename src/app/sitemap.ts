@@ -22,11 +22,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.5,
     },
-    {
-      url: `${SITE_URL}/market`,
-      lastModified: now,
-      changeFrequency: "hourly",
-      priority: 0.7,
-    },
   ];
 }

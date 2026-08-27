@@ -260,7 +260,7 @@ export function StockCell({
                     href={`/market?type=${encodeURIComponent(type)}&dc=${encodeURIComponent(dc)}`}
                     className="text-accent underline-offset-2 hover:underline"
                   >
-                    Transfer posts for {type} · {dc}
+                    Transfer listings for {type} · {dc}
                   </a>
                 </p>
               ) : null}

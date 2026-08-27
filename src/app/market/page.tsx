@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
 import { getObservedAtLabel } from "@/lib/availability/read-model";
 import {
+  expireStaleListings,
   formatPrice,
   listActiveListings,
-  sourceLabel,
 } from "@/lib/market/listings";
 import { DC_META, DCS, type DcCode } from "@/lib/schema";
 import { PageFrame } from "../_components/page-frame";
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Market",
   description:
-    "Index of public Hetzner Cloud server transfer posts from Reddit and the Hetzner Forum. Link out to deal.",
+    "Classifieds for Hetzner Cloud server transfers. Listings only — payment and transfer happen off-site.",
   alternates: { canonical: "/market" },
 };
 
@@ -26,6 +27,8 @@ export default async function MarketPage({
   searchParams: Promise<{ type?: string; dc?: string }>;
 }) {
   const { type, dc } = await searchParams;
+  const session = await getSession();
+  await expireStaleListings();
   const listings = await listActiveListings({
     serverType: type?.toUpperCase(),
     locationCode: dc?.toUpperCase(),
@@ -36,10 +39,37 @@ export default async function MarketPage({
       <section className="flex flex-col gap-6 pt-10">
         <SectionHeader
           as="h1"
-          kicker="Transfer index"
-          title="Cloud server transfers"
-          blurb="Public posts about Hetzner Cloud handoffs, pulled from Reddit and the Hetzner Forum Marktplatz. Open the original thread to reply. Not a marketplace host. Not affiliated with Hetzner."
+          kicker="Classifieds"
+          title="Server transfer market"
+          blurb="People list Cloud servers they want to hand off. Price and Hetzner project transfer stay between buyer and seller. Not escrow. Not affiliated with Hetzner."
         />
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          {session ? (
+            <>
+              <Link
+                href="/market/new"
+                className="text-accent underline-offset-4 hover:underline"
+              >
+                New listing
+              </Link>
+              <Link
+                href="/market/mine"
+                className="text-ink-soft underline-offset-4 hover:underline"
+              >
+                My listings
+              </Link>
+              <span className="text-ink-faint">{session.user.email}</span>
+            </>
+          ) : (
+            <Link
+              href="/login?next=/market"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              Sign in to list or contact sellers
+            </Link>
+          )}
+        </div>
 
         <form className="flex flex-wrap gap-3 text-sm" method="get">
           <label className="flex flex-col gap-1">
@@ -76,25 +106,17 @@ export default async function MarketPage({
 
         {listings.length === 0 ? (
           <p className="font-sans text-base text-ink-soft">
-            No active Cloud transfer posts
+            No active listings
             {type || dc
               ? ` for ${[type?.toUpperCase(), dc?.toUpperCase()].filter(Boolean).join(" · ")}`
               : ""}
-            . Sources scanned hourly; Forum Marktplatz needs a customer login
-            cookie to index.
+            .
           </p>
         ) : (
           <ul className="divide-y divide-hairline border-y border-hairline">
             {listings.map((listing) => {
-              const loc = listing.locationCode as DcCode | null;
-              const city = loc ? (DC_META[loc]?.city ?? loc) : null;
-              const meta = [
-                listing.serverType,
-                city,
-                sourceLabel(listing.source),
-              ]
-                .filter(Boolean)
-                .join(" · ");
+              const loc = listing.locationCode as DcCode;
+              const city = DC_META[loc]?.city ?? listing.locationCode;
               return (
                 <li key={listing.id}>
                   <Link
@@ -102,15 +124,14 @@ export default async function MarketPage({
                     className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-4 hover:bg-paper-recessed"
                   >
                     <span className="font-medium text-ink">
-                      <span className="text-sm font-normal text-ink-soft">
-                        {meta}
+                      <span className="font-mono">{listing.serverType}</span>
+                      <span className="text-ink-soft"> · {city}</span>
+                      <span className="mt-0.5 block text-sm font-normal text-ink-soft">
+                        {listing.title}
                       </span>
-                      <span className="mt-0.5 block">{listing.title}</span>
                     </span>
                     <span className="font-mono tabular-nums text-ink">
-                      {listing.priceCents != null
-                        ? formatPrice(listing.priceCents, listing.currency)
-                        : "—"}
+                      {formatPrice(listing.priceCents, listing.currency)}
                     </span>
                   </Link>
                 </li>
@@ -120,8 +141,10 @@ export default async function MarketPage({
         )}
 
         <p className="max-w-[68ch] font-sans text-xs leading-relaxed text-ink-faint">
-          Deals stay on the source thread. Cloud transfer uses project invites
-          and Transfer to project. No payment handling here.
+          Transfer uses Hetzner Cloud project invites (buyer creates project,
+          invites seller, seller moves the server). This site only hosts
+          classifieds. No payment handling. Buyer diligence on data wipe and
+          account SMTP rules after transfer.
         </p>
       </section>
     </PageFrame>
