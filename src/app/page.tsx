@@ -5,11 +5,11 @@ import { RadarView } from "./_components/radar-view";
 export const revalidate = 300;
 
 export default async function Home() {
-  const data = await getAvailabilityReadModel();
+    const data = await getAvailabilityReadModel();
 
-  if (data.usingFallback) {
-    noStore();
-  }
+    if (data.usingFallback) {
+        noStore();
+    }
 
-  return <RadarView data={data} />;
+    return <RadarView data={data} />;
 }

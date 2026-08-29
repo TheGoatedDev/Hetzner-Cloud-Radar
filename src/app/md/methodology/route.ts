@@ -5,5 +5,5 @@ import { markdownResponse } from "@/lib/markdown/response";
 export const revalidate = 300;
 
 export async function GET() {
-  return markdownResponse(renderMethodologyMd(await getObservedAtLabel()));
+    return markdownResponse(renderMethodologyMd(await getObservedAtLabel()));
 }

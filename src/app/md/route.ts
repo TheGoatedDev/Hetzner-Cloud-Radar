@@ -5,6 +5,6 @@ import { markdownResponse } from "@/lib/markdown/response";
 export const revalidate = 300;
 
 export async function GET() {
-  const data = await getAvailabilityReadModel();
-  return markdownResponse(renderHomeMd(data));
+    const data = await getAvailabilityReadModel();
+    return markdownResponse(renderHomeMd(data));
 }

@@ -7,91 +7,91 @@ export type DispatchEvent = (typeof DISPATCH_EVENTS)[number];
 export const DISPATCH_SERVER_FAMILIES = dispatchServerFamilyIds();
 
 export type DispatchPreferences = {
-  events: DispatchEvent[];
-  families: FamilyId[];
-  datacentres: DcCode[];
+    events: DispatchEvent[];
+    families: FamilyId[];
+    datacentres: DcCode[];
 };
 
 export type TopicParts = {
-  event: DispatchEvent;
-  family: FamilyId;
-  datacentre: DcCode;
+    event: DispatchEvent;
+    family: FamilyId;
+    datacentre: DcCode;
 };
 
 export const DEFAULT_DISPATCH_PREFERENCES: DispatchPreferences = {
-  events: [...DISPATCH_EVENTS],
-  families: [...DISPATCH_SERVER_FAMILIES],
-  datacentres: [...DCS],
+    events: [...DISPATCH_EVENTS],
+    families: [...DISPATCH_SERVER_FAMILIES],
+    datacentres: [...DCS],
 };
 
 const TOPIC_PREFIX = "hcr";
 
 export function normalizeDispatchPreferences(
-  input: DispatchPreferences,
+    input: DispatchPreferences,
 ): DispatchPreferences {
-  return {
-    events: DISPATCH_EVENTS.filter((event) => input.events.includes(event)),
-    families: DISPATCH_SERVER_FAMILIES.filter((family) =>
-      input.families.includes(family),
-    ),
-    datacentres: DCS.filter((datacentre) =>
-      input.datacentres.includes(datacentre),
-    ),
-  };
+    return {
+        events: DISPATCH_EVENTS.filter((event) => input.events.includes(event)),
+        families: DISPATCH_SERVER_FAMILIES.filter((family) =>
+            input.families.includes(family),
+        ),
+        datacentres: DCS.filter((datacentre) =>
+            input.datacentres.includes(datacentre),
+        ),
+    };
 }
 
 export function topicKey(parts: TopicParts) {
-  return [
-    TOPIC_PREFIX,
-    parts.event,
-    parts.family,
-    parts.datacentre.toLowerCase(),
-  ].join(":");
+    return [
+        TOPIC_PREFIX,
+        parts.event,
+        parts.family,
+        parts.datacentre.toLowerCase(),
+    ].join(":");
 }
 
 export function parseTopicKey(name: string): TopicParts | null {
-  const [prefix, event, family, datacentre] = name.split(":");
-  const normalizedFamily = family?.toLowerCase();
+    const [prefix, event, family, datacentre] = name.split(":");
+    const normalizedFamily = family?.toLowerCase();
 
-  if (
-    prefix !== TOPIC_PREFIX ||
-    !DISPATCH_EVENTS.includes(event as DispatchEvent) ||
-    !normalizedFamily ||
-    !DISPATCH_SERVER_FAMILIES.includes(normalizedFamily)
-  ) {
-    return null;
-  }
+    if (
+        prefix !== TOPIC_PREFIX ||
+        !DISPATCH_EVENTS.includes(event as DispatchEvent) ||
+        !normalizedFamily ||
+        !DISPATCH_SERVER_FAMILIES.includes(normalizedFamily)
+    ) {
+        return null;
+    }
 
-  const dc = datacentre?.toUpperCase();
-  if (!DCS.includes(dc as DcCode)) return null;
+    const dc = datacentre?.toUpperCase();
+    if (!DCS.includes(dc as DcCode)) return null;
 
-  return {
-    event: event as DispatchEvent,
-    family: normalizedFamily,
-    datacentre: dc as DcCode,
-  };
+    return {
+        event: event as DispatchEvent,
+        family: normalizedFamily,
+        datacentre: dc as DcCode,
+    };
 }
 
 export function allTopicParts(): TopicParts[] {
-  return DISPATCH_EVENTS.flatMap((event) =>
-    DISPATCH_SERVER_FAMILIES.flatMap((family) =>
-      DCS.map((datacentre) => ({ event, family, datacentre })),
-    ),
-  );
+    return DISPATCH_EVENTS.flatMap((event) =>
+        DISPATCH_SERVER_FAMILIES.flatMap((family) =>
+            DCS.map((datacentre) => ({ event, family, datacentre })),
+        ),
+    );
 }
 
 export function selectedTopicKeys(preferences: DispatchPreferences) {
-  const normalized = normalizeDispatchPreferences(preferences);
+    const normalized = normalizeDispatchPreferences(preferences);
 
-  return normalized.events.flatMap((event) =>
-    normalized.families.flatMap((family) =>
-      normalized.datacentres.map((datacentre) =>
-        topicKey({ event, family, datacentre }),
-      ),
-    ),
-  );
+    return normalized.events.flatMap((event) =>
+        normalized.families.flatMap((family) =>
+            normalized.datacentres.map((datacentre) =>
+                topicKey({ event, family, datacentre }),
+            ),
+        ),
+    );
 }
 
 export function dispatchEventFromState(state: string): DispatchEvent {
-  return state === "ongoing-out" ? "soldout" : "restock";
+    return state === "ongoing-out" ? "soldout" : "restock";
 }
