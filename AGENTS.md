@@ -6,4 +6,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Deploy
 
-Push to `main` deploys via Vercel Git. No GitHub Actions deploy. No `wrangler deploy`.
+Push to `main` deploys via Vercel Git. No GitHub Actions deploy.

@@ -21,9 +21,6 @@
 /local.db
 /local.db-*
 
-/.open-next/
-/.wrangler/
-
 # production
 /build
 

@@ -127,10 +127,9 @@ Public read routes should be cached at the CDN:
 - `/dispatches`
 - `/feed.atom`
 
-The app sends `Cloudflare-CDN-Cache-Control` for those routes with a 5 minute
+The app sends `Cache-Control` for those routes with a 5 minute
 fresh TTL, 15 minute stale-while-revalidate window, and 24 hour stale-if-error
-window. Cloudflare still needs a Cache Rule that caches HTML and JSON for these
-paths; Cloudflare does not cache HTML or JSON by default.
+window.
 
 Do not apply the cache rule to `/api/subscribe`, `/api/unsubscribe`, or
 `/api/unsubscribe/feedback`.

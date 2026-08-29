@@ -174,7 +174,6 @@ export async function pollAvailability() {
       };
     });
 
-    // ponytail: D1/drizzle ON CONFLICT("table"."col") is invalid — per-row upsert
     for (const row of locationValues) {
       await db
         .insert(locations)
@@ -345,7 +344,6 @@ export async function pollAvailability() {
         }
       }
 
-      // ponytail: D1 max ~100 bound params — one row at a time
       for (const candidate of transitionCandidates) {
         await db.insert(stockEvents).values({
           id: candidate.id,

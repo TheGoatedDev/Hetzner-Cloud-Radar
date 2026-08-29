@@ -37,7 +37,7 @@ Independent observation of the public Hetzner Cloud API, not Hetzner status or m
 - `/feed.atom` and `/md` variants for machine-readable / plain consumption.
 - `/unsubscribe`: preference edit or full leave, plus optional feedback.
 - Email: Resend-backed dispatches on sold-out / restock for selected families and DCs.
-- Deploy: Cloudflare (OpenNext), D1, GitHub Actions CD on `main`. Public site: `https://hetzner.thegoated.dev`.
+- Deploy: Vercel + Turso. Public site: `https://hetzner.thegoated.dev`.
 
 ## Capabilities and Constraints
 

@@ -13,7 +13,6 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:import-d1": "node --env-file=.env.local scripts/migrate-d1-to-turso.mjs",
     "families:audit": "node --env-file=.env.local src/scripts/audit-server-families.mjs",
     "prepare": "husky"
   },
@@ -40,8 +39,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "wrangler": "^4.122.0"
+    "typescript": "^5"
   },
   "lint-staged": {
     "*": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
