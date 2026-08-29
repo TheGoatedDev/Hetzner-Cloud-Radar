@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "dev": "next dev",
+    "dev": "bash scripts/dev-turso.sh",
     "build": "next build",
     "start": "next start",
     "lint": "biome check src",
