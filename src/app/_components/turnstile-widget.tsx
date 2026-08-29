@@ -108,7 +108,5 @@ export function TurnstileWidget({ onToken, resetSignal = 0 }: Props) {
     }
   }, [resetSignal]);
 
-  if (!siteKey) return null;
-
   return <div ref={hostRef} className="min-h-[65px]" />;
 }
