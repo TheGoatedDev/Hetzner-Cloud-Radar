@@ -12,7 +12,6 @@ export async function GET() {
     return Response.json(data, {
       headers: {
         "Cache-Control": "no-store",
-        "Cloudflare-CDN-Cache-Control": "no-store",
       },
     });
   }

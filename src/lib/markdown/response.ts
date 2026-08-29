@@ -9,7 +9,7 @@ export function markdownResponse(md: string) {
       "Content-Type": "text/markdown; charset=utf-8",
       Vary: "Accept",
       "x-markdown-tokens": String(Math.ceil(md.length / 4)),
-      "Cloudflare-CDN-Cache-Control": PUBLIC_READ_CACHE,
+      "Cache-Control": PUBLIC_READ_CACHE,
     },
   });
 }

@@ -6,4 +6,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Deploy
 
-Push to `main` deploys the app via GitHub Actions CD (`.github/workflows/cd.yml` → `pnpm cf:deploy`). No manual `wrangler deploy` unless CD broken or emergency.
+Push to `main` deploys via Vercel Git. No GitHub Actions deploy. No `wrangler deploy`.

@@ -24,15 +24,13 @@
   },
   "include": [
     "next-env.d.ts",
-    "cloudflare-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "open-next.config.ts",
     "next.config.ts",
     "drizzle.config.ts",
     "instrumentation-client.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "cloudflare-worker.ts", ".open-next", ".wrangler"]
+  "exclude": ["node_modules"]
 }
