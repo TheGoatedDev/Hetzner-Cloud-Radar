@@ -88,6 +88,20 @@ export const dailyAvailabilityState = sqliteTable(
   }),
 );
 
+export const dailySupplyByFamily = sqliteTable(
+  "daily_supply_by_family",
+  {
+    dateUtc: text("date_utc").notNull(),
+    family: text("family").notNull(),
+    available: integer("available").notNull().default(0),
+    limited: integer("limited").notNull().default(0),
+    soldOut: integer("sold_out").notNull().default(0),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.dateUtc, table.family] }),
+  }),
+);
+
 export const stockEvents = sqliteTable(
   "stock_events",
   {

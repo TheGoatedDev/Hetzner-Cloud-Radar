@@ -9,6 +9,7 @@ import { getDb } from "../db/client";
 import {
   availabilityCurrent,
   dailyAvailabilityState,
+  dailySupplyByFamily,
   locations,
   pollRuns,
   serverTypes,
@@ -50,6 +51,9 @@ async function pruneRetention(
   await db
     .delete(dailyAvailabilityState)
     .where(lt(dailyAvailabilityState.dateUtc, eventCutoffDay));
+  await db
+    .delete(dailySupplyByFamily)
+    .where(lt(dailySupplyByFamily.dateUtc, eventCutoffDay));
   await db
     .delete(stockEvents)
     .where(lt(stockEvents.observedAt, eventCutoffIso));
@@ -393,6 +397,32 @@ export async function pollAvailability() {
       .select()
       .from(dailyAvailabilityState)
       .where(sql`${dailyAvailabilityState.dateUtc} = ${dateUtc}`);
+    const supplyByFamily = new Map<
+      string,
+      { available: number; limited: number; soldOut: number }
+    >();
+    for (const row of currentValues) {
+      const family = deriveServerFamilyId(row.serverTypeCode);
+      if (!family) continue;
+      const bucket = supplyByFamily.get(family) ?? {
+        available: 0,
+        limited: 0,
+        soldOut: 0,
+      };
+      if (row.sawAvailable && !row.sawSoldOut) bucket.available += 1;
+      else if (row.sawAvailable && row.sawSoldOut) bucket.limited += 1;
+      else if (row.sawSoldOut && !row.sawAvailable) bucket.soldOut += 1;
+      supplyByFamily.set(family, bucket);
+    }
+    for (const [family, bucket] of supplyByFamily) {
+      await db
+        .insert(dailySupplyByFamily)
+        .values({ dateUtc, family, ...bucket })
+        .onConflictDoUpdate({
+          target: [dailySupplyByFamily.dateUtc, dailySupplyByFamily.family],
+          set: bucket,
+        });
+    }
     const dailyByCell = new Map(
       currentValues.map((row) => [
         `${row.serverTypeCode}:${row.locationCode}`,

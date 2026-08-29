@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sum } from "drizzle-orm";
 import {
   DCS,
   type DcCode,
@@ -16,7 +16,7 @@ import {
 import { getDb } from "../db/client";
 import {
   availabilityCurrent,
-  dailyAvailabilityState,
+  dailySupplyByFamily,
   pollRuns,
   serverTypes,
   stockEvents,
@@ -414,27 +414,23 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
     const [dailyRows, events] = await Promise.all([
       db
         .select({
-          dateUtc: dailyAvailabilityState.dateUtc,
-          available: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and not ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
-          limited: sql<number>`sum(case when ${dailyAvailabilityState.sawAvailable} and ${dailyAvailabilityState.sawSoldOut} then 1 else 0 end)`,
-          soldOut: sql<number>`sum(case when ${dailyAvailabilityState.sawSoldOut} and not ${dailyAvailabilityState.sawAvailable} then 1 else 0 end)`,
+          dateUtc: dailySupplyByFamily.dateUtc,
+          available: sum(dailySupplyByFamily.available),
+          limited: sum(dailySupplyByFamily.limited),
+          soldOut: sum(dailySupplyByFamily.soldOut),
         })
-        .from(dailyAvailabilityState)
-        .innerJoin(
-          serverTypes,
-          eq(dailyAvailabilityState.serverTypeCode, serverTypes.code),
-        )
+        .from(dailySupplyByFamily)
         .where(
           and(
             gte(
-              dailyAvailabilityState.dateUtc,
+              dailySupplyByFamily.dateUtc,
               sixtyDaysAgo.toISOString().slice(0, 10),
             ),
-            inArray(serverTypes.family, visibleFamilyIds),
+            inArray(dailySupplyByFamily.family, visibleFamilyIds),
           ),
         )
-        .groupBy(dailyAvailabilityState.dateUtc)
-        .orderBy(dailyAvailabilityState.dateUtc),
+        .groupBy(dailySupplyByFamily.dateUtc)
+        .orderBy(dailySupplyByFamily.dateUtc),
       getDispatchEvents(finishedAt),
     ]);
     const dailyByDate = new Map(
