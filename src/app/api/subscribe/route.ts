@@ -8,9 +8,6 @@ import { sendSubscriptionConfirmationEmail } from "@/lib/marketing/subscription-
 import { DCS } from "@/lib/schema";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
-
 const subscribeSchema = z
   .object({
     email: z.email().transform((email) => email.toLowerCase()),

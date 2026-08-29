@@ -2,7 +2,6 @@ import { getHetznerEnv } from "@/env";
 import { pollAvailability } from "@/lib/availability/poll";
 import { captureServer } from "@/lib/posthog-server";
 
-export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {

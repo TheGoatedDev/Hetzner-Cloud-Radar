@@ -7,9 +7,6 @@ import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
 import { UnsubscribeForm } from "./_components/unsubscribe-form";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Unsubscribe",
   description: "Unsubscribe from Hetzner Cloud Radar dispatches.",

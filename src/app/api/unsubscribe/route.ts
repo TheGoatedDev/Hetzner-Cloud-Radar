@@ -9,9 +9,6 @@ import {
 } from "@/lib/marketing/resend";
 import { DCS } from "@/lib/schema";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
-
 const unsubscribeSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
   token: z.string().optional(),

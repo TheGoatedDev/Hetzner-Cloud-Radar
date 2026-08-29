@@ -5,9 +5,6 @@ import {
 } from "@/lib/marketing/unsubscribe-feedback";
 import { verifyEmailToken } from "@/lib/marketing/unsubscribe-token";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
-
 const feedbackSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
   token: z.string().optional(),

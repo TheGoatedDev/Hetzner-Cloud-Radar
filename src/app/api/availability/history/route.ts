@@ -1,8 +1,5 @@
 import { getAvailabilityHistory, isValidDc } from "@/lib/availability/history";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const type = url.searchParams.get("type")?.toUpperCase();
