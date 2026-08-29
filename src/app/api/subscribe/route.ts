@@ -8,7 +8,7 @@ import { sendSubscriptionConfirmationEmail } from "@/lib/marketing/subscription-
 import { DCS } from "@/lib/schema";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const subscribeSchema = z

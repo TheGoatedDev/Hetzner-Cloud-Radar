@@ -7,7 +7,7 @@ import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
 import { UnsubscribeForm } from "./_components/unsubscribe-form";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -25,7 +25,8 @@ export default async function UnsubscribePage({
 }) {
   const { email, token } = await searchParams;
   const lower = email?.toLowerCase() ?? "";
-  const tokenValid = !!lower && !!token && verifyEmailToken(lower, token);
+  const tokenValid =
+    !!lower && !!token && (await verifyEmailToken(lower, token));
   let initialPreferences: DispatchPreferences | null = null;
   let preferenceLoadError: string | null = null;
 

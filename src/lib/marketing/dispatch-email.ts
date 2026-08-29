@@ -204,7 +204,7 @@ export async function sendPendingMarketingDispatches(
       });
       const html =
         event.state === "ongoing-out"
-          ? stockOutHtml({
+          ? await stockOutHtml({
               serverType,
               serverSpec,
               region,
@@ -212,7 +212,7 @@ export async function sendPendingMarketingDispatches(
               observedAt: event.startedAt,
               baselineNote: event.body,
             })
-          : restockHtml({
+          : await restockHtml({
               serverType,
               serverSpec,
               region,

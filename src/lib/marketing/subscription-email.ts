@@ -39,7 +39,7 @@ export async function sendSubscriptionConfirmationEmail(
   const result = await sendDispatch({
     to: input.email,
     subject: "You are subscribed to Hetzner Cloud Radar",
-    html: subscriptionConfirmationHtml({
+    html: await subscriptionConfirmationHtml({
       email: input.email,
       eventCopy,
       subscribedTo,

@@ -9,7 +9,7 @@ import {
 } from "@/lib/marketing/resend";
 import { DCS } from "@/lib/schema";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const unsubscribeSchema = z.object({

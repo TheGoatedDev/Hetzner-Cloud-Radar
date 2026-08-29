@@ -13,23 +13,23 @@ function esc(value: string) {
     .replaceAll('"', "&quot;");
 }
 
-function unsubscribeUrl(recipientEmail?: string) {
+async function unsubscribeUrl(recipientEmail?: string) {
   if (!recipientEmail) return "{{{RESEND_UNSUBSCRIBE_URL}}}";
   try {
-    const token = signEmail(recipientEmail);
+    const token = await signEmail(recipientEmail);
     return `${baseUrl}/unsubscribe?email=${encodeURIComponent(recipientEmail)}&token=${token}`;
   } catch {
     return `${baseUrl}/unsubscribe`;
   }
 }
 
-function shell(opts: {
+async function shell(opts: {
   preview: string;
   observedAt?: string;
   recipientEmail?: string;
   body: string;
 }) {
-  const unsub = unsubscribeUrl(opts.recipientEmail);
+  const unsub = await unsubscribeUrl(opts.recipientEmail);
   const observed = opts.observedAt
     ? `<p style="margin:8px 0 0;font-size:11px;color:${theme.inkSoft}">Observed at <span style="color:${theme.ink}">${esc(opts.observedAt)}</span></p>`
     : "";
@@ -84,7 +84,7 @@ function prose(text: string, soft = false) {
   return `<p style="margin:20px 0 0;font-family:${fontStack.sans};font-size:15px;line-height:1.6;color:${color}">${text}</p>`;
 }
 
-export function stockOutHtml(input: {
+export async function stockOutHtml(input: {
   serverType: string;
   serverSpec: string;
   region: string;
@@ -110,7 +110,7 @@ export function stockOutHtml(input: {
   });
 }
 
-export function restockHtml(input: {
+export async function restockHtml(input: {
   serverType: string;
   serverSpec: string;
   region: string;
@@ -137,7 +137,7 @@ export function restockHtml(input: {
   });
 }
 
-export function subscriptionConfirmationHtml(input: {
+export async function subscriptionConfirmationHtml(input: {
   email: string;
   eventCopy: string;
   subscribedTo: string;

@@ -5,7 +5,7 @@ import {
 } from "@/lib/marketing/unsubscribe-feedback";
 import { verifyEmailToken } from "@/lib/marketing/unsubscribe-token";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const feedbackSchema = z.object({
@@ -38,7 +38,9 @@ export async function POST(request: Request) {
 
   const { email, token, reason, note } = parsed.data;
   const source =
-    token && verifyEmailToken(email, token) ? "verified_link" : "manual_email";
+    token && (await verifyEmailToken(email, token))
+      ? "verified_link"
+      : "manual_email";
 
   try {
     await sendUnsubscribeFeedback({ reason, note, source });
