@@ -23,6 +23,7 @@ export function SubscribeForm() {
     const [turnstileReset, setTurnstileReset] = useState(0);
     const emailId = useId();
     const errorId = useId();
+    const wiredId = useId();
 
     function focusEmail() {
         queueMicrotask(() => {
@@ -30,29 +31,28 @@ export function SubscribeForm() {
         });
     }
 
+    function fail(message: string) {
+        setStatus("error");
+        setErrorMsg(message);
+        posthog.capture("subscribe_failed", { error: message });
+    }
+
     async function onSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
         if (events.length === 0) {
-            setStatus("error");
-            setErrorMsg("Pick at least one type of event.");
-            focusEmail();
+            fail("Pick at least one type of event.");
             return;
         }
         if (families.length === 0) {
-            setStatus("error");
-            setErrorMsg("Pick at least one server family.");
-            focusEmail();
+            fail("Pick at least one server family.");
             return;
         }
         if (datacentres.length === 0) {
-            setStatus("error");
-            setErrorMsg("Pick at least one datacentre.");
-            focusEmail();
+            fail("Pick at least one datacentre.");
             return;
         }
         if (!turnstileToken) {
-            setStatus("error");
-            setErrorMsg("Complete the bot check first.");
+            fail("Complete the bot check first.");
             return;
         }
         setStatus("submitting");
@@ -142,11 +142,36 @@ export function SubscribeForm() {
         );
     }
 
-    const disabled = status === "submitting";
+    const submitting = status === "submitting";
     const wired = events.length * families.length * datacentres.length;
+    const canSubmit = wired >= 1;
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+            <PreferenceMatrix
+                events={events}
+                families={families}
+                datacentres={datacentres}
+                onEventsChange={setEvents}
+                onFamiliesChange={setFamilies}
+                onDatacentresChange={setDatacentres}
+                disabled={submitting}
+            />
+
+            <TurnstileWidget
+                onToken={setTurnstileToken}
+                resetSignal={turnstileReset}
+            />
+
+            <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs tracking-wide text-ink-faint">
+                <span id={wiredId}>
+                    → {wired} alert{wired === 1 ? "" : "s"} wired
+                </span>
+                <span aria-hidden="true">
+                    {events.length} × {families.length} × {datacentres.length}
+                </span>
+            </div>
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <label
                     htmlFor={emailId}
@@ -160,7 +185,7 @@ export function SubscribeForm() {
                         name="email"
                         type="email"
                         required
-                        disabled={disabled}
+                        disabled={submitting}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com…"
@@ -175,35 +200,12 @@ export function SubscribeForm() {
                 </label>
                 <button
                     type="submit"
-                    disabled={disabled}
+                    disabled={submitting || !canSubmit}
+                    aria-describedby={wiredId}
                     className="min-h-11 rounded-edge bg-accent px-5 py-2 font-mono text-sm font-medium text-paper transition-colors hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    {disabled ? "Subscribing…" : "Subscribe"}
+                    {submitting ? "Subscribing…" : "Subscribe"}
                 </button>
-            </div>
-
-            <PreferenceMatrix
-                events={events}
-                families={families}
-                datacentres={datacentres}
-                onEventsChange={setEvents}
-                onFamiliesChange={setFamilies}
-                onDatacentresChange={setDatacentres}
-                disabled={disabled}
-            />
-
-            <TurnstileWidget
-                onToken={setTurnstileToken}
-                resetSignal={turnstileReset}
-            />
-
-            <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline pt-3 font-mono text-2xs tracking-wide text-ink-faint">
-                <span>
-                    → {wired} alert{wired === 1 ? "" : "s"} wired
-                </span>
-                <span aria-hidden="true">
-                    {events.length} × {families.length} × {datacentres.length}
-                </span>
             </div>
 
             {status === "error" && errorMsg ? (

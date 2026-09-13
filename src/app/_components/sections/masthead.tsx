@@ -28,10 +28,18 @@ export function Masthead({ observedAt }: { observedAt: string }) {
                     <GithubIcon className="size-4" />
                 </a>
             </p>
-            <p className="text-xs text-ink-soft sm:ml-auto">
-                Observed at{" "}
-                <span className="text-ink tabular-nums">{observedAt}</span>
-            </p>
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 sm:ml-auto">
+                <a
+                    href="#subscribe"
+                    className="text-xs text-ink-soft hover:text-accent"
+                >
+                    Subscribe
+                </a>
+                <p className="text-xs text-ink-soft">
+                    Observed at{" "}
+                    <span className="text-ink tabular-nums">{observedAt}</span>
+                </p>
+            </div>
         </header>
     );
 }
