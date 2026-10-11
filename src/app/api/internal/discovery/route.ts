@@ -1,5 +1,6 @@
 import { getHetznerEnv } from "@/env";
 import { discoverServerFamilies } from "@/lib/availability/discovery";
+import { revalidateAvailabilityPaths } from "@/lib/availability/revalidate";
 import { captureServer } from "@/lib/posthog-server";
 
 export const maxDuration = 60;
@@ -26,14 +27,7 @@ export async function POST(req: Request) {
             await captureServer("server_families_discovered", {
                 families: result.discovered,
             });
-            const origin = new URL(req.url).origin;
-            await Promise.allSettled(
-                ["/", "/api/availability"].map((p) =>
-                    fetch(`${origin}${p}`, { cache: "no-store" }).catch(
-                        () => null,
-                    ),
-                ),
-            );
+            revalidateAvailabilityPaths();
         }
 
         return Response.json(result);

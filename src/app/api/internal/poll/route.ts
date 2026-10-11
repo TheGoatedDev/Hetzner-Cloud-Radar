@@ -1,5 +1,6 @@
 import { getHetznerEnv } from "@/env";
 import { pollAvailability } from "@/lib/availability/poll";
+import { revalidateAvailabilityPaths } from "@/lib/availability/revalidate";
 import { captureServer } from "@/lib/posthog-server";
 
 export const maxDuration = 60;
@@ -22,12 +23,7 @@ export async function POST(req: Request) {
     const started = Date.now();
     try {
         const result = await pollAvailability();
-        const origin = new URL(req.url).origin;
-        await Promise.allSettled(
-            ["/", "/api/availability"].map((p) =>
-                fetch(`${origin}${p}`, { cache: "no-store" }).catch(() => null),
-            ),
-        );
+        revalidateAvailabilityPaths();
 
         if (result.status === "success") {
             await captureServer("availability_poll_completed", {
