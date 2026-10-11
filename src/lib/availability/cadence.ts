@@ -1,4 +1,4 @@
-/** Expected worker poll interval. Keep Railway cron in sync (every 5 minutes). */
+/** Expected worker poll interval. Keep vercel.json cron in sync (every 5 minutes). */
 export const POLL_INTERVAL_SECONDS = 300;
 export const POLL_INTERVAL_MS = POLL_INTERVAL_SECONDS * 1000;
 export const POLL_CADENCE = "5 minutes";

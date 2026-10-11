@@ -19,7 +19,7 @@ subscribers into Resend Contacts for marketing dispatches.
 
 ## Features
 
-- One-shot worker poll every 5 minutes (`pnpm worker` / `Dockerfile.worker`).
+- Vercel Cron poll every 5 minutes (`vercel.json`).
 - Hetzner `GET /v1/server_types` integration.
 - Raw poll history in `availability_observations`.
 - Current per server-type/location state in `availability_current`.
@@ -110,10 +110,13 @@ http://localhost:3000
 
 ## Polling
 
-One-shot worker (local or Railway cron via `Dockerfile.worker`):
+Vercel Cron (`vercel.json`) calls `GET /api/internal/poll` every 5 minutes.
+Set `CRON_SECRET` in Vercel; the cron sends it as `Authorization: Bearer …`.
+
+Trigger a poll locally:
 
 ```bash
-pnpm worker
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/internal/poll
 ```
 
 Needs `DATABASE_URL` + `HETZNER_API_TOKEN` (plus Resend vars if you want dispatch emails).
