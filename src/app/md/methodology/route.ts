@@ -2,7 +2,7 @@ import { getObservedAtLabel } from "@/lib/availability/read-model";
 import { renderMethodologyMd } from "@/lib/markdown/pages";
 import { markdownResponse } from "@/lib/markdown/response";
 
-export const revalidate = 300;
+export const revalidate = 1200;
 
 export async function GET() {
     return markdownResponse(renderMethodologyMd(await getObservedAtLabel()));

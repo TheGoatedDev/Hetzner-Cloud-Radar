@@ -2,7 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { getAvailabilityReadModel } from "@/lib/availability/read-model";
 import { RadarView } from "./_components/radar-view";
 
-export const revalidate = 300;
+export const revalidate = 1200;
 
 export default async function Home() {
     const data = await getAvailabilityReadModel();

@@ -1,4 +1,4 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "crons": [{ "path": "/api/internal/poll", "schedule": "*/5 * * * *" }]
+    "crons": [{ "path": "/api/internal/poll", "schedule": "*/20 * * * *" }]
 }
