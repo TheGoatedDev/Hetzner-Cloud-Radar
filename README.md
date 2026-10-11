@@ -19,14 +19,14 @@ subscribers into Resend Contacts for marketing dispatches.
 
 ## Features
 
-- One-shot worker poll every 5 minutes (`pnpm worker` / `Dockerfile.worker`).
+- Vercel Cron poll every 20 minutes (`vercel.json`).
 - Hetzner `GET /v1/server_types` integration.
 - Raw poll history in `availability_observations`.
 - Current per server-type/location state in `availability_current`.
 - Daily flicker tracking in `daily_availability_state`.
 - `limited` display state when latest stock is available but same UTC day also
   saw sold-out.
-- ISR for `/` and `/api/availability` with 5 minute revalidation.
+- ISR for `/` and `/api/availability` with 20 minute revalidation.
 - Resend-backed subscriber capture and React Email marketing dispatches.
 - DB-backed homepage with no mock-data dependency.
 
@@ -110,10 +110,13 @@ http://localhost:3000
 
 ## Polling
 
-One-shot worker (local or Railway cron via `Dockerfile.worker`):
+Vercel Cron (`vercel.json`) calls `GET /api/internal/poll` every 20 minutes.
+Set `CRON_SECRET` in Vercel; the cron sends it as `Authorization: Bearer …`.
+
+Trigger a poll locally:
 
 ```bash
-pnpm worker
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/internal/poll
 ```
 
 Needs `DATABASE_URL` + `HETZNER_API_TOKEN` (plus Resend vars if you want dispatch emails).
@@ -127,8 +130,8 @@ Public read routes should be cached at the CDN:
 - `/dispatches`
 - `/feed.atom`
 
-The app sends `Cache-Control` for those routes with a 5 minute
-fresh TTL, 15 minute stale-while-revalidate window, and 24 hour stale-if-error
+The app sends `Cache-Control` for those routes with a 20 minute
+fresh TTL, 60 minute stale-while-revalidate window, and 24 hour stale-if-error
 window.
 
 Do not apply the cache rule to `/api/subscribe`, `/api/unsubscribe`, or

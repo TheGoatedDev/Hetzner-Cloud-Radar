@@ -6,7 +6,7 @@ import {
 import { renderDispatchesMd } from "@/lib/markdown/pages";
 import { markdownResponse } from "@/lib/markdown/response";
 
-export const revalidate = 300;
+export const revalidate = 1200;
 
 const WINDOW_DAYS = 60;
 const LIMIT = 200;

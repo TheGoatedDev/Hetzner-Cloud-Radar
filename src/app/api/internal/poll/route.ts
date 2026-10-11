@@ -55,3 +55,6 @@ export async function POST(req: Request) {
         throw error;
     }
 }
+
+// Vercel Cron invokes with GET + `Authorization: Bearer $CRON_SECRET`.
+export const GET = POST;

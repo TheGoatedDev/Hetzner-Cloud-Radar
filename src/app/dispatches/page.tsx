@@ -9,7 +9,7 @@ import { PageFrame } from "../_components/page-frame";
 import { SectionHeader } from "../_components/section-header";
 
 // Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
-export const revalidate = 300;
+export const revalidate = 1200;
 
 export const metadata: Metadata = {
     title: "All dispatches",

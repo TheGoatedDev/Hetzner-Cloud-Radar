@@ -7,7 +7,7 @@ import type { StockEvent } from "@/lib/schema";
 import { SITE_URL } from "@/lib/site";
 
 // Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
-export const revalidate = 300;
+export const revalidate = 1200;
 
 const WINDOW_DAYS = 60;
 const LIMIT = 200;
