@@ -11,7 +11,6 @@ import {
 import {
     serverFamilyOrder,
     visibleServerFamilies,
-    visibleServerFamilyIds,
 } from "@/lib/server-families";
 import { getDb } from "../db/client";
 import {
@@ -22,6 +21,7 @@ import {
     stockEvents,
 } from "../db/schema";
 import { POLL_CADENCE } from "./cadence";
+import { getPublicServerFamilies } from "./discovery";
 
 export { POLL_CADENCE };
 
@@ -267,7 +267,9 @@ export async function getDispatchEvents(
     limit = 8,
     windowDays = 30,
 ): Promise<StockEvent[]> {
-    const visibleFamilies = visibleServerFamilyIds();
+    const visibleFamilies = (await getPublicServerFamilies()).map(
+        ({ id }) => id,
+    );
 
     if (visibleFamilies.length === 0) return [];
 
@@ -333,16 +335,18 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
     try {
         const db = await getDb();
         // Parallel first round — current/types don't depend on latest poll row.
-        const [latestPoll, currentRows, typeRows] = await Promise.all([
-            db
-                .select()
-                .from(pollRuns)
-                .where(eq(pollRuns.status, "success"))
-                .orderBy(desc(pollRuns.finishedAt))
-                .limit(1),
-            db.select().from(availabilityCurrent),
-            db.select().from(serverTypes),
-        ]);
+        const [latestPoll, currentRows, typeRows, visibleFamilies] =
+            await Promise.all([
+                db
+                    .select()
+                    .from(pollRuns)
+                    .where(eq(pollRuns.status, "success"))
+                    .orderBy(desc(pollRuns.finishedAt))
+                    .limit(1),
+                db.select().from(availabilityCurrent),
+                db.select().from(serverTypes),
+                getPublicServerFamilies(),
+            ]);
 
         if (!latestPoll[0]?.finishedAt) {
             return fallbackModel();
@@ -358,7 +362,6 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
                 current.displayStatus as Stock,
             ]),
         );
-        const visibleFamilies = visibleServerFamilies();
         const visibleFamilyIds = visibleFamilies.map(({ id }) => id);
         const activeTypes = typeRows
             .filter(isActiveServerType)
@@ -379,13 +382,7 @@ export async function getAvailabilityReadModel(): Promise<AvailabilityReadModel>
             specs.push(type);
             typesByFamily.set(family, specs);
         }
-        const families = visibleFamilies.flatMap(({ id, meta }) => {
-            const family = {
-                id,
-                label: meta.label,
-                kicker: meta.kicker,
-                blurb: meta.blurb,
-            };
+        const families = visibleFamilies.flatMap((family) => {
             const specs = typesByFamily.get(family.id) ?? [];
 
             if (specs.length === 0) {

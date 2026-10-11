@@ -28,6 +28,15 @@ export const serverTypes = sqliteTable("server_types", {
         .$type<Record<string, unknown>>(),
 });
 
+// Families found by the daily discovery cron that are not in SERVER_FAMILY_META. Copy is editable in the DB.
+export const serverFamilies = sqliteTable("server_families", {
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    kicker: text("kicker").notNull(),
+    blurb: text("blurb").notNull(),
+    discoveredAt: text("discovered_at").notNull(),
+});
+
 export const locations = sqliteTable("locations", {
     code: text("code").primaryKey(),
     apiName: text("api_name").notNull().unique(),
