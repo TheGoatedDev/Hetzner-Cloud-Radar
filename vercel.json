@@ -1,5 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
+    "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then pnpm db:migrate; fi && pnpm build",
     "crons": [
         { "path": "/api/internal/poll", "schedule": "*/20 * * * *" },
         { "path": "/api/internal/discovery", "schedule": "0 6 * * *" }
