@@ -24,28 +24,42 @@ function familyFromCode(code) {
     );
 }
 
-const response = await fetch("https://api.hetzner.cloud/v1/server_types", {
-    headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-    },
-});
-const body = await response.json().catch(() => null);
+const serverTypes = [];
+let page = 1;
 
-if (!response.ok) {
-    throw new Error(
-        body?.error?.message ?? `Hetzner API returned HTTP ${response.status}`,
+// API defaults to 25 per page (max 50); follow next_page until null.
+while (page) {
+    const response = await fetch(
+        `https://api.hetzner.cloud/v1/server_types?per_page=50&page=${page}`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
+            },
+        },
     );
-}
+    const body = await response.json().catch(() => null);
 
-if (!body || !Array.isArray(body.server_types)) {
-    throw new Error("Hetzner API response missing server_types");
+    if (!response.ok) {
+        throw new Error(
+            body?.error?.message ??
+                `Hetzner API returned HTTP ${response.status}`,
+        );
+    }
+
+    if (!body || !Array.isArray(body.server_types)) {
+        throw new Error("Hetzner API response missing server_types");
+    }
+
+    serverTypes.push(...body.server_types);
+    const nextPage = body.meta?.pagination?.next_page;
+    page = typeof nextPage === "number" && nextPage > page ? nextPage : null;
 }
 
 const liveByFamily = new Map();
 const malformed = [];
 
-for (const serverType of body.server_types) {
+for (const serverType of serverTypes) {
     const code = String(serverType?.name ?? "").toUpperCase();
     const family = familyFromCode(code);
 
