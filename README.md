@@ -121,6 +121,17 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/internal/
 
 Needs `DATABASE_URL` + `HETZNER_API_TOKEN` (plus Resend vars if you want dispatch emails).
 
+## Family discovery
+
+Vercel Cron also calls `GET /api/internal/discovery` daily at 06:00 UTC.
+It finds server families in the Hetzner API that are not in `SERVER_FAMILY_META` and stores them in `server_families` with generic copy.
+Discovered families show on the dashboard after the configured ones; they get no email dispatches.
+Edit the copy in the DB, or add the family to `SERVER_FAMILY_META` (config wins).
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/internal/discovery
+```
+
 ## CDN Caching
 
 Public read routes should be cached at the CDN:

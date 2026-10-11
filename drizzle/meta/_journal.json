@@ -1,20 +1,27 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1788011111257,
-      "tag": "0000_fixed_loki",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1788013966824,
-      "tag": "0001_third_spot",
-      "breakpoints": true
-    }
-  ]
+    "version": "7",
+    "dialect": "sqlite",
+    "entries": [
+        {
+            "idx": 0,
+            "version": "6",
+            "when": 1788011111257,
+            "tag": "0000_fixed_loki",
+            "breakpoints": true
+        },
+        {
+            "idx": 1,
+            "version": "6",
+            "when": 1788013966824,
+            "tag": "0001_third_spot",
+            "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "6",
+            "when": 1791748114925,
+            "tag": "0002_lonely_proteus",
+            "breakpoints": true
+        }
+    ]
 }

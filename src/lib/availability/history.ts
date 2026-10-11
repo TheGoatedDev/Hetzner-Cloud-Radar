@@ -1,6 +1,5 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { DCS, type DcCode, type Stock } from "@/lib/schema";
-import { visibleServerFamilyIds } from "@/lib/server-families";
 import { getDb } from "../db/client";
 import {
     availabilityCurrent,
@@ -9,6 +8,7 @@ import {
     stockEvents,
 } from "../db/schema";
 import { HISTORY_GAP_THRESHOLD_SECONDS } from "./cadence";
+import { getPublicServerFamilies } from "./discovery";
 
 export const HISTORY_WINDOW_DAYS = 1;
 export { HISTORY_GAP_THRESHOLD_SECONDS };
@@ -52,7 +52,9 @@ export async function getAvailabilityHistory(
     dc: DcCode,
 ): Promise<AvailabilityHistory> {
     const db = await getDb();
-    const visibleFamilies = visibleServerFamilyIds();
+    const visibleFamilies = (await getPublicServerFamilies()).map(
+        ({ id }) => id,
+    );
     const windowEnd = new Date();
     const windowStart = new Date(windowEnd);
     windowStart.setUTCDate(windowStart.getUTCDate() - HISTORY_WINDOW_DAYS);
