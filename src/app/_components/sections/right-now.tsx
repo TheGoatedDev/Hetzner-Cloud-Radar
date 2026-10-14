@@ -77,17 +77,6 @@ export function RightNow({
                 />
                 <Counter label="Not offered" value={totals.notOffered} />
             </dl>
-            <p className="max-w-[68ch] border-l-2 border-accent pl-3 text-xs text-ink-soft">
-                Sold out where you need it?{" "}
-                <a
-                    href="https://github.com/TheGoatedDev/hcloud-snipe"
-                    className="text-ink underline underline-offset-4 hover:text-accent"
-                    translate="no"
-                >
-                    hcloud-snipe
-                </a>{" "}
-                creates the server the moment that type comes back in stock.
-            </p>
         </section>
     );
 }

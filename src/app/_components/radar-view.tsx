@@ -7,6 +7,7 @@ import { Legend } from "./sections/legend";
 import { Masthead } from "./sections/masthead";
 import { PageFooter } from "./sections/page-footer";
 import { RightNow } from "./sections/right-now";
+import { SnipeBanner } from "./sections/snipe-banner";
 import { SupplyTrend } from "./sections/supply-trend";
 import { SubscribeForm } from "./subscribe-form";
 
@@ -71,6 +72,7 @@ export function RadarView({ data }: { data: AvailabilityReadModel }) {
     return (
         <div className="flex w-full flex-1 flex-col">
             <div className="page-shell mx-auto flex w-full max-w-5xl flex-1 flex-col">
+                <SnipeBanner />
                 <Masthead observedAt={data.observedAt} />
                 <main id="main-content" className="w-full">
                     <RightNow
