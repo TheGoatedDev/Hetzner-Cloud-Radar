@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📡 Hetzner Cloud Radar
+<img src="public/brand/mark.svg" width="88" height="88" alt="">
+
+# Hetzner Cloud Radar
 
 **Know which Hetzner Cloud servers you can actually deploy, before the console says no.**
 
