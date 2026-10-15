@@ -4,6 +4,7 @@
   <source media="(prefers-color-scheme: dark)" srcset="public/brand/logo-dark.svg">
   <img src="public/brand/logo-light.svg" width="340" alt="Hetzner Cloud Radar">
 </picture>
+<br><br>
 
 **Know which Hetzner Cloud servers you can actually deploy, before the console says no.**
 
