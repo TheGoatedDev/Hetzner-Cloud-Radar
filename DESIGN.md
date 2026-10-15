@@ -247,3 +247,13 @@ Flat by default. Tonal steps (`paper` / `paper-recessed` / `paper-raised`) and 1
 - Animate page entrances or scroll choreography.
 - Invent off-scale spacing (`gap-7`, `pt-11`, `p-3.5`) without updating this file.
 - Pad matrix or preference rows like cards.
+
+## 8. Brand mark
+
+**Afterglow.** A 5×5 radar scope drawn in the stock-glyph alphabet. The beam points north-east. Cells behind it decay from `●` to `◑` to `○`, unswept cells are `·`, the centre `●` is the observer, and one copper `■` is the blip. The dark half of each `◑` faces the beam.
+
+- **Files:** `public/brand/mark.svg` (follows `prefers-color-scheme`), `public/brand/logo-light.svg` and `logo-dark.svg` (stacked lockup), `src/app/icon.svg` and `src/app/favicon.ico` (ink tile).
+- **Lockup type:** IBM Plex Mono, outlined. "Hetzner Cloud" Medium in ink-soft, cap height aligned to the top glyph row; "Radar" SemiBold in ink, baseline on the bottom dot row.
+- **Colour:** ink plus copper only (`#14110e` / `#b75037` on paper, `#edebe8` / `#ee8266` on dark). Decay is carried by glyph shape, not tint, so the mark survives one-colour reproduction with the blip in ink.
+- **Small sizes:** use the full mark at 48px and up. Below that the glyph shapes cannot resolve; the 16px favicon swaps shape for tone on a 2×2 pixel grid.
+- **Don't:** recolour the trail, add a beam line or range rings, rotate the mark, or set "Hetzner Cloud" in uppercase.
