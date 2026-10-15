@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hetzner Cloud Radar">
-  <rect width="64" height="64" rx="4" fill="#14110e"/>
-  <g fill="none" stroke="#fcfaf7" stroke-width="2.5">
-    <path d="M14 14V50H50" stroke-opacity=".3" stroke-width="1.5"/>
-    <path d="M14 38A12 12 0 0 1 26 50" stroke-opacity=".9"/>
-    <path d="M14 26A24 24 0 0 1 38 50" stroke-opacity=".6"/>
-    <path d="M14 14A36 36 0 0 1 50 50" stroke-opacity=".35"/>
-  </g>
-  <path d="M14 50L37.14 22.42A36 36 0 0 0 20.25 14.55Z" fill="#ee8266" fill-opacity=".22"/>
-  <path d="M14 50L37.14 22.42" stroke="#ee8266" stroke-width="2.5"/>
-  <rect x="25" y="20.5" width="6" height="6" fill="#ee8266"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -30 60 60" role="img" aria-label="Hetzner Cloud Radar"><style>.hcr-f{fill:#14110e}.hcr-s{stroke:#14110e}.hcr-a{fill:#b75037}@media (prefers-color-scheme:dark){.hcr-f{fill:#edebe8}.hcr-s{stroke:#edebe8}.hcr-a{fill:#ee8266}}</style><circle cx="-12" cy="-24" r="3.75" fill="none" class="hcr-s" stroke-width="1.5"/><circle cx="0" cy="-24" r="3.75" fill="none" class="hcr-s" stroke-width="1.5"/><path d="M0 -28.5A4.5 4.5 0 0 1 0 -19.5Z" class="hcr-f"/><circle cx="12" cy="-24" r="4.5" class="hcr-f"/><circle cx="-24" cy="-12" r="1.6" class="hcr-f"/><circle cx="-12" cy="-12" r="1.6" class="hcr-f"/><circle cx="0" cy="-12" r="3.75" fill="none" class="hcr-s" stroke-width="1.5"/><path d="M0 -16.5A4.5 4.5 0 0 1 0 -7.5Z" class="hcr-f"/><rect x="8" y="-16" width="8" height="8" class="hcr-a"/><circle cx="24" cy="-12" r="1.6" class="hcr-f"/><circle cx="-24" cy="0" r="1.6" class="hcr-f"/><circle cx="-12" cy="0" r="1.6" class="hcr-f"/><circle cx="0" cy="0" r="4.5" class="hcr-f"/><circle cx="12" cy="0" r="1.6" class="hcr-f"/><circle cx="24" cy="0" r="1.6" class="hcr-f"/><circle cx="-24" cy="12" r="1.6" class="hcr-f"/><circle cx="-12" cy="12" r="1.6" class="hcr-f"/><circle cx="0" cy="12" r="1.6" class="hcr-f"/><circle cx="12" cy="12" r="1.6" class="hcr-f"/><circle cx="24" cy="12" r="1.6" class="hcr-f"/><circle cx="-12" cy="24" r="1.6" class="hcr-f"/><circle cx="0" cy="24" r="1.6" class="hcr-f"/><circle cx="12" cy="24" r="1.6" class="hcr-f"/></svg>
