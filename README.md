@@ -1,261 +1,186 @@
-# Hetzner Cloud Radar
+<div align="center">
 
-Independent availability radar for Hetzner Cloud server types.
+# 📡 Hetzner Cloud Radar
 
-The app polls Hetzner Cloud, stores raw availability observations in Postgres,
-derives current stock state, renders a public dashboard, and syncs mailing-list
-subscribers into Resend Contacts for marketing dispatches.
+**Know which Hetzner Cloud servers you can actually deploy, before the console says no.**
 
-## Stack
+Live stock for every Hetzner Cloud server type in every datacentre, polled every 20 minutes.
+Restock and sold-out alerts straight to your inbox.
 
-- Next.js 16 App Router
-- React 19
-- TanStack Query, server-prefetched and hydrated
-- Postgres
-- Drizzle ORM and Drizzle Kit
-- Zod + T3 Env
-- Biome
-- pnpm
+[**hetzner.thegoated.dev →**](https://hetzner.thegoated.dev)
+
+[![Live](https://img.shields.io/badge/status-live-22c55e?style=flat-square)](https://hetzner.thegoated.dev)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000?style=flat-square&logo=nextdotjs)](https://nextjs.org)
+[![React 19](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react&logoColor=000)](https://react.dev)
+[![Turso](https://img.shields.io/badge/DB-Turso-4ff8d2?style=flat-square&logo=turso&logoColor=000)](https://turso.tech)
+[![Vercel](https://img.shields.io/badge/deploy-Vercel-000?style=flat-square&logo=vercel)](https://vercel.com)
+
+[Live radar](https://hetzner.thegoated.dev) · [Dispatches](https://hetzner.thegoated.dev/dispatches) · [Methodology](https://hetzner.thegoated.dev/methodology) · [Atom feed](https://hetzner.thegoated.dev/feed.atom)
+
+</div>
+
+---
+
+## Why
+
+Hetzner regularly runs out of popular server types in popular regions. Most people
+find out when `hcloud server create` fails. Radar answers one question fast:
+
+> Can I create a CCX33 in Falkenstein right now, or do I need another region?
+
+Radar is independent. It reads the public Hetzner Cloud API and has no affiliation with Hetzner.
 
 ## Features
 
-- Vercel Cron poll every 20 minutes (`vercel.json`).
-- Hetzner `GET /v1/server_types` integration.
-- Raw poll history in `availability_observations`.
-- Current per server-type/location state in `availability_current`.
-- Daily flicker tracking in `daily_availability_state`.
-- `limited` display state when latest stock is available but same UTC day also
-  saw sold-out.
-- ISR for `/` and `/api/availability` with 20 minute revalidation.
-- Resend-backed subscriber capture and React Email marketing dispatches.
-- DB-backed homepage with no mock-data dependency.
+- **Live stock matrix.** Every server family by datacentre (NBG1, FSN1, HEL1, ASH, HIL, SIN).
+- **Five honest states.** `available`, `limited`, `sold-out`, `not-offered`, `unknown`. Each one has a glyph and a label, so colour is never the only signal.
+- **24-hour cell history.** Click any cell to see when it flipped.
+- **Supply trend.** A chart of regional capacity over time.
+- **Email dispatches.** Get sold-out and restock alerts, filtered by family and datacentre.
+- **Machine-readable.** Use `GET /api/availability`, the Atom feed, or the `/md` page mirrors.
+- **Auto-discovery.** New Hetzner server families show up without a deploy.
 
-## Status Rules
+## How it works
 
-Base status:
-
-- location exists and `available: true` -> `available`
-- location exists and `available: false` -> `sold-out`
-- tracked location missing from server type -> `not-offered`
-- parse/fetch uncertainty -> `unknown`
-
-Display status:
-
-- latest `sold-out` stays `sold-out`
-- latest `available` plus same UTC day saw both available and sold-out -> `limited`
-- latest `available` without flicker -> `available`
-- `not-offered` and `unknown` pass through
-
-Server types are discovered from the live Hetzner API by family prefix, so
-current active types such as `CX23`, `CX33`, `CX43`, and `CX53` are shown instead
-of stale legacy codes. Family metadata in `src/lib/server-families.ts` controls
-which discovered families are visible publicly and which are dispatch-enabled.
-Run `pnpm families:audit` to detect new Hetzner server families that need local
-metadata review.
-
-## Environment
-
-Create `.env.local` from `env.example`:
-
-```bash
-cp env.example .env.local
+```text
+ Vercel Cron (*/20)          Hetzner Cloud API
+        │                           │
+        ▼                           │
+ /api/internal/poll ───────────────►│  GET /v1/server_types
+        │
+        ▼
+     Turso (libSQL)  ── current state, daily flicker, stock events
+        │
+        ├──► ISR pages (/, /dispatches, /feed.atom), revalidated after each poll
+        └──► Resend dispatches on sold-out / restock
 ```
 
-Required variables:
+**State rules**
 
-```bash
-DATABASE_URL=postgres://postgres:password@localhost:5432/hetzner_cloud_radar
-HETZNER_API_TOKEN=
-RESEND_API_KEY=
-RESEND_FROM_EMAIL=dispatches@hetzner.thegoated.dev
-RESEND_MARKETING_SEGMENT_ID=
-RESEND_SOLD_OUT_TOPIC_ID=
-RESEND_RESTOCK_TOPIC_ID=
-SKIP_ENV_VALIDATION=false
-```
+| Hetzner says | Radar shows |
+| --- | --- |
+| Location listed, `available: true` | `available` |
+| `available` now, but sold out earlier the same UTC day | `limited` |
+| Location listed, `available: false` | `sold-out` |
+| Tracked location missing from server type | `not-offered` |
+| Fetch or parse failed | `unknown` (never a false sold-out) |
 
-`RESEND_FROM_EMAIL` must be a verified sender/domain in Resend. It defaults to
-`dispatches@hetzner.thegoated.dev` if omitted. `RESEND_MARKETING_SEGMENT_ID`,
-`RESEND_SOLD_OUT_TOPIC_ID`, and `RESEND_RESTOCK_TOPIC_ID` are optional. If topic
-IDs are configured, new contacts are created with matching opt-in/opt-out topic
-preferences and dispatch emails are tagged with the matching topic.
+A daily cron (`/api/internal/discovery`, 06:00 UTC) finds server families that are
+missing from `SERVER_FAMILY_META` and stores them with generic copy. They appear on the
+dashboard but don't send email dispatches. To change that, add the family to
+`src/lib/server-families.ts`. Config wins over the DB.
 
-Do not commit `.env.local` or real tokens.
+## Stack
 
-## Local Development
+| | |
+| --- | --- |
+| Framework | Next.js 16 App Router, React 19 |
+| Data | Turso (libSQL), Drizzle ORM + Drizzle Kit |
+| Styling | Tailwind CSS v4 |
+| Email | Resend Contacts, Segments, Topics |
+| Abuse / analytics | Cloudflare Turnstile, PostHog |
+| Tooling | pnpm, Biome, Husky, commitlint |
+| Hosting | Vercel (Git deploys + Cron) |
 
-Install dependencies:
+## Quickstart
+
+You need Node, pnpm, and the [Turso CLI](https://docs.turso.tech/cli) logged into a
+`hetzner-cloud-radar` group with a `main` database.
 
 ```bash
 pnpm install
+cp env.example .env.local   # fill in HETZNER_API_TOKEN, RESEND_*, CRON_SECRET, …
+pnpm dev                    # branches a throwaway Turso DB from main, runs next dev
 ```
 
-Create the local database and run migrations:
+`pnpm dev` creates a temporary `hcr-dev-*` branch and destroys it on exit. Branches
+older than 24h are pruned automatically.
 
-```bash
-pnpm db:setup:local
-```
-
-Start the app:
-
-```bash
-pnpm dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-## Polling
-
-Vercel Cron (`vercel.json`) calls `GET /api/internal/poll` every 20 minutes.
-Set `CRON_SECRET` in Vercel; the cron sends it as `Authorization: Bearer …`.
-
-Trigger a poll locally:
+Trigger a poll or a discovery run locally:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/internal/poll
-```
-
-Needs `DATABASE_URL` + `HETZNER_API_TOKEN` (plus Resend vars if you want dispatch emails).
-
-## Family discovery
-
-Vercel Cron also calls `GET /api/internal/discovery` daily at 06:00 UTC.
-It finds server families in the Hetzner API that are not in `SERVER_FAMILY_META` and stores them in `server_families` with generic copy.
-Discovered families show on the dashboard after the configured ones; they get no email dispatches.
-Edit the copy in the DB, or add the family to `SERVER_FAMILY_META` (config wins).
-
-```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/internal/discovery
 ```
 
-## CDN Caching
+Never commit `.env.local` or real tokens.
 
-Public read routes should be cached at the CDN:
+<details>
+<summary><b>Environment variables</b></summary>
 
-- `/`
-- `/api/availability`
-- `/dispatches`
-- `/feed.atom`
+See [`env.example`](env.example) for the full list.
 
-The app sends `Cache-Control` for those routes with a 20 minute
-fresh TTL, 60 minute stale-while-revalidate window, and 24 hour stale-if-error
-window.
+| Variable | Purpose |
+| --- | --- |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Database (set by `pnpm dev` locally) |
+| `HETZNER_API_TOKEN` | Read-only Hetzner Cloud token |
+| `CRON_SECRET` | Bearer token for `/api/internal/*` |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_MARKETING_SEGMENT_ID` | Subscriber sync and dispatches. The sender must be verified in Resend. |
+| `UNSUBSCRIBE_SECRET` | Signs unsubscribe links |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Bot protection on subscribe |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST` | Analytics (consent-gated) |
+| `DISCORD_UNSUBSCRIBE_FEEDBACK_WEBHOOK_URL` | Optional unsubscribe feedback relay |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL, default `https://hetzner.thegoated.dev` |
 
-Do not apply the cache rule to `/api/subscribe`, `/api/unsubscribe`, or
-`/api/unsubscribe/feedback`.
+</details>
 
-## Database
+<details>
+<summary><b>Scripts</b></summary>
 
-Schema lives in:
+| Command | Does |
+| --- | --- |
+| `pnpm dev` | Dev server on a branched Turso DB |
+| `pnpm build` | Production build |
+| `pnpm lint` | Biome check |
+| `pnpm db:generate` | Generate Drizzle migrations from `src/lib/db/schema.ts` |
+| `pnpm db:migrate` | Apply migrations (runs automatically on production builds) |
+| `pnpm db:studio` | Drizzle Studio |
+| `pnpm families:audit` | Report Hetzner families missing local metadata |
 
-```text
-src/lib/db/schema.ts
-```
+</details>
 
-Tables:
+<details>
+<summary><b>Public API</b></summary>
 
-- `poll_runs`
-- `server_types`
-- `locations`
-- `availability_observations`
-- `availability_current`
-- `daily_availability_state`
-- `marketing_dispatch_sends`
-
-Generate migrations:
-
-```bash
-pnpm db:generate
-```
-
-Apply migrations:
-
-```bash
-pnpm db:migrate
-```
-
-Open Drizzle Studio:
-
-```bash
-pnpm db:studio
-```
-
-## API
-
-Public read endpoint:
-
-```text
+```http
 GET /api/availability
+GET /api/availability/history
 ```
 
-Returns the same shape used by the dashboard:
+`/api/availability` returns the dashboard read model: `families`, `observedAt`,
+`observedDate`, `pollCadence`, `topLine`, `events`, `supplyHistory`, `usingFallback`.
 
-- `families`
-- `observedAt`
-- `observedDate`
-- `pollCadence`
-- `topLine`
-- `events`
-- `supplyHistory`
-- `usingFallback`
-
-Subscribe endpoint:
-
-```text
+```http
 POST /api/subscribe
 ```
 
-Body:
+Syncs the email and its preferences to Resend. Radar stores no subscriber emails locally.
 
-```json
-{
-  "email": "you@example.com",
-  "wantsSoldOut": true,
-  "wantsRestock": true
-}
-```
+Public reads send `Cache-Control` with a 20 min fresh TTL, 60 min
+stale-while-revalidate, and 24 h stale-if-error. Never cache `/api/subscribe` or
+`/api/unsubscribe*`.
 
-The endpoint syncs the address and preferences to Resend Contacts, Segments,
-and Topics. The app does not store subscriber email addresses locally.
+</details>
 
-## Project Layout
+## Project layout
 
 ```text
-src/app/                         Next.js routes and UI
-src/app/api/availability/         Public availability JSON
-src/app/api/subscribe/            Resend-backed subscriber endpoint
-src/lib/availability/             Hetzner polling and read model
-src/lib/db/                       Drizzle client and schema
-src/lib/marketing/                Resend contact sync
-src/scripts/                      Local DB setup helpers
-worker.ts                         One-shot poll entrypoint
-Dockerfile.worker                 Worker image
-drizzle/                          Generated migrations
+src/app/                 Routes, UI, API handlers
+src/app/api/internal/    Cron endpoints (poll, discovery)
+src/emails/              Email templates
+src/lib/availability/    Hetzner polling + read model
+src/lib/db/              Drizzle client + schema
+src/lib/marketing/       Resend sync + dispatches
+docs/adr/                Architecture decisions
+drizzle/                 Generated migrations
 ```
 
-## Verification
+## Deploy
 
-Run:
+Push to `main`. Vercel builds, runs migrations on production, and registers the crons
+from [`vercel.json`](vercel.json).
 
-```bash
-pnpm lint
-pnpm exec tsc --noEmit
-pnpm build
-```
-
-Known lint output: Biome currently warns about `!important` rules in
-`src/app/globals.css` for reduced-motion overrides. The command exits with code
-0.
-
-## Out Of Scope
-
-- User accounts
-- Admin UI
-- Public API docs
-- Alerting
-- Automated broadcast creation/sending
-- Long-form historical dispatch generation
+<div align="center">
+<br>
+<sub>Independent project. Not affiliated with Hetzner Online GmbH.</sub>
+</div>
