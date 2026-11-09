@@ -120,8 +120,8 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
                     <caption>
                         Available, limited, and sold-out cells per day, last{" "}
                         {days.length} days. Maximum {maxStack} cells. Available
-                        average {formatSupplyStat(stats.average)}, min {stats.min},
-                        max {stats.max}.
+                        average {formatSupplyStat(stats.average)}, min{" "}
+                        {stats.min}, max {stats.max}.
                     </caption>
                     <thead>
                         <tr>
