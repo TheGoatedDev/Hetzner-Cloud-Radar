@@ -115,32 +115,34 @@ export function SupplyChart({ days }: { days: SupplyDay[] }) {
 
     return (
         <figure className="flex flex-col gap-2">
-            <table className="sr-only">
-                <caption>
-                    Available, limited, and sold-out cells per day, last{" "}
-                    {days.length} days. Maximum {maxStack} cells. Available
-                    average {formatSupplyStat(stats.average)}, min {stats.min},
-                    max {stats.max}.
-                </caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Available</th>
-                        <th scope="col">Limited</th>
-                        <th scope="col">Sold out</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {days.map((d) => (
-                        <tr key={d.date}>
-                            <th scope="row">{formatChartLabel(d.date)}</th>
-                            <td>{d.available}</td>
-                            <td>{d.limited}</td>
-                            <td>{d.soldOut}</td>
+            <div className="sr-only">
+                <table>
+                    <caption>
+                        Available, limited, and sold-out cells per day, last{" "}
+                        {days.length} days. Maximum {maxStack} cells. Available
+                        average {formatSupplyStat(stats.average)}, min {stats.min},
+                        max {stats.max}.
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Available</th>
+                            <th scope="col">Limited</th>
+                            <th scope="col">Sold out</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {days.map((d) => (
+                            <tr key={d.date}>
+                                <th scope="row">{formatChartLabel(d.date)}</th>
+                                <td>{d.available}</td>
+                                <td>{d.limited}</td>
+                                <td>{d.soldOut}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
             <div className="relative" aria-hidden>
                 {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative; data in sr-only table */}
                 <svg
