@@ -11,6 +11,7 @@ import { DC_META, DCS, STOCK } from "@/lib/schema";
 import { PageFrame } from "../../_components/page-frame";
 import { SectionHeader } from "../../_components/section-header";
 import { StockGlyph } from "../../_components/stock-glyph";
+import { AvailabilityCalendar } from "./_components/availability-calendar";
 
 // Keep in sync with POLL_INTERVAL_SECONDS in cadence.ts
 export const revalidate = 1200;
@@ -235,6 +236,14 @@ export default async function ServerPage({
                 blurb="Current stock and gross list price in each datacentre. Prices come from the Hetzner Cloud API and include VAT at Hetzner's default rate."
             >
                 <Datacentres detail={detail} />
+            </Section>
+
+            <Section
+                kicker="Last 60 days"
+                title="Daily availability"
+                blurb="One cell per UTC day in each datacentre, from every poll that day."
+            >
+                <AvailabilityCalendar rows={detail.calendar} />
             </Section>
         </PageFrame>
     );

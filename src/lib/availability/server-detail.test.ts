@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readServerTypeDetails } from "./server-detail";
+import { buildCalendar, readServerTypeDetails } from "./server-detail";
 
 describe("readServerTypeDetails", () => {
     it("parses Hetzner server type fields and prices per datacentre", () => {
@@ -75,6 +75,59 @@ describe("readServerTypeDetails", () => {
                 includedTrafficTb: null,
                 perTbTraffic: null,
             },
+        });
+    });
+});
+
+describe("buildCalendar", () => {
+    const row = (
+        dateUtc: string,
+        locationCode: string,
+        sawAvailable: boolean,
+        sawSoldOut: boolean,
+    ) => ({ dateUtc, locationCode, sawAvailable, sawSoldOut });
+
+    it("builds 60 UTC days per datacentre ending at the end date", () => {
+        const calendar = buildCalendar([], "2026-03-01");
+        expect(calendar.map((r) => r.dc)).toEqual([
+            "NBG1",
+            "FSN1",
+            "HEL1",
+            "ASH",
+            "HIL",
+            "SIN",
+        ]);
+        const days = calendar[0]?.days ?? [];
+        expect(days).toHaveLength(60);
+        expect(days[0]?.date).toBe("2026-01-01");
+        expect(days[59]?.date).toBe("2026-03-01");
+        expect(calendar[0]?.totals.unknown).toBe(60);
+    });
+
+    it("maps daily flags to states and counts them", () => {
+        const [nbg] = buildCalendar(
+            [
+                row("2026-03-01", "NBG1", true, false),
+                row("2026-02-28", "NBG1", true, true),
+                row("2026-02-27", "NBG1", false, true),
+                row("2026-02-26", "NBG1", false, false),
+                row("2026-02-25", "FSN1", false, true),
+            ],
+            "2026-03-01",
+        );
+        expect(nbg?.days.slice(-5).map((d) => d.state)).toEqual([
+            "unknown",
+            "not-offered",
+            "sold-out",
+            "limited",
+            "available",
+        ]);
+        expect(nbg?.totals).toEqual({
+            available: 1,
+            limited: 1,
+            "sold-out": 1,
+            "not-offered": 1,
+            unknown: 56,
         });
     });
 });

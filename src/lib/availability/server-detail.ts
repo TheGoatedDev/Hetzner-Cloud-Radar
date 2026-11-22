@@ -1,7 +1,12 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { DCS, type DcCode, type Stock } from "@/lib/schema";
 import { getDb } from "../db/client";
-import { availabilityCurrent, pollRuns, serverTypes } from "../db/schema";
+import {
+    availabilityCurrent,
+    dailyAvailabilityState,
+    pollRuns,
+    serverTypes,
+} from "../db/schema";
 import { getPublicServerFamilies } from "./discovery";
 
 export type DcPrice = {
@@ -33,7 +38,70 @@ export type ServerDetail = {
     details: ServerTypeDetails;
     current: Record<DcCode, { stock: Stock; observedAt: string | null }>;
     latestPollAt: string | null;
+    calendar: CalendarRow[];
 };
+
+export const CALENDAR_DAYS = 60;
+
+export type CalendarRow = {
+    dc: DcCode;
+    days: { date: string; state: Stock }[];
+    totals: Record<Stock, number>;
+};
+
+type DailyRow = {
+    dateUtc: string;
+    locationCode: string;
+    sawAvailable: boolean;
+    sawSoldOut: boolean;
+};
+
+function dayState(row: DailyRow | undefined): Stock {
+    if (!row) return "unknown";
+    if (row.sawAvailable && row.sawSoldOut) return "limited";
+    if (row.sawSoldOut) return "sold-out";
+    if (row.sawAvailable) return "available";
+    // Polled that day but neither available nor sold out: not offered.
+    return "not-offered";
+}
+
+export function calendarStartDate(endDate: string) {
+    const start = new Date(`${endDate}T00:00:00Z`);
+    start.setUTCDate(start.getUTCDate() - (CALENDAR_DAYS - 1));
+    return start.toISOString().slice(0, 10);
+}
+
+// One row per datacentre, CALENDAR_DAYS UTC days ending at endDate (YYYY-MM-DD).
+export function buildCalendar(
+    rows: DailyRow[],
+    endDate: string,
+): CalendarRow[] {
+    const byKey = new Map(
+        rows.map((row) => [`${row.locationCode}:${row.dateUtc}`, row]),
+    );
+    const start = new Date(`${calendarStartDate(endDate)}T00:00:00Z`);
+    const dates = Array.from({ length: CALENDAR_DAYS }, (_, i) => {
+        const date = new Date(start);
+        date.setUTCDate(start.getUTCDate() + i);
+        return date.toISOString().slice(0, 10);
+    });
+
+    return DCS.map((dc) => {
+        const totals: Record<Stock, number> = {
+            available: 0,
+            limited: 0,
+            "sold-out": 0,
+            "not-offered": 0,
+            unknown: 0,
+        };
+        const days = dates.map((date) => {
+            const state = dayState(byKey.get(`${dc}:${date}`));
+            totals[state] += 1;
+            return { date, state };
+        });
+        return { dc, days, totals };
+    });
+}
 
 function obj(value: unknown): Record<string, unknown> | null {
     return value && typeof value === "object" && !Array.isArray(value)
@@ -150,6 +218,23 @@ export async function getServerDetail(
     const family = families.find(({ id }) => id === type?.family);
     if (!type || !family || isMissingFromApi(type.raw)) return null;
 
+    const latestPollAt = latestPoll[0]?.finishedAt ?? null;
+    const endDate = (latestPollAt ?? new Date().toISOString()).slice(0, 10);
+    const dailyRows = await db
+        .select({
+            dateUtc: dailyAvailabilityState.dateUtc,
+            locationCode: dailyAvailabilityState.locationCode,
+            sawAvailable: dailyAvailabilityState.sawAvailable,
+            sawSoldOut: dailyAvailabilityState.sawSoldOut,
+        })
+        .from(dailyAvailabilityState)
+        .where(
+            and(
+                eq(dailyAvailabilityState.serverTypeCode, code),
+                gte(dailyAvailabilityState.dateUtc, calendarStartDate(endDate)),
+            ),
+        );
+
     const currentByDc = new Map(
         currentRows.map((r) => [r.locationCode, r] as const),
     );
@@ -176,6 +261,7 @@ export async function getServerDetail(
         architecture: type.architecture,
         details: readServerTypeDetails(type.raw),
         current,
-        latestPollAt: latestPoll[0]?.finishedAt ?? null,
+        latestPollAt,
+        calendar: buildCalendar(dailyRows, endDate),
     };
 }
