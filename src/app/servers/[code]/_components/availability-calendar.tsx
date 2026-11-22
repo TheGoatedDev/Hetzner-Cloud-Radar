@@ -9,11 +9,11 @@ const SUMMARY_ORDER: Stock[] = [
     "unknown",
 ];
 
-// Unknown days share ink-faint with not-offered; fade them so a gap in polling reads differently.
+// Not offered recedes; unknown (no poll that day) is an empty outline so polling gaps read as gaps.
 function cellClass(state: Stock) {
-    return state === "unknown"
-        ? `${STOCK[state].bgClass} opacity-25`
-        : STOCK[state].bgClass;
+    if (state === "unknown") return "border border-hairline-strong";
+    if (state === "not-offered") return `${STOCK[state].bgClass} opacity-40`;
+    return STOCK[state].bgClass;
 }
 
 function summary(row: CalendarRow) {

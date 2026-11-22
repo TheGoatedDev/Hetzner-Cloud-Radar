@@ -329,7 +329,7 @@ export default async function ServerPage({
             <Section
                 kicker="Right now"
                 title="Datacentres"
-                blurb="Current stock and gross list price in each datacentre. Prices come from the Hetzner Cloud API and include VAT at Hetzner's default rate."
+                blurb="Current stock and gross list price in each datacentre, as returned by the Hetzner Cloud API."
             >
                 <Datacentres detail={detail} />
             </Section>
