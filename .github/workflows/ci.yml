@@ -25,3 +25,13 @@ jobs:
           node-version-file: .nvmrc
       - run: corepack enable && pnpm install --frozen-lockfile
       - run: pnpm exec tsc --noEmit
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable && pnpm install --frozen-lockfile
+      - run: pnpm test
