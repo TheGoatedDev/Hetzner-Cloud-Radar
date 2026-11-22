@@ -39,10 +39,34 @@ export async function generateMetadata({
     const detail = await getServerDetail(code).catch(() => null);
     if (!detail) return { title: "Server not found" };
 
+    const title = `${detail.code} availability`;
+    const description = `${detail.code} (${detail.family.label} ${detail.family.kicker}, ${specLine(detail)}) stock per Hetzner Cloud datacentre, with 60 days of history.`;
+    const url = `/servers/${detail.code.toLowerCase()}`;
+
+    // Child openGraph/twitter replace the root ones (image included), so restate the shared fields.
+    const images = [
+        {
+            url: "/opengraph-image",
+            width: 1200,
+            height: 630,
+            alt: "Hetzner Cloud Radar: live server-type availability by datacentre",
+        },
+    ];
+
     return {
-        title: `${detail.code} availability`,
-        description: `${detail.code} (${detail.family.label} ${detail.family.kicker}, ${specLine(detail)}) stock per Hetzner Cloud datacentre, with 60 days of history.`,
-        alternates: { canonical: `/servers/${detail.code.toLowerCase()}` },
+        title,
+        description,
+        alternates: { canonical: url },
+        openGraph: {
+            type: "website",
+            locale: "en_GB",
+            siteName: "Hetzner Cloud Radar",
+            url,
+            title,
+            description,
+            images,
+        },
+        twitter: { card: "summary", title, description, images },
     };
 }
 
