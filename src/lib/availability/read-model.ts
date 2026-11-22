@@ -319,9 +319,35 @@ export async function getDispatchEvents(
         .orderBy(desc(stockEvents.observedAt))
         .limit(Math.max(limit * 2, 16));
 
+    return toDispatchEvents(rows, latestAt, limit);
+}
+
+type TransitionRow = {
+    observedAt: string;
+    serverTypeCode: string;
+    locationCode: string;
+    baseStatus: DispatchTransition["base_status"];
+    prevStatus: DispatchTransition["prev_status"];
+    previousSoldOutAt: string | null;
+    currentStatus: string | null;
+};
+
+// rows must be newest first.
+export function toDispatchEvents(
+    rows: TransitionRow[],
+    latestAt: Date,
+    limit: number,
+): StockEvent[] {
+    const seenCells = new Set<string>();
+
     return rows
-        .map((row) =>
-            makeDispatch(
+        .map((row) => {
+            const cell = `${row.serverTypeCode}:${row.locationCode}`;
+            // Only the newest event of a cell can still be ongoing; older sold-out runs were resolved.
+            const isLatest = !seenCells.has(cell);
+            seenCells.add(cell);
+
+            return makeDispatch(
                 {
                     observed_at: row.observedAt,
                     server_type_code: row.serverTypeCode,
@@ -329,11 +355,13 @@ export async function getDispatchEvents(
                     base_status: row.baseStatus,
                     prev_status: row.prevStatus,
                     previous_sold_out_at: row.previousSoldOutAt,
-                    current_status: (row.currentStatus as Stock | null) ?? null,
+                    current_status: isLatest
+                        ? ((row.currentStatus as Stock | null) ?? null)
+                        : null,
                 },
                 latestAt,
-            ),
-        )
+            );
+        })
         .filter((event): event is StockEvent => event !== null)
         .slice(0, limit);
 }
