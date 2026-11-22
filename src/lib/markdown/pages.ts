@@ -253,7 +253,7 @@ export function renderServerMd(detail: ServerDetail, observedAt: string) {
         "",
         "| Datacentre | Status | EUR/month | EUR/hour | Traffic |",
         "| --- | --- | ---: | ---: | ---: |",
-        ...DCS.map((dc) => {
+        ...detail.dcs.map((dc) => {
             const price = prices[dc];
             return `| ${dc} | ${stockLabel(detail.current[dc].stock)} | ${price?.monthly ?? "-"} | ${price?.hourly ?? "-"} | ${price?.includedTrafficTb ? `${price.includedTrafficTb} TB` : "-"} |`;
         }),

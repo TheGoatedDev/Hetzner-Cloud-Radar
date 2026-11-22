@@ -40,6 +40,7 @@ const detail: ServerDetail = {
         ]),
     ) as ServerDetail["current"],
     latestPollAt: end.toISOString(),
+    dcs: [...DCS],
     calendar: buildCalendar(
         [
             {

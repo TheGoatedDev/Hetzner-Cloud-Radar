@@ -138,7 +138,7 @@ function Datacentres({ detail }: { detail: ServerDetail }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {DCS.map((dc, i) => {
+                    {detail.dcs.map((dc, i) => {
                         const { stock } = detail.current[dc];
                         const price = detail.details.prices[dc];
                         return (
@@ -329,7 +329,11 @@ export default async function ServerPage({
             <Section
                 kicker="Right now"
                 title="Datacentres"
-                blurb="Current stock and gross list price in each datacentre, as returned by the Hetzner Cloud API."
+                blurb={`Current stock and gross list price, as returned by the Hetzner Cloud API.${
+                    detail.dcs.length < DCS.length
+                        ? ` Datacentres where ${detail.code} has not been offered in the last 60 days are hidden.`
+                        : ""
+                }`}
             >
                 <Datacentres detail={detail} />
             </Section>

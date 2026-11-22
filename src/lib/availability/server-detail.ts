@@ -40,6 +40,8 @@ export type ServerDetail = {
     details: ServerTypeDetails;
     current: Record<DcCode, { stock: Stock; observedAt: string | null }>;
     latestPollAt: string | null;
+    // Datacentres where this server was offered at some point in the window; the page lists only these.
+    dcs: DcCode[];
     calendar: CalendarRow[];
     stats: DcStats[];
     events: StockEvent[];
@@ -146,6 +148,26 @@ function dayState(row: DailyRow | undefined): Stock {
     if (row.sawAvailable) return "available";
     // Polled that day but neither available nor sold out: not offered.
     return "not-offered";
+}
+
+const OFFERED: Stock[] = ["available", "limited", "sold-out"];
+
+// A datacentre is listed when the server is offered there now or was on any day in the window.
+// Falls back to every datacentre so a server never seen offered still renders its rows.
+export function offeredDcs(
+    current: ServerDetail["current"],
+    calendar: CalendarRow[],
+): DcCode[] {
+    const dcs = DCS.filter(
+        (dc) =>
+            OFFERED.includes(current[dc].stock) ||
+            calendar.some(
+                (row) =>
+                    row.dc === dc &&
+                    row.days.some((day) => OFFERED.includes(day.state)),
+            ),
+    );
+    return dcs.length > 0 ? dcs : [...DCS];
 }
 
 export function calendarStartDate(endDate: string) {
@@ -357,6 +379,9 @@ export async function getServerDetail(
         }),
     ) as ServerDetail["current"];
 
+    const calendar = buildCalendar(dailyRows, endDate);
+    const dcs = offeredDcs(current, calendar);
+
     return {
         code,
         family: { id: family.id, label: family.label, kicker: family.kicker },
@@ -367,8 +392,9 @@ export async function getServerDetail(
         details: readServerTypeDetails(type.raw),
         current,
         latestPollAt,
-        calendar: buildCalendar(dailyRows, endDate),
-        stats: DCS.map((dc) =>
+        dcs,
+        calendar: calendar.filter((row) => dcs.includes(row.dc)),
+        stats: dcs.map((dc) =>
             computeDcStats(
                 dc,
                 changeRows,

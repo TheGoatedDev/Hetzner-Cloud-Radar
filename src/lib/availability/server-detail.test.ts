@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     buildCalendar,
     computeDcStats,
+    offeredDcs,
     readServerTypeDetails,
 } from "./server-detail";
 
@@ -208,5 +209,47 @@ describe("computeDcStats", () => {
             end,
         );
         expect(stats.availablePct).toBe(100);
+    });
+});
+
+describe("offeredDcs", () => {
+    const current = (stocks: Partial<Record<string, string>>) =>
+        Object.fromEntries(
+            ["NBG1", "FSN1", "HEL1", "ASH", "HIL", "SIN"].map((dc) => [
+                dc,
+                { stock: stocks[dc] ?? "not-offered", observedAt: null },
+            ]),
+        ) as Parameters<typeof offeredDcs>[0];
+
+    it("keeps datacentres offered now or on any day in the window", () => {
+        const calendar = buildCalendar(
+            [
+                {
+                    dateUtc: "2026-02-10",
+                    locationCode: "ASH",
+                    sawAvailable: false,
+                    sawSoldOut: true,
+                },
+                {
+                    dateUtc: "2026-02-11",
+                    locationCode: "SIN",
+                    sawAvailable: false,
+                    sawSoldOut: false,
+                },
+            ],
+            "2026-03-01",
+        );
+        expect(
+            offeredDcs(
+                current({ NBG1: "sold-out", HEL1: "limited" }),
+                calendar,
+            ),
+        ).toEqual(["NBG1", "HEL1", "ASH"]);
+    });
+
+    it("falls back to every datacentre when never offered", () => {
+        expect(
+            offeredDcs(current({}), buildCalendar([], "2026-03-01")),
+        ).toHaveLength(6);
     });
 });
