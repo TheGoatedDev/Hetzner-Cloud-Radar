@@ -1,8 +1,17 @@
 import type { MetadataRoute } from "next";
+import { getServerCodes } from "@/lib/availability/server-detail";
 import { SITE_URL } from "@/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 86400;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const now = new Date();
+    const servers = (await getServerCodes()).map((code) => ({
+        url: `${SITE_URL}/servers/${code.toLowerCase()}`,
+        lastModified: now,
+        changeFrequency: "hourly" as const,
+        priority: 0.6,
+    }));
     return [
         {
             url: SITE_URL,
@@ -22,5 +31,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: "monthly",
             priority: 0.5,
         },
+        ...servers,
     ];
 }

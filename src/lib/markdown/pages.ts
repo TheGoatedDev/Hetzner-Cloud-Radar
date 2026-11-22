@@ -1,5 +1,9 @@
 import { POLL_CADENCE } from "@/lib/availability/cadence";
-import type { AvailabilityReadModel } from "@/lib/availability/read-model";
+import {
+    type AvailabilityReadModel,
+    formatDuration,
+} from "@/lib/availability/read-model";
+import type { ServerDetail } from "@/lib/availability/server-detail";
 import {
     DCS,
     type Family,
@@ -216,6 +220,72 @@ export function renderDispatchesMd(
         "",
         `- [Home](/)`,
         `- [Atom feed](/feed.atom)`,
+        "",
+    ].join("\n");
+}
+
+function msLabel(ms: number) {
+    return ms > 0 ? formatDuration(new Date(0), new Date(ms)) : "-";
+}
+
+export function renderServerMd(detail: ServerDetail, observedAt: string) {
+    const { prices } = detail.details;
+    const specs = `${detail.cores} vCPU · ${detail.memoryGb} GB RAM · ${detail.diskGb} GB disk`;
+
+    return [
+        frontmatter({
+            title: `${detail.code} availability · Hetzner Cloud Radar`,
+            description: `${detail.code} stock per Hetzner Cloud datacentre, with 60 days of history.`,
+        }),
+        `# ${detail.code}`,
+        "",
+        `Observed: ${observedAt}`,
+        "",
+        `${detail.family.label} · ${detail.family.kicker}. ${specs}. Architecture ${detail.architecture}, CPU ${detail.details.cpuType ?? "unknown"}, storage ${detail.details.storageType ?? "unknown"}.`,
+        "",
+        ...(detail.details.deprecation
+            ? [
+                  `Deprecated by Hetzner. Unavailable after ${detail.details.deprecation.unavailableAfter?.slice(0, 10) ?? "unknown"}.`,
+                  "",
+              ]
+            : []),
+        `## Datacentres`,
+        "",
+        "| Datacentre | Status | EUR/month | EUR/hour | Traffic |",
+        "| --- | --- | ---: | ---: | ---: |",
+        ...detail.dcs.map((dc) => {
+            const price = prices[dc];
+            return `| ${dc} | ${stockLabel(detail.current[dc].stock)} | ${price?.monthly ?? "-"} | ${price?.hourly ?? "-"} | ${price?.includedTrafficTb ? `${price.includedTrafficTb} TB` : "-"} |`;
+        }),
+        "",
+        `## Daily availability, last 60 days`,
+        "",
+        ...detail.calendar.map(
+            (row) =>
+                `- ${row.dc}: ${(Object.keys(STOCK) as Stock[])
+                    .filter((state) => row.totals[state] > 0)
+                    .map(
+                        (state) =>
+                            `${row.totals[state]} ${stockLabel(state).toLowerCase()}`,
+                    )
+                    .join(", ")}`,
+        ),
+        "",
+        `## Stock statistics, last 60 days`,
+        "",
+        "| Datacentre | Available | Sell-outs | Longest | Average | Last change |",
+        "| --- | ---: | ---: | ---: | ---: | --- |",
+        ...detail.stats.map(
+            (s) =>
+                `| ${s.dc} | ${s.availablePct === null ? "-" : `${s.availablePct}%`} | ${s.soldOutRuns}${s.soldOutNow ? " (now)" : ""} | ${msLabel(s.longestSoldOutMs)} | ${msLabel(s.avgSoldOutMs)} | ${s.lastChangeAt?.slice(0, 10) ?? "-"} |`,
+        ),
+        "",
+        `## Stock changes`,
+        "",
+        eventsList(
+            detail.events,
+            `No stock changes for ${detail.code} in the last 60 days.`,
+        ),
         "",
     ].join("\n");
 }

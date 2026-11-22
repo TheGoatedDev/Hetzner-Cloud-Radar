@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DC_META, DCS, type Family } from "@/lib/schema";
 import { StockCell } from "./stock-cell";
 
@@ -44,7 +45,12 @@ export function FamilyTable({ family }: { family: Family }) {
                             className="px-1 py-1 text-left align-middle font-medium tracking-[0.04em] text-ink sm:px-2"
                         >
                             <div className="flex flex-col gap-0.5">
-                                <span>{t.code}</span>
+                                <Link
+                                    href={`/servers/${t.code.toLowerCase()}`}
+                                    className="text-ink underline underline-offset-4 hover:text-accent"
+                                >
+                                    {t.code}
+                                </Link>
                                 <span className="text-2xs font-normal tracking-normal text-ink-faint sm:hidden">
                                     {t.cores}c&nbsp;·&nbsp;{t.ram}G
                                 </span>

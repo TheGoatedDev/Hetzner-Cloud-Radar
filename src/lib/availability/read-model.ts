@@ -74,7 +74,7 @@ function toDate(value: Date | string) {
     return value instanceof Date ? value : new Date(value);
 }
 
-function formatDuration(start: Date, end: Date) {
+export function formatDuration(start: Date, end: Date) {
     const seconds = Math.max(
         0,
         Math.floor((end.getTime() - start.getTime()) / 1000),
@@ -204,6 +204,7 @@ function makeDispatch(
             startedAt,
             resolvedAt: null,
             durationLabel: `ongoing · ${formatDuration(observedAt, latestAt)}`,
+            serverTypeCode: code,
             scope: `${code} / ${location}`,
             title: `${code} sold out in ${location}`,
             body: `${code} is currently unavailable for new provisioning in ${location}. This sold-out run was first observed at ${startedAt}.`,
@@ -221,6 +222,7 @@ function makeDispatch(
             startedAt,
             resolvedAt: startedAt,
             durationLabel: outageDuration ? outageDuration.trim() : "restocked",
+            serverTypeCode: code,
             scope: `${code} / ${location}`,
             title: `${code} returned in ${location}`,
             body: `${code} became available for new provisioning in ${location}${outageDuration}.`,
@@ -234,6 +236,7 @@ function makeDispatch(
             startedAt,
             resolvedAt: null,
             durationLabel: "newly offered",
+            serverTypeCode: code,
             scope: `${code} / ${location}`,
             title: `${code} became available in ${location}`,
             body: `${code} moved from not offered to available in ${location}. This may indicate a rollout or newly exposed capacity for that location.`,
@@ -266,6 +269,7 @@ export async function getDispatchEvents(
     latestAt: Date,
     limit = 8,
     windowDays = 30,
+    serverTypeCode?: string,
 ): Promise<StockEvent[]> {
     const visibleFamilies = (await getPublicServerFamilies()).map(
         ({ id }) => id,
@@ -307,14 +311,43 @@ export async function getDispatchEvents(
             and(
                 gte(stockEvents.observedAt, cutoff.toISOString()),
                 inArray(serverTypes.family, visibleFamilies),
+                serverTypeCode
+                    ? eq(stockEvents.serverTypeCode, serverTypeCode)
+                    : undefined,
             ),
         )
         .orderBy(desc(stockEvents.observedAt))
         .limit(Math.max(limit * 2, 16));
 
+    return toDispatchEvents(rows, latestAt, limit);
+}
+
+type TransitionRow = {
+    observedAt: string;
+    serverTypeCode: string;
+    locationCode: string;
+    baseStatus: DispatchTransition["base_status"];
+    prevStatus: DispatchTransition["prev_status"];
+    previousSoldOutAt: string | null;
+    currentStatus: string | null;
+};
+
+// rows must be newest first.
+export function toDispatchEvents(
+    rows: TransitionRow[],
+    latestAt: Date,
+    limit: number,
+): StockEvent[] {
+    const seenCells = new Set<string>();
+
     return rows
-        .map((row) =>
-            makeDispatch(
+        .map((row) => {
+            const cell = `${row.serverTypeCode}:${row.locationCode}`;
+            // Only the newest event of a cell can still be ongoing; older sold-out runs were resolved.
+            const isLatest = !seenCells.has(cell);
+            seenCells.add(cell);
+
+            return makeDispatch(
                 {
                     observed_at: row.observedAt,
                     server_type_code: row.serverTypeCode,
@@ -322,11 +355,13 @@ export async function getDispatchEvents(
                     base_status: row.baseStatus,
                     prev_status: row.prevStatus,
                     previous_sold_out_at: row.previousSoldOutAt,
-                    current_status: (row.currentStatus as Stock | null) ?? null,
+                    current_status: isLatest
+                        ? ((row.currentStatus as Stock | null) ?? null)
+                        : null,
                 },
                 latestAt,
-            ),
-        )
+            );
+        })
         .filter((event): event is StockEvent => event !== null)
         .slice(0, limit);
 }

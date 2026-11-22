@@ -10,7 +10,10 @@ const MD_PATHS: Record<string, string> = {
 export function proxy(request: NextRequest) {
     const accept = request.headers.get("accept") ?? "";
     if (!accept.includes("text/markdown")) return NextResponse.next();
-    const dest = MD_PATHS[request.nextUrl.pathname];
+    const { pathname } = request.nextUrl;
+    const dest =
+        MD_PATHS[pathname] ??
+        (pathname.startsWith("/servers/") ? `/md${pathname}` : undefined);
     if (!dest) return NextResponse.next();
     const url = request.nextUrl.clone();
     url.pathname = dest;
@@ -18,5 +21,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/", "/methodology", "/dispatches"],
+    matcher: ["/", "/methodology", "/dispatches", "/servers/:code"],
 };

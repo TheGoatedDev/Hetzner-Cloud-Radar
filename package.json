@@ -1,47 +1,49 @@
 {
-  "name": "hetzner-cloud-radar",
-  "version": "0.1.0",
-  "private": true,
-  "packageManager": "pnpm@9.15.9",
-  "scripts": {
-    "dev": "bash scripts/dev-turso.sh",
-    "build": "next build",
-    "start": "next start",
-    "lint": "biome check src",
-    "format": "biome format --write",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "families:audit": "node --env-file=.env.local src/scripts/audit-server-families.mjs",
-    "prepare": "husky"
-  },
-  "dependencies": {
-    "@libsql/client": "^0.15.15",
-    "drizzle-orm": "^0.45.2",
-    "next": "16.2.12",
-    "posthog-js": "^1.407.8",
-    "posthog-node": "^5.50.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "zod": "^4.4.3",
-    "zustand": "^5.0.15"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.2.0",
-    "@commitlint/cli": "^21.2.2",
-    "@commitlint/config-conventional": "^21.2.2",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.10",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "lint-staged": {
-    "*": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
-  }
+    "name": "hetzner-cloud-radar",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "pnpm@9.15.9",
+    "scripts": {
+        "dev": "bash scripts/dev-turso.sh",
+        "build": "next build",
+        "start": "next start",
+        "lint": "biome check src",
+        "format": "biome format --write",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio",
+        "families:audit": "node --env-file=.env.local src/scripts/audit-server-families.mjs",
+        "prepare": "husky",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@libsql/client": "^0.15.15",
+        "drizzle-orm": "^0.45.2",
+        "next": "16.2.12",
+        "posthog-js": "^1.407.8",
+        "posthog-node": "^5.50.0",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+        "zod": "^4.4.3",
+        "zustand": "^5.0.15"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.2.0",
+        "@commitlint/cli": "^21.2.2",
+        "@commitlint/config-conventional": "^21.2.2",
+        "@tailwindcss/postcss": "^4",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "drizzle-kit": "^0.31.10",
+        "husky": "^9.1.7",
+        "lint-staged": "^17.3.0",
+        "tailwindcss": "^4",
+        "typescript": "^5",
+        "vitest": "^3"
+    },
+    "lint-staged": {
+        "*": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+    }
 }
