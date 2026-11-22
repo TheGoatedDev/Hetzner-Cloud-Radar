@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { STOCK, type Stock, type StockEvent } from "@/lib/schema";
 
 const TAG_FOR: Record<StockEvent["state"], { stock: Stock; label: string }> = {
@@ -41,7 +42,15 @@ function DispatchRow({
                 <span className="tabular-nums text-ink-faint">
                     {event.durationLabel}
                 </span>
-                <span className="break-words text-ink-soft">{event.scope}</span>
+                <span className="break-words text-ink-soft">
+                    <Link
+                        href={`/servers/${event.serverTypeCode.toLowerCase()}`}
+                        className="text-ink underline-offset-4 hover:text-accent hover:underline"
+                    >
+                        {event.serverTypeCode}
+                    </Link>
+                    {event.scope.slice(event.serverTypeCode.length)}
+                </span>
                 <span
                     className={`mt-2 inline-flex items-baseline gap-2 text-xs font-medium uppercase tracking-[0.1em] ${STOCK[tag.stock].textClass}`}
                 >

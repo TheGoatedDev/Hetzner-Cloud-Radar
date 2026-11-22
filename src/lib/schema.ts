@@ -83,6 +83,7 @@ export type Family = {
 
 export type StockEvent = {
     id: string;
+    serverTypeCode: string;
     startedAt: string;
     resolvedAt: string | null;
     durationLabel: string;
