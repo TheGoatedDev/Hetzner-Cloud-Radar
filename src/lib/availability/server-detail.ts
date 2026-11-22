@@ -1,13 +1,15 @@
 import { and, desc, eq, gte } from "drizzle-orm";
-import { DCS, type DcCode, type Stock } from "@/lib/schema";
+import { DCS, type DcCode, type Stock, type StockEvent } from "@/lib/schema";
 import { getDb } from "../db/client";
 import {
     availabilityCurrent,
     dailyAvailabilityState,
     pollRuns,
     serverTypes,
+    stockEvents,
 } from "../db/schema";
 import { getPublicServerFamilies } from "./discovery";
+import { getDispatchEvents } from "./read-model";
 
 export type DcPrice = {
     monthly: string | null;
@@ -39,7 +41,88 @@ export type ServerDetail = {
     current: Record<DcCode, { stock: Stock; observedAt: string | null }>;
     latestPollAt: string | null;
     calendar: CalendarRow[];
+    stats: DcStats[];
+    events: StockEvent[];
 };
+
+type BaseStatus = "available" | "sold-out" | "not-offered" | "unknown";
+
+type ChangeEvent = {
+    observedAt: string;
+    locationCode: string;
+    baseStatus: BaseStatus;
+    prevStatus: BaseStatus | null;
+};
+
+export type DcStats = {
+    dc: DcCode;
+    // Share of offered time (available + sold out) spent available; null when never offered.
+    availablePct: number | null;
+    soldOutRuns: number;
+    longestSoldOutMs: number;
+    avgSoldOutMs: number;
+    soldOutNow: boolean;
+    lastChangeAt: string | null;
+};
+
+// Walks one datacentre's status changes across [windowStart, windowEnd].
+// Events before the window are pruned, so the opening state is the first event's prevStatus,
+// or the current status when nothing changed in the window.
+export function computeDcStats(
+    dc: DcCode,
+    events: ChangeEvent[],
+    currentStatus: BaseStatus,
+    windowStart: Date,
+    windowEnd: Date,
+): DcStats {
+    const changes = events
+        .filter((e) => e.locationCode === dc)
+        .map((e) => ({ ...e, at: new Date(e.observedAt).getTime() }))
+        .filter(
+            (e) => e.at >= windowStart.getTime() && e.at <= windowEnd.getTime(),
+        )
+        .sort((a, b) => a.at - b.at);
+    const time: Record<BaseStatus, number> = {
+        available: 0,
+        "sold-out": 0,
+        "not-offered": 0,
+        unknown: 0,
+    };
+    const soldOutRuns: number[] = [];
+    let state: BaseStatus = changes[0]
+        ? (changes[0].prevStatus ?? "unknown")
+        : currentStatus;
+    let since = windowStart.getTime();
+
+    const close = (until: number) => {
+        time[state] += until - since;
+        if (state === "sold-out") soldOutRuns.push(until - since);
+    };
+    for (const change of changes) {
+        if (change.baseStatus === state) continue;
+        close(change.at);
+        state = change.baseStatus;
+        since = change.at;
+    }
+    close(windowEnd.getTime());
+
+    const offered = time.available + time["sold-out"];
+    const totalSoldOut = soldOutRuns.reduce((sum, ms) => sum + ms, 0);
+
+    return {
+        dc,
+        availablePct:
+            offered > 0
+                ? Math.round((time.available / offered) * 1000) / 10
+                : null,
+        soldOutRuns: soldOutRuns.length,
+        longestSoldOutMs: Math.max(0, ...soldOutRuns),
+        avgSoldOutMs:
+            soldOutRuns.length > 0 ? totalSoldOut / soldOutRuns.length : 0,
+        soldOutNow: state === "sold-out",
+        lastChangeAt: changes.at(-1)?.observedAt ?? null,
+    };
+}
 
 export const CALENDAR_DAYS = 60;
 
@@ -220,20 +303,42 @@ export async function getServerDetail(
 
     const latestPollAt = latestPoll[0]?.finishedAt ?? null;
     const endDate = (latestPollAt ?? new Date().toISOString()).slice(0, 10);
-    const dailyRows = await db
-        .select({
-            dateUtc: dailyAvailabilityState.dateUtc,
-            locationCode: dailyAvailabilityState.locationCode,
-            sawAvailable: dailyAvailabilityState.sawAvailable,
-            sawSoldOut: dailyAvailabilityState.sawSoldOut,
-        })
-        .from(dailyAvailabilityState)
-        .where(
-            and(
-                eq(dailyAvailabilityState.serverTypeCode, code),
-                gte(dailyAvailabilityState.dateUtc, calendarStartDate(endDate)),
+    const windowStart = new Date(`${calendarStartDate(endDate)}T00:00:00Z`);
+    const windowEnd = latestPollAt ? new Date(latestPollAt) : new Date();
+    const [dailyRows, changeRows, events] = await Promise.all([
+        db
+            .select({
+                dateUtc: dailyAvailabilityState.dateUtc,
+                locationCode: dailyAvailabilityState.locationCode,
+                sawAvailable: dailyAvailabilityState.sawAvailable,
+                sawSoldOut: dailyAvailabilityState.sawSoldOut,
+            })
+            .from(dailyAvailabilityState)
+            .where(
+                and(
+                    eq(dailyAvailabilityState.serverTypeCode, code),
+                    gte(
+                        dailyAvailabilityState.dateUtc,
+                        calendarStartDate(endDate),
+                    ),
+                ),
             ),
-        );
+        db
+            .select({
+                observedAt: stockEvents.observedAt,
+                locationCode: stockEvents.locationCode,
+                baseStatus: stockEvents.baseStatus,
+                prevStatus: stockEvents.prevStatus,
+            })
+            .from(stockEvents)
+            .where(
+                and(
+                    eq(stockEvents.serverTypeCode, code),
+                    gte(stockEvents.observedAt, windowStart.toISOString()),
+                ),
+            ),
+        getDispatchEvents(windowEnd, 50, CALENDAR_DAYS, code),
+    ]);
 
     const currentByDc = new Map(
         currentRows.map((r) => [r.locationCode, r] as const),
@@ -263,5 +368,15 @@ export async function getServerDetail(
         current,
         latestPollAt,
         calendar: buildCalendar(dailyRows, endDate),
+        stats: DCS.map((dc) =>
+            computeDcStats(
+                dc,
+                changeRows,
+                currentByDc.get(dc)?.baseStatus ?? "unknown",
+                windowStart,
+                windowEnd,
+            ),
+        ),
+        events,
     };
 }

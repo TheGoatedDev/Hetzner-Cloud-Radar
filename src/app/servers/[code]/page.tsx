@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { formatObservedAt } from "@/lib/availability/read-model";
+import {
+    formatDuration,
+    formatObservedAt,
+} from "@/lib/availability/read-model";
 import {
     getServerCodes,
     getServerDetail,
     type ServerDetail,
 } from "@/lib/availability/server-detail";
 import { DC_META, DCS, STOCK } from "@/lib/schema";
+import { DispatchList } from "../../_components/dispatch-list";
 import { PageFrame } from "../../_components/page-frame";
 import { SectionHeader } from "../../_components/section-header";
 import { StockGlyph } from "../../_components/stock-glyph";
@@ -186,6 +190,98 @@ function Datacentres({ detail }: { detail: ServerDetail }) {
     );
 }
 
+function duration(ms: number) {
+    return ms > 0 ? formatDuration(new Date(0), new Date(ms)) : "—";
+}
+
+function Stats({ detail }: { detail: ServerDetail }) {
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm tabular-nums">
+                <caption className="sr-only">
+                    {detail.code} availability statistics per datacentre, last
+                    60 days
+                </caption>
+                <thead>
+                    <tr className="text-xs text-ink-faint">
+                        <th
+                            scope="col"
+                            className="px-2 py-2 text-left font-medium"
+                        >
+                            Datacentre
+                        </th>
+                        <th
+                            scope="col"
+                            className="px-2 py-2 text-right font-medium"
+                        >
+                            Available
+                        </th>
+                        <th
+                            scope="col"
+                            className="px-2 py-2 text-right font-medium"
+                        >
+                            Sell-outs
+                        </th>
+                        <th
+                            scope="col"
+                            className="hidden px-2 py-2 text-right font-medium sm:table-cell"
+                        >
+                            Longest
+                        </th>
+                        <th
+                            scope="col"
+                            className="hidden px-2 py-2 text-right font-medium sm:table-cell"
+                        >
+                            Average
+                        </th>
+                        <th
+                            scope="col"
+                            className="px-2 py-2 text-right font-medium"
+                        >
+                            Last change
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {detail.stats.map((row, i) => (
+                        <tr
+                            key={row.dc}
+                            className={i > 0 ? "border-t border-hairline" : ""}
+                        >
+                            <th
+                                scope="row"
+                                className="px-2 py-2 text-left font-medium tracking-[0.08em] text-ink"
+                            >
+                                {row.dc}
+                            </th>
+                            <td className="px-2 py-2 text-right text-ink">
+                                {row.availablePct === null
+                                    ? "—"
+                                    : `${row.availablePct}%`}
+                            </td>
+                            <td className="px-2 py-2 text-right text-ink">
+                                {row.soldOutRuns}
+                                {row.soldOutNow ? (
+                                    <span className="text-down"> · now</span>
+                                ) : null}
+                            </td>
+                            <td className="hidden px-2 py-2 text-right text-ink-soft sm:table-cell">
+                                {duration(row.longestSoldOutMs)}
+                            </td>
+                            <td className="hidden px-2 py-2 text-right text-ink-soft sm:table-cell">
+                                {duration(row.avgSoldOutMs)}
+                            </td>
+                            <td className="px-2 py-2 text-right text-ink-soft">
+                                {formatDay(row.lastChangeAt)}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 export default async function ServerPage({
     params,
 }: {
@@ -244,6 +340,25 @@ export default async function ServerPage({
                 blurb="One cell per UTC day in each datacentre, from every poll that day."
             >
                 <AvailabilityCalendar rows={detail.calendar} />
+            </Section>
+
+            <Section
+                kicker="Last 60 days"
+                title="Stock statistics"
+                blurb="Available is the share of time the server could be ordered while Hetzner offered it there. Sell-outs counts separate sold-out runs; longest and average are their lengths."
+            >
+                <Stats detail={detail} />
+            </Section>
+
+            <Section
+                kicker="Last 60 days"
+                title="Stock changes"
+                blurb={`Sold-out, restock and rollout dispatches for ${detail.code}.`}
+            >
+                <DispatchList
+                    events={detail.events}
+                    emptyMessage={`No stock changes for ${detail.code} in the last 60 days.`}
+                />
             </Section>
         </PageFrame>
     );

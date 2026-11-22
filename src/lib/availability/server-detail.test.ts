@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendar, readServerTypeDetails } from "./server-detail";
+import {
+    buildCalendar,
+    computeDcStats,
+    readServerTypeDetails,
+} from "./server-detail";
 
 describe("readServerTypeDetails", () => {
     it("parses Hetzner server type fields and prices per datacentre", () => {
@@ -129,5 +133,80 @@ describe("buildCalendar", () => {
             "not-offered": 1,
             unknown: 56,
         });
+    });
+});
+
+describe("computeDcStats", () => {
+    const start = new Date("2026-03-01T00:00:00Z");
+    const end = new Date("2026-03-11T00:00:00Z");
+    const day = 86_400_000;
+    const change = (
+        observedAt: string,
+        baseStatus: "available" | "sold-out" | "not-offered" | "unknown",
+        prevStatus: typeof baseStatus | null,
+        locationCode = "FSN1",
+    ) => ({ observedAt, locationCode, baseStatus, prevStatus });
+
+    it("uses the current status when nothing changed in the window", () => {
+        expect(computeDcStats("FSN1", [], "available", start, end)).toEqual({
+            dc: "FSN1",
+            availablePct: 100,
+            soldOutRuns: 0,
+            longestSoldOutMs: 0,
+            avgSoldOutMs: 0,
+            soldOutNow: false,
+            lastChangeAt: null,
+        });
+        expect(
+            computeDcStats("FSN1", [], "not-offered", start, end).availablePct,
+        ).toBeNull();
+    });
+
+    it("measures closed and ongoing sold-out runs", () => {
+        const stats = computeDcStats(
+            "FSN1",
+            [
+                change("2026-03-02T00:00:00Z", "sold-out", "available"),
+                change("2026-03-04T00:00:00Z", "available", "sold-out"),
+                change("2026-03-10T00:00:00Z", "sold-out", "available"),
+                change("2026-03-05T00:00:00Z", "sold-out", "available", "NBG1"),
+            ],
+            "sold-out",
+            start,
+            end,
+        );
+        expect(stats).toEqual({
+            dc: "FSN1",
+            availablePct: 70,
+            soldOutRuns: 2,
+            longestSoldOutMs: 2 * day,
+            avgSoldOutMs: 1.5 * day,
+            soldOutNow: true,
+            lastChangeAt: "2026-03-10T00:00:00Z",
+        });
+    });
+
+    it("counts a run that started before the window", () => {
+        const stats = computeDcStats(
+            "FSN1",
+            [change("2026-03-03T00:00:00Z", "available", "sold-out")],
+            "available",
+            start,
+            end,
+        );
+        expect(stats.soldOutRuns).toBe(1);
+        expect(stats.longestSoldOutMs).toBe(2 * day);
+        expect(stats.availablePct).toBe(80);
+    });
+
+    it("excludes unknown time from the availability share", () => {
+        const stats = computeDcStats(
+            "FSN1",
+            [change("2026-03-06T00:00:00Z", "available", null)],
+            "available",
+            start,
+            end,
+        );
+        expect(stats.availablePct).toBe(100);
     });
 });

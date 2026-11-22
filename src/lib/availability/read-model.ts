@@ -74,7 +74,7 @@ function toDate(value: Date | string) {
     return value instanceof Date ? value : new Date(value);
 }
 
-function formatDuration(start: Date, end: Date) {
+export function formatDuration(start: Date, end: Date) {
     const seconds = Math.max(
         0,
         Math.floor((end.getTime() - start.getTime()) / 1000),
@@ -266,6 +266,7 @@ export async function getDispatchEvents(
     latestAt: Date,
     limit = 8,
     windowDays = 30,
+    serverTypeCode?: string,
 ): Promise<StockEvent[]> {
     const visibleFamilies = (await getPublicServerFamilies()).map(
         ({ id }) => id,
@@ -307,6 +308,9 @@ export async function getDispatchEvents(
             and(
                 gte(stockEvents.observedAt, cutoff.toISOString()),
                 inArray(serverTypes.family, visibleFamilies),
+                serverTypeCode
+                    ? eq(stockEvents.serverTypeCode, serverTypeCode)
+                    : undefined,
             ),
         )
         .orderBy(desc(stockEvents.observedAt))
