@@ -45,7 +45,7 @@ function DispatchRow({
                 <span className="break-words text-ink-soft">
                     <Link
                         href={`/servers/${event.serverTypeCode.toLowerCase()}`}
-                        className="text-accent underline underline-offset-4 hover:text-accent-deep"
+                        className="text-ink underline underline-offset-4 hover:text-accent"
                     >
                         {event.serverTypeCode}
                     </Link>

@@ -47,7 +47,7 @@ export function FamilyTable({ family }: { family: Family }) {
                             <div className="flex flex-col gap-0.5">
                                 <Link
                                     href={`/servers/${t.code.toLowerCase()}`}
-                                    className="text-accent underline underline-offset-4 hover:text-accent-deep"
+                                    className="text-ink underline underline-offset-4 hover:text-accent"
                                 >
                                     {t.code}
                                 </Link>
