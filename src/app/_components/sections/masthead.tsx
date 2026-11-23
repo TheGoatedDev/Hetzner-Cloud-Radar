@@ -30,7 +30,7 @@ export function Masthead({ observedAt }: { observedAt: string }) {
             </p>
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 sm:ml-auto">
                 <a
-                    href="#subscribe"
+                    href="/#subscribe"
                     className="text-xs text-ink-soft hover:text-accent"
                 >
                     Subscribe
